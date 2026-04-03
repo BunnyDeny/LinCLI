@@ -29,4 +29,4 @@ clean:
 ag:
 	@rm -rf $(BUILD_DIR) && $(MAKE)
 run:
-	$(MAKE) && $(BUILD_DIR)/$(TARGET)
+	@$(MAKE) && $(BUILD_DIR)/$(TARGET)
