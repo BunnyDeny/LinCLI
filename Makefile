@@ -11,7 +11,7 @@ OBJS_NO_PRE = $(patsubst $(BUILD_dir)/%,%,$(OBJS))
 export C_INCLUDES
 export CFLAGS
 export BUILD_DIR
-.PHONY: all clean __cc __ld run
+.PHONY: all clean __cc __ld run rbd
 
 all: __cc __ld
 __cc:
@@ -26,5 +26,7 @@ __ld: __cc
 	echo "[OK]: Successfully."
 clean:
 	@rm -rf $(BUILD_DIR)
+ag:
+	@rm -rf $(BUILD_DIR) && $(MAKE)
 run:
-	$(BUILD_DIR)/$(TARGET)
+	$(MAKE) && $(BUILD_DIR)/$(TARGET)

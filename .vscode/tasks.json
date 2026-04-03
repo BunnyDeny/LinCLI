@@ -26,7 +26,7 @@
                 "id": "rocket",
                 "tooltip": "重新编译项目"
             },
-            "command": "make clean && make",
+            "command": "make ag",
         },
         {
             "label": "run",
@@ -35,7 +35,7 @@
                 "id": "gear",
                 "tooltip": "运行项目"
             },
-            "command": "make && ./build/a.out",
+            "command": "make run",
         },
     ]
 }
