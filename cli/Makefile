@@ -6,5 +6,3 @@ export MODULE_TOP_MAKEFILE
 .PHONY: all clean
 all:
 	@for dir in $(SUBDIRS); do $(MAKE) -s -C $$dir || exit $$?; done;
-clean:
-	@rm -rf $(BUILD_DIR)
