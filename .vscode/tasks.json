@@ -35,7 +35,7 @@
                 "id": "gear",
                 "tooltip": "运行项目"
             },
-            "command": "make && ./build/stateM",
+            "command": "make && ./build/a.out",
         },
     ]
 }
