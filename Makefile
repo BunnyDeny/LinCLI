@@ -7,6 +7,7 @@ BUILD_DIR = $(abspath $(BUILD_dir))
 C_INCLUDES_REL := $(patsubst -I%,%,$(C_INCLUDES))
 C_INCLUDES_ABS := $(addprefix -I,$(abspath $(C_INCLUDES_REL)))
 OBJS = $(wildcard $(BUILD_dir)/*.o)
+OBJS_NO_PRE = $(patsubst $(BUILD_dir)/%,%,$(OBJS))
 export C_INCLUDES
 export CFLAGS
 export BUILD_DIR
@@ -16,7 +17,7 @@ all: __cc __ld
 __cc:
 	@for dir in $(SUBDIRS); do $(MAKE) -s -C $$dir || exit $$?; done;
 __ld: __cc
-	@printf "  %-7s %s\n" "LD" "$(OBJS)"
+	@printf "  %-4s %s\n" "LD" "$(OBJS_NO_PRE)"
 	@$(CC) $(OBJS) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET) && \
 	echo "Created executable:"; \
 	echo "    path: $(BUILD_DIR)/$(TARGET)"; \
