@@ -31,7 +31,22 @@
 # clean:
 # 	rm -rf $(BUILD_DIR)
 # -include $(DEPS)
-
+SUBDIRS = ./cli
 C_INCLUDES += -Icli/stateM/Inc
-CFLAGS += C_INCLUDES
+BUILD_dir = ./build
+CFLAGS += $(C_INCLUDES_ABS) -Wall 
+BUILD_DIR = $(abspath $(BUILD_dir))
+C_INCLUDES_REL := $(patsubst -I%,%,$(C_INCLUDES))
+C_INCLUDES_ABS := $(addprefix -I,$(abspath $(C_INCLUDES_REL)))
+export C_INCLUDES
 export CFLAGS
+export BUILD_DIR
+.PHONY: all clean
+
+all: __cc __ld
+__cc:
+	@for dir in $(SUBDIRS); do $(MAKE) -s -C $$dir || exit $$?; done;
+__ld:
+
+clean:
+	@rm -rf $(BUILD_DIR)
