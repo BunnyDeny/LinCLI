@@ -6,6 +6,7 @@ CFLAGS += $(C_INCLUDES_ABS) -Wall
 BUILD_DIR = $(abspath $(BUILD_dir))
 C_INCLUDES_REL := $(patsubst -I%,%,$(C_INCLUDES))
 C_INCLUDES_ABS := $(addprefix -I,$(abspath $(C_INCLUDES_REL)))
+OBJS = $(wildcard $(BUILD_dir)/*.o)
 export C_INCLUDES
 export CFLAGS
 export BUILD_DIR
@@ -16,7 +17,7 @@ __cc:
 	@for dir in $(SUBDIRS); do $(MAKE) -s -C $$dir || exit $$?; done;
 __ld: __cc
 	@printf "  %-7s %s\n" "LD" "$(OBJS)"
-	@$(CC) $(wildcard $(BUILD_DIR)/*.o) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET) && \
+	@$(CC) $(OBJS) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET) && \
 	echo "Created executable:"; \
 	echo "    path: $(BUILD_DIR)/$(TARGET)"; \
 	echo "    type: $$(file -b $(BUILD_DIR)/$(TARGET) | cut -d',' -f1-2)"; \
