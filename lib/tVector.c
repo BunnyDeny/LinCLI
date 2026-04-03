@@ -1,101 +1,64 @@
 #include "tVector.h"
 
-#include <assert.h>
-#include <stdio.h>
-
-void vectorInit(vector_t *v, _u8 *buf, int maxSize)
+void vectorInit(struct vector *v, _u8 *buf, int buf_size)
 {
-	v->maxSize = maxSize;
+	v->buf_size = buf_size;
 	v->_buf = buf;
 	v->head = 0;
 	v->tail = -1;
 	v->size = 0;
 }
 
-_u8 at(vector_t *v, int index)
+_u8 at(struct vector *v, int pos)
 {
-	if (index >= v->size || index < 0) {
+	if (pos >= v->size || pos < 0) {
 		return (_u8)0xff;
 	}
-	return v->_buf[(v->head + index) % v->maxSize];
+	return v->_buf[(v->head + pos) % v->buf_size];
 }
 
-bool pop_font(vector_t *v, int numToPop)
+bool pop_front(struct vector *v, int n)
 {
-	if (v->size < numToPop || numToPop <= 0) {
+	if (v->size < n || n <= 0) {
 		return false;
 	}
-	v->head = (v->head + numToPop) % v->maxSize;
-	v->size -= numToPop;
+	v->head = (v->head + n) % v->buf_size;
+	v->size -= n;
 	return true;
 }
 
-bool pop_back(vector_t *v, int numToPop)
+bool pop_back(struct vector *v, int n)
 {
-	if (v->size < numToPop || numToPop <= 0) {
+	if (v->size < n || n <= 0) {
 		return false;
 	}
-	v->tail = (v->tail - numToPop + v->maxSize) % v->maxSize;
-	v->size -= numToPop;
+	v->tail = (v->tail - n + v->buf_size) % v->buf_size;
+	v->size -= n;
 	return true;
 }
 
-bool push_font(vector_t *v, _u8 *dataToPush, int sizeToPush)
+bool push_font(struct vector *v, _u8 *date, int n)
 {
-	if (v->size + sizeToPush > v->maxSize || sizeToPush <= 0) {
+	if (v->size + n > v->buf_size || n <= 0) {
 		return false;
 	}
-	for (int i = sizeToPush - 1; i >= 0; --i) {
-		v->head = (v->head - 1 + v->maxSize) % v->maxSize;
-		v->_buf[v->head] = dataToPush[i];
+	for (int i = n - 1; i >= 0; --i) {
+		v->head = (v->head - 1 + v->buf_size) % v->buf_size;
+		v->_buf[v->head] = date[i];
 	}
-	v->size += sizeToPush;
+	v->size += n;
 	return true;
 }
 
-bool push_back(vector_t *v, _u8 *dataToPush, int sizeToPush)
+bool push_back(struct vector *v, _u8 *date, int n)
 {
-	if (v->size + sizeToPush > v->maxSize || sizeToPush <= 0) {
+	if (v->size + n > v->buf_size || n <= 0) {
 		return false;
 	}
-	for (int i = 0; i < sizeToPush; ++i) {
-		v->tail = (v->tail + 1) % v->maxSize;
-		v->_buf[v->tail] = dataToPush[i];
+	for (int i = 0; i < n; ++i) {
+		v->tail = (v->tail + 1) % v->buf_size;
+		v->_buf[v->tail] = date[i];
 	}
-	v->size += sizeToPush;
+	v->size += n;
 	return true;
-}
-
-void vectorPrint(vector_t *v)
-{
-	printf("{ ");
-	for (int i = 0; i < v->size; ++i) {
-		printf("0x%02x ", at(v, i));
-	}
-	printf("}\n");
-}
-
-void vectorTest(void)
-{
-	vector_t v;
-	_u8 vBuf[10];
-	vectorInit(&v, vBuf, 10);
-
-	_u8 tx1[4] = { 1, 2, 3, 4 };
-	push_back(&v, tx1, 4);
-	vectorPrint(&v); // { 0x01 0x02 0x03 0x04 }
-
-	_u8 tx2[3] = { 5, 6, 7 };
-	push_back(&v, tx2, 3);
-	vectorPrint(&v); // { 0x01 0x02 0x03 0x04 0x05 0x06 0x07 }
-
-	_u8 tx3[2] = { 8, 9 };
-	push_font(&v, tx3, 2);
-	vectorPrint(&v); // { 0x08 0x09 0x01 0x02 0x03 0x04 0x05 0x06 0x07 }
-
-	pop_font(&v, 4);
-	vectorPrint(&v); // { 0x03 0x04 0x05 0x06 0x07 }
-
-	pop_back(&v, 4);
-	vectorPrint(&v); // { 0x03 }
 }

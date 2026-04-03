@@ -11,21 +11,26 @@ typedef volatile uint8_t _u8;
 typedef volatile uint8_t _u8;
 #endif
 
-typedef struct vector {
-	volatile int maxSize;
-	volatile int head;
-	volatile int tail;
-	volatile int size;
-	volatile _u8 *_buf;
-} vector_t;
+#if defined(_int)
+#undef _int
+typedef volatile int _int;
+#else
+typedef volatile int _int;
+#endif
 
-void vectorInit(vector_t *v, _u8 *buf, int maxSize);
-_u8 at(vector_t *v, int index);
-bool pop_font(vector_t *v, int numToPop);
-bool pop_back(vector_t *v, int numToPop);
-bool push_font(vector_t *v, _u8 *dataToPush, int sizeToPush);
-bool push_back(vector_t *v, _u8 *dataToPush, int sizeToPush);
-void vectorPrint(vector_t *v);
-void vectorTest(void);
+struct vector {
+	_int buf_size;
+	_int head;
+	_int tail;
+	_int size;
+	_u8 *_buf;
+};
+
+void vectorInit(struct vector *v, _u8 *buf, int buf_size);
+_u8 at(struct vector *v, int pos);
+bool pop_front(struct vector *v, int n);
+bool pop_back(struct vector *v, int n);
+bool push_font(struct vector *v, _u8 *date, int n);
+bool push_back(struct vector *v, _u8 *date, int n);
 
 #endif
