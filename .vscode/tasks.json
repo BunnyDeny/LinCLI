@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "icon": {
+                "id": "tools",
+                "tooltip": "构建项目"
+            },
+            "command": "make",
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "icon": {
+                "id": "flame",
+                "tooltip": "清理项目"
+            },
+            "command": "make clean",
+        },
+        {
+            "label": "rebuild",
+            "type": "shell",
+            "icon": {
+                "id": "rocket",
+                "tooltip": "重新编译项目"
+            },
+            "command": "make clean && make",
+        },
+        {
+            "label": "run",
+            "type": "shell",
+            "icon": {
+                "id": "gear",
+                "tooltip": "运行项目"
+            },
+            "command": "make && ./build/stateM",
+        },
+    ]
+}
