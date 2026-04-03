@@ -7,13 +7,13 @@ CFLAGS_CLEAN := $(filter-out -MMD -MP -MF%,$(CFLAGS))
 all: $(OBJS)
 $(BUILD_DIR)/%.d: $(SRC_DIR)/%.c $(MODULE_TOP_MAKEFILE) $(MAKE_FILE_NAME) |$(BUILD_DIR)
 	@rm -f $@;
-	@printf "  %-7s %s\n" "CC -MM" "$(abspath $<)"
+	@printf "  %-4s %s\n" "MM" "$(abspath $<)"
 	@$(CC) -MM $(CFLAGS_CLEAN) $< >$@.tmp; 
 	@sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/\1.o $@ : ,g' < $@.tmp > $@; 
 	@rm -f $@.tmp
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(MODULE_TOP_MAKEFILE) $(MAKE_FILE_NAME) |$(BUILD_DIR)
 	@mkdir -p $(dir $@)
-	@printf "  %-7s %s\n" "CC -c" "$(abspath $<)"
+	@printf "  %-4s %s\n" "CC" "$(abspath $<)"
 	@$(CC) $(CFLAGS_CLEAN) -c -o $@ $<
 $(BUILD_DIR):
 	@mkdir $@

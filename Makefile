@@ -46,7 +46,6 @@ export BUILD_DIR
 all: __cc __ld
 __cc:
 	@for dir in $(SUBDIRS); do $(MAKE) -s -C $$dir || exit $$?; done;
-__ld:
-
+__ld: __cc
 clean:
 	@rm -rf $(BUILD_DIR)
