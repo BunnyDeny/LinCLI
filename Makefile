@@ -25,7 +25,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJS)
 	echo "    size: $$(ls -lh $(BUILD_DIR)/$(TARGET) | awk '{print $$5}')"; \
 	echo "[OK]: Successfully."
 clean:
-	@rm -rf $(BUILD_DIR)
+	@if [ -d "$(BUILD_DIR)" ]; then rm -rf $(BUILD_DIR) && echo "Cleaned: $(BUILD_DIR)"; fi
 ag:
 	@rm -rf $(BUILD_DIR) && $(MAKE)
 run:
