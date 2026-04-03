@@ -9,7 +9,7 @@ C_INCLUDES_ABS := $(addprefix -I,$(abspath $(C_INCLUDES_REL)))
 export C_INCLUDES
 export CFLAGS
 export BUILD_DIR
-.PHONY: all clean
+.PHONY: all clean __cc __ld
 
 all: __cc __ld
 __cc:
