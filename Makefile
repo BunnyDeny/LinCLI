@@ -12,13 +12,13 @@ export C_INCLUDES
 export CFLAGS
 export BUILD_DIR
 .PHONY: all clean __cc __ld run rbd
-
 all: __cc __ld
 __cc:
 	@for dir in $(SUBDIRS); do $(MAKE) -s -C $$dir || exit $$?; done;
-__ld: __cc
+__ld: $(BUILD_DIR)/$(TARGET)
+$(BUILD_DIR)/$(TARGET): $(OBJS)
 	@printf "  %-4s %s\n" "LD" "$(OBJS_NO_PRE)"
-	@$(CC) $(OBJS) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET) && \
+	@$(CC) $(OBJS) $(LDFLAGS) -o $@ && \
 	echo "Created executable:"; \
 	echo "    path: $(BUILD_DIR)/$(TARGET)"; \
 	echo "    type: $$(file -b $(BUILD_DIR)/$(TARGET) | cut -d',' -f1-2)"; \
