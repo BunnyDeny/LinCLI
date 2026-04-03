@@ -9,12 +9,13 @@ void vectorInit(struct vector *v, _u8 *buf, int buf_size)
 	v->size = 0;
 }
 
-_u8 at(struct vector *v, int pos)
+bool at(struct vector *v, int pos, _u8 *data)
 {
 	if (pos >= v->size || pos < 0) {
-		return (_u8)0xff;
+		return false;
 	}
-	return v->_buf[(v->head + pos) % v->buf_size];
+	*data = v->_buf[(v->head + pos) % v->buf_size];
+	return true;
 }
 
 bool pop_front(struct vector *v, int n)
