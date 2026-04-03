@@ -22,6 +22,5 @@ __ld: __cc
 	echo "    type: $$(file -b $(BUILD_DIR)/$(TARGET) | cut -d',' -f1-2)"; \
 	echo "    size: $$(ls -lh $(BUILD_DIR)/$(TARGET) | awk '{print $$5}')"; \
 	echo "[OK]: Successfully."
-
 clean:
 	@rm -rf $(BUILD_DIR)
