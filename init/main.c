@@ -1,123 +1,44 @@
-#include "stateM.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h> // 必须包含 pthread 库头文件
+#include <unistd.h>
 
-struct tStateEngine engine;
-
-struct ctx {
-	int running_count;
-} ctx;
-
-//////////////////////////////////////state1////////////////////////////////
-void state1_entry(void *private)
+// 线程运行的函数
+void *print_message(void *ptr)
 {
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state1_entry] running count : %d\n", ctx->running_count++);
-}
-
-int state1_task(void *private)
-{
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state1_task] running count : %d\n", ctx->running_count++);
-	if (ctx->running_count > 10) {
-		// if (state_switch(&engine, "state4")) {/* switch error */
-		if (state_switch(&engine, "state2")) {
-			printf("switch error!\n");
-			return -2;
-		}
+	char *message = (char *)ptr;
+	for (int i = 0; i < 3; i++) {
+		printf("线程运行中: %s (步骤 %d)\n", message, i + 1);
+		sleep(1); // 模拟耗时操作
 	}
-	return ctx->running_count;
+	return NULL;
 }
 
-void state1_exit(void *private)
+int main()
 {
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state1_exit] running count : %d\n", ctx->running_count++);
-}
+	pthread_t thread1, thread2;
+	const char *msg1 = "Thread A";
+	const char *msg2 = "Thread B";
 
-struct tState state1 = {
-	.name = "state1",
-	.state_entry = state1_entry,
-	.state_task = state1_task,
-	.state_exit = state1_exit,
-};
-
-//////////////////////////////////////state2////////////////////////////////
-void state2_entry(void *private)
-{
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state2_entry] running count : %d\n", ctx->running_count++);
-}
-
-int state2_task(void *private)
-{
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state2_task] running count : %d\n", ctx->running_count++);
-	if (ctx->running_count > 20) {
-		if (state_switch(&engine, "state3")) {
-			printf("switch error!\n");
-			return -2;
-		}
+	// 1. 创建第一个线程
+	if (pthread_create(&thread1, NULL, print_message, (void *)msg1)) {
+		fprintf(stderr, "创建线程 1 失败\n");
+		return 1;
 	}
-	return ctx->running_count;
-}
 
-void state2_exit(void *private)
-{
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state2_exit] running count : %d\n", ctx->running_count++);
-}
-
-struct tState state2 = {
-	.name = "state2",
-	.state_entry = state2_entry,
-	.state_task = state2_task,
-	.state_exit = state2_exit,
-};
-
-//////////////////////////////////////state3////////////////////////////////
-void state3_entry(void *private)
-{
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state3_entry] running count : %d\n", ctx->running_count++);
-}
-
-int state3_task(void *private)
-{
-	struct ctx *ctx = (struct ctx *)private;
-	printf("[state3_task] running count : %d\n", ctx->running_count++);
-	if (ctx->running_count == 30) {
-		return 30;
+	// 2. 创建第二个线程
+	if (pthread_create(&thread2, NULL, print_message, (void *)msg2)) {
+		fprintf(stderr, "创建线程 2 失败\n");
+		return 1;
 	}
-	return ctx->running_count;
-}
 
-struct tState state3 = {
-	.name = "state3",
-	.state_entry = state3_entry,
-	.state_task = state3_task,
-	.state_exit = NULL,
-};
+	printf("主线程：已启动子线程，正在等待它们完成...\n");
 
-//////////////////////////////////pool///////////////////////////////
-struct tState *pool[3] = { &state1, &state2, &state3 };
+	// 3. 等待线程结束（join），否则主线程结束会导致子线程强制退出
+	pthread_join(thread1, NULL);
+	pthread_join(thread2, NULL);
 
-/*test engine_init error*/
-// struct tState *pool[3] = {&state1, &state2, NULL};
+	printf("主线程：所有子线程已结束，程序退出。\n");
 
-int main(void)
-{
-	int status = engine_init(&engine, &state1, pool, 3);
-	if (status != 0) {
-		printf("engine_init error : %d", status);
-		return status;
-	}
-	while (1) {
-		int runing_state = stateEngineRun(&engine, &ctx);
-		if (runing_state == 30)
-			return 0;
-		else if (runing_state < 0) {
-			printf("running task ocurrs error!\n");
-			return -1;
-		}
-	}
+	return 0;
 }
