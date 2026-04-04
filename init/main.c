@@ -3,13 +3,12 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <termios.h>
-#include <fcntl.h>
 
 void *capture_input(void *arg)
 {
-	char ch;
-	// 使用 read() 直接读取单个字符
-	while (read(STDIN_FILENO, &ch, 1) > 0) {
+	int ch;
+	// 使用 getchar() 直接读取单个字符
+	while ((ch = getchar()) != 'q') {
 		printf("捕获到字符: '%c' (ASCII: %d)\n", ch, ch);
 	}
 	printf("输入已结束，线程退出。\n");
