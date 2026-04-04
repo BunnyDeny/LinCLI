@@ -3,7 +3,7 @@
 
 #include "tVector.h"
 
-#define CLI_IO_SIZE 10
+#define CLI_IO_SIZE 128
 
 struct cli_io {
 	struct vector in;
