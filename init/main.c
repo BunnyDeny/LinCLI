@@ -15,8 +15,6 @@ void *cli_in_entry(void *arg)
 		if (status) {
 			printf("cli_in push err:%d\n", status);
 		}
-		printf("in size :%d, out size :%d\n", cli_get_in_size(),
-		       cli_get_out_size());
 	}
 	printf("输入已结束，线程退出。\n");
 	return NULL;
