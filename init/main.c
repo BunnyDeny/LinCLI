@@ -12,7 +12,6 @@ void *cli_in_entry(void *arg)
 	while (1) {
 		ch = getchar();
 		cli_in_push((_u8 *)&ch, 1);
-
 		cli_out_push((_u8 *)&ch, 1);
 	}
 	printf("输入已结束，线程退出。\n");
@@ -31,6 +30,7 @@ void *cli_out_entry(void *arg)
 				printf("cli_out_pop err %d\n", status);
 			}
 		}
+		usleep(10000);
 	}
 }
 
