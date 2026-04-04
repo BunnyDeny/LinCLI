@@ -2,16 +2,15 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <termios.h>
+#include <fcntl.h>
 
 void *capture_input(void *arg)
 {
-	int ch;
-	printf("请输入字符（每输入一个字符立即打印）:\n");
-	while ((ch = getchar()) != EOF) {
+	char ch;
+	// 使用 read() 直接读取单个字符
+	while (read(STDIN_FILENO, &ch, 1) > 0) {
 		printf("捕获到字符: '%c' (ASCII: %d)\n", ch, ch);
-		if (ch == '\n') {
-			printf("请继续输入:\n");
-		}
 	}
 	printf("输入已结束，线程退出。\n");
 	return NULL;
@@ -19,6 +18,12 @@ void *capture_input(void *arg)
 
 int main()
 {
+	// 设置终端为 raw 模式（禁用行缓冲）
+	struct termios t;
+	tcgetattr(STDIN_FILENO, &t);
+	t.c_lflag &= ~(ICANON); // 禁用规范模式
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
+
 	pthread_t thread1;
 	const char *msg1 = "Thread A";
 
@@ -26,11 +31,15 @@ int main()
 		fprintf(stderr, "创建线程 1 失败\n");
 		return 1;
 	}
-	printf("主线程：已启动子线程，正在等待它们完成...\n");
+	printf("主线程：已启动子线程，输入字符立即打印，按 Ctrl+C 退出...\n");
 
-	//等待线程结束（join）
 	pthread_join(thread1, NULL);
-	printf("主线程：所有子线程已结束，程序退出。\n");
+
+	// 恢复终端模式
+	t.c_lflag |= ICANON;
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
+
+	printf("主线程：子线程已结束，程序退出。\n");
 
 	return 0;
 }
