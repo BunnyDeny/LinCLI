@@ -36,9 +36,10 @@ void *cli_out_entry(void *arg)
 	}
 }
 
-void *cli_pushout_and_popin_entry(void *arg)
+void *cli_task_entry(void *arg)
 {
 	int status, size;
+	cli_io_init();
 	while (1) {
 		size = cli_get_in_size();
 		if (size) {
@@ -66,8 +67,7 @@ int main()
 
 	pthread_t cli_in_thread;
 	pthread_t cli_out_thread;
-	pthread_t cli_pushout_and_popin_thread;
-	cli_io_init();
+	pthread_t cli_task;
 	if (pthread_create(&cli_in_thread, NULL, cli_in_entry, NULL)) {
 		fprintf(stderr, "创建线程 cli_in_thread 失败\n");
 		return 1;
@@ -76,16 +76,15 @@ int main()
 		fprintf(stderr, "创建线程 cli_in_thread 失败\n");
 		return 1;
 	}
-	if (pthread_create(&cli_pushout_and_popin_thread, NULL,
-			   cli_pushout_and_popin_entry, NULL)) {
-		fprintf(stderr, "创建线程 cli_pushout_and_popin_thread 失败\n");
+	if (pthread_create(&cli_task, NULL, cli_task_entry, NULL)) {
+		fprintf(stderr, "创建线程 cli_task 失败\n");
 		return 1;
 	}
 	printf("主线程：已启动子线程，输入字符立即打印，按 Ctrl+C 退出...\n");
 
 	pthread_join(cli_in_thread, NULL);
 	pthread_join(cli_out_thread, NULL);
-	pthread_join(cli_pushout_and_popin_thread, NULL);
+	pthread_join(cli_task, NULL);
 
 	// 恢复终端模式
 	t.c_lflag |= ICANON;
