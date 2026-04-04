@@ -28,6 +28,9 @@ void *cli_out_entry(void *arg)
 			int status = cli_out_pop((_u8 *)&ch, 1);
 			if (status == 0) {
 				write(STDOUT_FILENO, &ch, 1);
+
+				/*debug*/
+				printf("acssi : %d, char %c\n", (int)ch, ch);
 			} else {
 				printf("cli_out_pop err %d\n", status);
 			}
