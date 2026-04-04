@@ -23,27 +23,33 @@ void cli_io_init(void);
 
 static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
-	if (*ref > 1)
+	bool status;
+	if (*ref > 2)
 		return *ref;
 	(*ref)++;
-	return push_back(v, data, size) ? 0 : -1;
+	status = push_back(v, data, size);
+	(*ref)--;
+	return status ? 0 : -1;
 }
 
 static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
-	if (*ref > 1)
+	if (*ref > 2)
 		return *ref;
 	(*ref)++;
 	int remain_to_pop = size;
 	while (remain_to_pop) {
 		_u8 front;
 		if (at(v, 0, &front) == false) {
+			(*ref)--;
 			return -1;
 		}
 		int idx = size - remain_to_pop;
 		*(data + idx) = front;
+		pop_front(v, 1);
 		remain_to_pop--;
 	}
+	(*ref)--;
 	return 0;
 }
 
@@ -65,6 +71,16 @@ static inline int cli_in_pop(_u8 *data, int size)
 static inline int cli_out_pop(_u8 *data, int size)
 {
 	return _cli_io_pop(&_cli_io.out, data, size, &_cli_io.out_push_ref);
+}
+
+static inline int cli_get_in_size(void)
+{
+	return _cli_io.in.size;
+}
+
+static inline int cli_get_out_size(void)
+{
+	return _cli_io.out.size;
 }
 
 #endif
