@@ -185,6 +185,7 @@ SECTIONS
   _edata = .;
   PROVIDE (edata = .);
   . = ALIGN(ALIGNOF(NEXT_SECTION));
+  INCLUDE cli_project.ld
   __bss_start = .;
   .bss            :
   {
