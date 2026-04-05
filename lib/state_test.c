@@ -74,5 +74,5 @@ void state_section_test(void)
 	{
 		printf("state name: %s\n", state->name);
 	}
-	printf("==========================\n");
+	printf("===========================\n");
 }
