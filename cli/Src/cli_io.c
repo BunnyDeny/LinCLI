@@ -30,6 +30,11 @@ __attribute__((weak)) const char *pre_ALERT_gen(void)
 	return "[ALERT]";
 }
 
+__attribute__((weak)) const char *pre_CRIT_gen(void)
+{
+	return "[CRIT]";
+}
+
 __attribute__((weak)) const char *pre_ERR_gen(void)
 {
 	return "[ERR]";
@@ -67,7 +72,41 @@ __attribute__((weak)) const char *pre_CONT_gen(void)
 
 static const char *prefiex_gen(const char *level)
 {
-	return "[test]";
+	char lv = level[0];
+	const char *prefiex;
+	switch (lv) {
+	case KERN_EMERG:
+		prefiex = pre_EMERG_gen();
+		break;
+	case KERN_ALERT:
+		prefiex = pre_ALERT_gen();
+		break;
+	case KERN_CRIT:
+		prefiex = pre_CRIT_gen();
+		break;
+	case KERN_ERR:
+		prefiex = pre_ERR_gen();
+		break;
+	case KERN_WARNING:
+		prefiex = pre_WARNING_gen();
+		break;
+	case KERN_NOTICE:
+		prefiex = pre_NOTICE_gen();
+		break;
+	case KERN_INFO:
+		prefiex = pre_INFO_gen();
+		break;
+	case KERN_DEBUG:
+		prefiex = pre_DEBUG_gen();
+		break;
+	case KERN_CONT:
+		prefiex = pre_CONT_gen();
+		break;
+	default:
+		prefiex = pre_DEFAULT_gen();
+		break;
+	}
+	return prefiex;
 }
 
 static char buffer[256];
@@ -81,8 +120,7 @@ int cli_printk(const char *fmt, ...)
 	char pre[2] = { buffer[0], '\0' };
 	const char *_pre = prefiex_gen(pre);
 	int pre_len = strlen(_pre);
-	if (len > 0 && pre_len > 0) {
-		/* 移动字符串，为前缀腾出空间 */
+	if (len > 0 && pre_len >= 0) {
 		memmove(buffer + pre_len, buffer, len + 1);
 		memcpy(buffer, _pre, pre_len);
 		return cli_out_push((_u8 *)buffer, pre_len + len);
