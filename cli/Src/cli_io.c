@@ -115,7 +115,7 @@ static inline int is_kern_level(char c)
 		c == '5' || c == '6' || c == '7' || c == 'c');
 }
 
-static char buffer[256];
+static char buffer[CLI_PRINTK_BUF_SIZE];
 
 int cli_printk(const char *fmt, ...)
 {
@@ -126,7 +126,7 @@ int cli_printk(const char *fmt, ...)
 	char pre[2] = { buffer[0], '\0' };
 	const char *_pre = prefiex_gen(pre);
 	if (is_kern_level(buffer[0])) {
-		memmove(buffer, buffer + 1, 255);
+		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
 	}
 	int pre_len = strlen(_pre);
 	if (len > 0 && pre_len >= 0) {

@@ -4,6 +4,7 @@
 #include "tVector.h"
 
 #define CLI_IO_SIZE 128
+#define CLI_PRINTK_BUF_SIZE 128
 #define COLOR_TERMINAL_EN 1
 
 #if COLOR_TERMINAL_EN
