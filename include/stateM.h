@@ -63,11 +63,8 @@ struct tState {
 		.state_task = task,                                  \
 		.state_exit = exit,                                  \
 	}
-#define _FOR_EACH_STATE(_start, _end, _state)                \
-	for ((_state) = (struct tState *)(_start);           \
-	     (_state) < (struct tState *)(_end);             \
-	     (_state) = (struct tState *)((char *)(_state) + \
-					  sizeof(struct tState)))
+#define _FOR_EACH_STATE(_start, _end, _state) \
+	for ((_state) = (_start); (_state) < (_end); (_state)++)
 
 struct tStateEngine {
 	struct tState *from;
