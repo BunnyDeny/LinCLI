@@ -69,22 +69,6 @@ void state_section_test(void)
 {
 	extern struct tState _state_sec_start;
 	extern struct tState _state_sec_end;
-
-	struct tStateEngine engine;
-	struct tState startup_state = {
-		.name = "dummy",
-		.state_entry = NULL,
-		.state_task = NULL,
-		.state_exit = NULL,
-	};
-
-	int ret = engine_init(&engine, &startup_state, &_state_sec_start,
-			      &_state_sec_end);
-	if (ret != 0) {
-		printf("engine_init failed: %d\n", ret);
-		return;
-	}
-
 	printf("=== State Section Test ===\n");
 	struct tState *state;
 	_FOR_EACH_STATE(&_state_sec_start, &_state_sec_end, state)
