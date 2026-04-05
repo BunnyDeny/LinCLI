@@ -20,8 +20,6 @@ void *cli_in_entry(void *arg)
 			printf("cli_in push err:%d\n", status);
 		}
 	}
-	printf("输入已结束，线程退出。\n");
-	return NULL;
 }
 
 extern int scheduler_task(void);
