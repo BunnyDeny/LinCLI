@@ -53,7 +53,7 @@ struct tState {
 	void (*state_entry)(void *);
 	int (*state_task)(void *);
 	void (*state_exit)(void *);
-};
+} __attribute__((aligned(sizeof(long))));
 
 #define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
 	static struct tState state_##obj __attribute__((             \
