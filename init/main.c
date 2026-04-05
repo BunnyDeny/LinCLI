@@ -6,6 +6,8 @@
 #include "cli_io.h"
 #include "stateM.h"
 
+extern void state_section_test(void);
+
 static pthread_t cli_in_thread;
 static pthread_t cli_out_thread;
 static pthread_t cli_task_thread;
@@ -121,6 +123,8 @@ void *cli_task_thread_entry(void *arg)
 
 int main()
 {
+	state_section_test();
+
 	// 设置终端为 raw 模式（禁用行缓冲）
 	struct termios t;
 	tcgetattr(STDIN_FILENO, &t);

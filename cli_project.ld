@@ -2,5 +2,5 @@
 .state : {
     _state_sec_start = .;
     *(.state)
-    _state_sec_end = .;
+    _state_sec_end = . + 16;
 }
