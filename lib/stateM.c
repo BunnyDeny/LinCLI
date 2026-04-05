@@ -53,7 +53,7 @@ static int state_insert(struct rb_root *root, struct tState *state_to_insert)
  * @param pool_size     Number of states in the pool.
  * @return 0 on success, -1 if engine or startup_state is NULL.
  */
-int engine_init(struct tStateEngine *engine, struct tState *startup_state,
+int engine_init(struct tStateEngine *engine, char *startup_state,
 		struct tState *sec_start, struct tState *sec_end)
 {
 	if (engine == NULL || startup_state == NULL || sec_start == NULL ||
@@ -62,7 +62,6 @@ int engine_init(struct tStateEngine *engine, struct tState *startup_state,
 	if (sec_start >= sec_end)
 		return -2;
 	engine->from = NULL;
-	engine->to = startup_state;
 	struct rb_root *rbtree_root = &engine->state_tree_root;
 	*rbtree_root = RB_ROOT;
 	struct tState *state;
@@ -73,6 +72,12 @@ int engine_init(struct tStateEngine *engine, struct tState *startup_state,
 		}
 		state_insert(rbtree_root, state);
 	}
+
+	struct tState *_to = state_search(rbtree_root, startup_state);
+	if (_to == NULL) {
+		return -4;
+	}
+	engine->to = _to;
 	return 0;
 }
 

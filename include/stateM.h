@@ -72,7 +72,7 @@ struct tStateEngine {
 	struct rb_root state_tree_root;
 };
 
-int engine_init(struct tStateEngine *engine, struct tState *startup_state,
+int engine_init(struct tStateEngine *engine, char *startup_state,
 		struct tState *sec_start, struct tState *sec_end);
 int state_switch(struct tStateEngine *engine, char *name);
 int stateEngineRun(struct tStateEngine *engine, void *private);
