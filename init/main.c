@@ -42,7 +42,7 @@ void *cli_out_entry(void *arg)
 				write(STDOUT_FILENO, &ch, 1);
 
 				/*debug*/
-				printf("    <[userinput] acssi : %d, char %c\n",
+				printf("  <[userinput] acssi : %3d, char %c\n",
 				       (int)ch, ch);
 			} else {
 				printf("cli_out_pop err %d\n", status);
