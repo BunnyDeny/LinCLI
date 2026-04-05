@@ -6,10 +6,7 @@
 #include "cli_io.h"
 #include "stateM.h"
 
-extern void state_section_test(void);
-
 static pthread_t cli_in_thread;
-static pthread_t cli_out_thread;
 static pthread_t cli_task_thread;
 
 void *cli_in_entry(void *arg)
@@ -25,30 +22,6 @@ void *cli_in_entry(void *arg)
 	}
 	printf("输入已结束，线程退出。\n");
 	return NULL;
-}
-
-void *cli_out_entry(void *arg)
-{
-	while (1) {
-		while (cli_get_out_size() > 0) {
-			char ch;
-			int status = cli_out_pop((_u8 *)&ch, 1);
-			if (status == 0) {
-				// 检测到 Ctrl+D (ASCII 4)，销毁所有线程
-				if ((unsigned char)ch == 4) {
-					printf("检测到 Ctrl+D，退出程序\n");
-					pthread_cancel(cli_in_thread);
-					pthread_cancel(cli_out_thread);
-					pthread_cancel(cli_task_thread);
-					return NULL;
-				}
-				write(STDOUT_FILENO, &ch, 1);
-			} else {
-				printf("cli_out_pop err %d\n", status);
-			}
-		}
-		usleep(10000);
-	}
 }
 
 extern int scheduler_task(void);
@@ -81,10 +54,6 @@ int main()
 		fprintf(stderr, "创建线程 cli_in_thread 失败\n");
 		return 1;
 	}
-	if (pthread_create(&cli_out_thread, NULL, cli_out_entry, NULL)) {
-		fprintf(stderr, "创建线程 cli_out_thread 失败\n");
-		return 1;
-	}
 	if (pthread_create(&cli_task_thread, NULL, cli_task_thread_entry,
 			   NULL)) {
 		fprintf(stderr, "创建线程 cli_task_thread 失败\n");
@@ -92,7 +61,6 @@ int main()
 	}
 
 	pthread_join(cli_in_thread, NULL);
-	pthread_join(cli_out_thread, NULL);
 	pthread_join(cli_task_thread, NULL);
 
 	// 恢复终端模式

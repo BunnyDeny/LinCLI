@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <termios.h>
+
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
 	.in_pop_ref = 0,
@@ -18,6 +22,20 @@ void cli_io_init(void)
 	_cli_io.in_pop_ref = 1;
 	_cli_io.out_push_ref = 1;
 	_cli_io.out_pop_ref = 1;
+}
+
+//移植的时候实现
+void cli_out_sync(void)
+{
+	while (cli_get_out_size() > 0) {
+		char ch;
+		int status = cli_out_pop((_u8 *)&ch, 1);
+		if (status == 0) {
+			write(STDOUT_FILENO, &ch, 1);
+		} else {
+			printf("cli_out_pop err %d\n", status);
+		}
+	}
 }
 
 __attribute__((weak)) const char *pre_EMERG_gen(void)
@@ -119,6 +137,7 @@ static char buffer[CLI_PRINTK_BUF_SIZE];
 
 int cli_printk(const char *fmt, ...)
 {
+	int status;
 	va_list args;
 	va_start(args, fmt);
 	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
@@ -133,9 +152,11 @@ int cli_printk(const char *fmt, ...)
 		memmove(buffer + pre_len, buffer, len + 1);
 		memcpy(buffer, _pre, pre_len);
 		strcat(buffer, COLOR_NONE);
-		printf("printf : %s", buffer);
-		return cli_out_push((_u8 *)buffer,
-				    pre_len + len + strlen(COLOR_NONE) + 1);
+		status = cli_out_push((_u8 *)buffer,
+				      pre_len + len + strlen(COLOR_NONE));
+		if (status)
+			return status;
+		cli_out_sync();
 	}
 	return len;
 }

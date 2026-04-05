@@ -65,5 +65,6 @@ int scheduler_task(void)
 	} else if (status == 1) {
 		return status;
 	}
+	cli_out_sync();
 	return 0;
 }

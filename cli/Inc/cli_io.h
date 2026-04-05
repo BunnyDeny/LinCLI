@@ -3,8 +3,8 @@
 
 #include "tVector.h"
 
-#define CLI_IO_SIZE 128
-#define CLI_PRINTK_BUF_SIZE 128
+#define CLI_IO_SIZE 4096
+#define CLI_PRINTK_BUF_SIZE 4096
 #define COLOR_TERMINAL_EN 1
 
 #if COLOR_TERMINAL_EN
@@ -143,6 +143,7 @@ static inline int cli_get_out_size(void)
 }
 
 void cli_io_init(void);
+void cli_out_sync(void);
 int cli_printk(const char *fmt, ...);
 
 #endif
