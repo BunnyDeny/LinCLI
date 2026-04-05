@@ -22,7 +22,7 @@ int test_task(void *arg)
 void test_exit(void *arg)
 {
 }
-_EXPORT_STATE_SYMBOL("my_test", my_test, test_entry, test_task, test_exit,
+_EXPORT_STATE_SYMBOL(my_test, test_entry, test_task, test_exit,
 		     ".my_test_section");
 
 void *cli_in_entry(void *arg)
