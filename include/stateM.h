@@ -53,15 +53,15 @@ struct tState {
 	void (*state_entry)(void *);
 	int (*state_task)(void *);
 	void (*state_exit)(void *);
-} __attribute__((packed));
+};
 
-#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
-	static struct tState state_##obj                             \
-		__attribute__((used, section(_section), packed)) = { \
-			.name = #obj,                                \
-			.state_entry = entry,                        \
-			.state_task = task,                          \
-			.state_exit = exit,                          \
+#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section) \
+	static struct tState state_##obj                       \
+		__attribute__((used, section(_section))) = {   \
+			.name = #obj,                          \
+			.state_entry = entry,                  \
+			.state_task = task,                    \
+			.state_exit = exit,                    \
 		}
 #define _FOR_EACH_STATE(_start, _end, _state) \
 	for ((_state) = (_start); (_state) < (_end); (_state)++)
