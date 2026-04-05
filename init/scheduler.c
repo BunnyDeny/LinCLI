@@ -9,7 +9,8 @@ struct tStateEngine scheduler_eng;
 /* State functions implementation */
 void cli_idle_entry(void *private)
 {
-	cli_printk(KERN_EMERG "[scheduler]进入空闲状态 cli_idle_entry\n");
+	cli_printk("[scheduler]进入空闲状态 cli_idle_entry\n");
+	cli_printk_test();
 }
 
 int cli_idle_task(void *private)
@@ -22,7 +23,7 @@ int cli_idle_task(void *private)
 		if (status) {
 			return status;
 		}
-		status = cli_out_push((_u8 *)&ch, 1);
+		//status = cli_out_push((_u8 *)&ch, 1);
 		if (status) {
 			return status;
 		}

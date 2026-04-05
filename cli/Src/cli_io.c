@@ -27,37 +27,37 @@ __attribute__((weak)) const char *pre_EMERG_gen(void)
 
 __attribute__((weak)) const char *pre_ALERT_gen(void)
 {
-	return "[ALERT]";
+	return COLOR_MAGENTA "[ALERT]";
 }
 
 __attribute__((weak)) const char *pre_CRIT_gen(void)
 {
-	return "[CRIT]";
+	return COLOR_BOLD COLOR_RED "[CRIT]";
 }
 
 __attribute__((weak)) const char *pre_ERR_gen(void)
 {
-	return "[ERR]";
+	return COLOR_RED "[ERR]";
 }
 
 __attribute__((weak)) const char *pre_WARNING_gen(void)
 {
-	return "[WARNING]";
+	return COLOR_YELLOW "[WARNING]";
 }
 
 __attribute__((weak)) const char *pre_NOTICE_gen(void)
 {
-	return "[NOTICE]";
+	return COLOR_BLUE "[NOTICE]";
 }
 
 __attribute__((weak)) const char *pre_INFO_gen(void)
 {
-	return "[INFO]";
+	return COLOR_GREEN "[INFO]";
 }
 
 __attribute__((weak)) const char *pre_DEBUG_gen(void)
 {
-	return "[DEBUG]";
+	return COLOR_CYAN "[DEBUG]";
 }
 
 __attribute__((weak)) const char *pre_DEFAULT_gen(void)
@@ -67,7 +67,7 @@ __attribute__((weak)) const char *pre_DEFAULT_gen(void)
 
 __attribute__((weak)) const char *pre_CONT_gen(void)
 {
-	return "[CONT]";
+	return COLOR_CYAN "[CONT]";
 }
 
 static const char *prefiex_gen(const char *level)
@@ -137,4 +137,18 @@ int cli_printk(const char *fmt, ...)
 				    pre_len + len + strlen(COLOR_NONE) + 1);
 	}
 	return len;
+}
+
+void cli_printk_test(void)
+{
+	cli_printk(KERN_EMERG "这是EMERG级别 - 最严重的紧急情况\n");
+	cli_printk(KERN_ALERT "这是ALERT级别 - 需要立即处理\n");
+	cli_printk(KERN_CRIT "这是CRIT级别 - 严重故障\n");
+	cli_printk(KERN_ERR "这是ERR级别 - 错误\n");
+	cli_printk(KERN_WARNING "这是WARNING级别 - 警告\n");
+	cli_printk(KERN_NOTICE "这是NOTICE级别 - 正常但重要\n");
+	cli_printk(KERN_INFO "这是INFO级别 - 一般信息\n");
+	cli_printk(KERN_DEBUG "这是DEBUG级别 - 调试信息\n");
+	cli_printk(KERN_DEFAULT "这是DEFAULT级别 - 无前缀\n");
+	cli_printk(KERN_CONT "这是CONT级别 - 继续输出\n");
 }
