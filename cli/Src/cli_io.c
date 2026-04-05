@@ -109,6 +109,12 @@ static const char *prefiex_gen(const char *level)
 	return prefiex;
 }
 
+static inline int is_kern_level(char c)
+{
+	return (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
+		c == '5' || c == '6' || c == '7' || c == 'c');
+}
+
 static char buffer[256];
 
 int cli_printk(const char *fmt, ...)
@@ -119,6 +125,9 @@ int cli_printk(const char *fmt, ...)
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
 	const char *_pre = prefiex_gen(pre);
+	if (is_kern_level(buffer[0])) {
+		memmove(buffer, buffer + 1, 255);
+	}
 	int pre_len = strlen(_pre);
 	if (len > 0 && pre_len >= 0) {
 		memmove(buffer + pre_len, buffer, len + 1);
