@@ -73,7 +73,7 @@ struct tStateEngine {
 };
 
 int engine_init(struct tStateEngine *engine, struct tState *startup_state,
-		struct tState **pool, int pool_size);
+		struct tState *sec_start, struct tState *sec_end);
 int state_switch(struct tStateEngine *engine, char *name);
 int stateEngineRun(struct tStateEngine *engine, void *private);
 

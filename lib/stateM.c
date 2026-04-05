@@ -54,20 +54,24 @@ static int state_insert(struct rb_root *root, struct tState *state_to_insert)
  * @return 0 on success, -1 if engine or startup_state is NULL.
  */
 int engine_init(struct tStateEngine *engine, struct tState *startup_state,
-		struct tState **pool, int pool_size)
+		struct tState *sec_start, struct tState *sec_end)
 {
-	if (engine == NULL || startup_state == NULL || pool == NULL)
+	if (engine == NULL || startup_state == NULL || sec_start == NULL ||
+	    sec_end == NULL)
 		return -1;
+	if (sec_start >= sec_end)
+		return -2;
 	engine->from = NULL;
 	engine->to = startup_state;
 	struct rb_root *rbtree_root = &engine->state_tree_root;
 	*rbtree_root = RB_ROOT;
-	for (int i = 0; i < pool_size; i++) {
-		struct tState *_to_insert_state = pool[i];
-		if (_to_insert_state == NULL) {
-			return -2;
+	struct tState *state;
+	_FOR_EACH_STATE(sec_start, sec_end, state)
+	{
+		if (state == NULL) {
+			return -3;
 		}
-		state_insert(rbtree_root, _to_insert_state);
+		state_insert(rbtree_root, state);
 	}
 	return 0;
 }
