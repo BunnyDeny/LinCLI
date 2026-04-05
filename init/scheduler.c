@@ -10,7 +10,7 @@ struct tStateEngine scheduler_eng;
 void cli_idle_entry(void *private)
 {
 	cli_io_init();
-	printk("[scheduler] 进入空闲状态 cli_idle_entry\n");
+	_cli_io_printf("[scheduler] 进入空闲状态 cli_idle_entry\n");
 }
 
 int cli_idle_task(void *private)

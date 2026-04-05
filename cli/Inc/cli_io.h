@@ -90,6 +90,6 @@ static inline int cli_get_out_size(void)
 }
 
 void cli_io_init(void);
-int printk(const char *fmt, ...);
+int _cli_io_printf(const char *fmt, ...);
 
 #endif

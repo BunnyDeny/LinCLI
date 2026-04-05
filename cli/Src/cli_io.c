@@ -20,7 +20,7 @@ void cli_io_init(void)
 }
 
 char buffer[128];
-int printk(const char *fmt, ...)
+int _cli_io_printf(const char *fmt, ...)
 {
 	int status;
 	va_list args;
