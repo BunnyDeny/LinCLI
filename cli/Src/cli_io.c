@@ -24,23 +24,25 @@ void cli_io_init(void)
 	_cli_io.out_pop_ref = 1;
 }
 
-//移植的时候实现
-void cli_out_sync(void)
+void cli_putc(char ch);
+
+int cli_out_sync(void)
 {
 	while (cli_get_out_size() > 0) {
 		char ch;
 		int status = cli_out_pop((_u8 *)&ch, 1);
 		if (status == 0) {
-			write(STDOUT_FILENO, &ch, 1);
+			cli_putc(ch);
 		} else {
-			printf("cli_out_pop err %d\n", status);
+			return status;
 		}
 	}
+	return 0;
 }
 
 __attribute__((weak)) const char *pre_EMERG_gen(void)
 {
-	return COLOR_RED "[EMERG]";
+	return COLOR_BOLD COLOR_RED "[EMERG]";
 }
 
 __attribute__((weak)) const char *pre_ALERT_gen(void)
@@ -50,7 +52,7 @@ __attribute__((weak)) const char *pre_ALERT_gen(void)
 
 __attribute__((weak)) const char *pre_CRIT_gen(void)
 {
-	return COLOR_BOLD COLOR_RED "[CRIT]";
+	return COLOR_RED "[CRIT]";
 }
 
 __attribute__((weak)) const char *pre_ERR_gen(void)
@@ -156,7 +158,8 @@ int cli_printk(const char *fmt, ...)
 				      pre_len + len + strlen(COLOR_NONE));
 		if (status)
 			return status;
-		cli_out_sync();
+		if (cli_out_sync())
+			return -2;
 	}
 	return len;
 }

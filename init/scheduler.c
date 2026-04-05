@@ -24,19 +24,19 @@ void cli_idle_entry(void *private)
 
 int cli_idle_task(void *private)
 {
-	// int status, size;
-	// size = cli_get_in_size();
-	// if (size) {
-	// 	char ch;
-	// 	status = cli_in_pop((_u8 *)&ch, 1);
-	// 	if (status) {
-	// 		return status;
-	// 	}
-	// 	status = cli_out_push((_u8 *)&ch, 1);
-	// 	if (status) {
-	// 		return status;
-	// 	}
-	// }
+	int status, size;
+	size = cli_get_in_size();
+	if (size) {
+		char ch;
+		status = cli_in_pop((_u8 *)&ch, 1);
+		if (status) {
+			return status;
+		}
+		status = cli_out_push((_u8 *)&ch, 1);
+		if (status) {
+			return status;
+		}
+	}
 	return 0;
 }
 
@@ -65,6 +65,8 @@ int scheduler_task(void)
 	} else if (status == 1) {
 		return status;
 	}
-	cli_out_sync();
+	if (cli_out_sync()) {
+		return -2;
+	}
 	return 0;
 }
