@@ -4,6 +4,8 @@
  */
 #include "stateM.h"
 #include <stdio.h>
+#include "cli_io.h"
+#include <unistd.h>
 
 struct scheduler_arg {
 	int running_cnt;
@@ -14,74 +16,34 @@ struct tStateEngine scheduler_eng;
 /* State functions implementation */
 void test_state_entry(void *private)
 {
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("test_state_entry : running_cnt = %3d\n", arg->running_cnt++);
+	cli_io_init();
 }
 
 int test_state_task(void *private)
 {
-	int status;
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("test_state_task : running_cnt = %3d\n", arg->running_cnt++);
-	if (arg->running_cnt > 10) {
-		status = state_switch(&scheduler_eng, "state2");
-		if (status < 0) {
-			return status;
+	int status, size;
+	size = cli_get_in_size();
+	if (size) {
+		char ch;
+		status = cli_in_pop((_u8 *)&ch, 1);
+		if (status) {
+			printf("pop in err : %d\n", status);
+		}
+		status = cli_out_push((_u8 *)&ch, 1);
+		if (status) {
+			printf("push out err : %d\n", status);
 		}
 	}
-	return arg->running_cnt;
+	return 0;
 }
 
 void test_state_exit(void *private)
 {
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("test_state_exit : running_cnt = %3d\n", arg->running_cnt++);
 }
 _EXPORT_STATE_SYMBOL(test, test_state_entry, test_state_task, test_state_exit,
 		     ".state");
 
-void state2_entry(void *private)
-{
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("state2_entry : running_cnt = %3d\n", arg->running_cnt++);
-}
-
-int state2_task(void *private)
-{
-	int status;
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("state2_task : running_cnt = %3d\n", arg->running_cnt++);
-	if (arg->running_cnt > 20) {
-		status = state_switch(&scheduler_eng, "state3");
-		if (status < 0) {
-			return status;
-		}
-	}
-	return arg->running_cnt;
-	return 0;
-}
-
-void state2_exit(void *private)
-{
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("state2_exit : running_cnt = %3d\n", arg->running_cnt++);
-}
-_EXPORT_STATE_SYMBOL(state2, state2_entry, state2_task, state2_exit, ".state");
-
-void state3_entry(void *private)
-{
-	struct scheduler_arg *arg = (struct scheduler_arg *)private;
-	printf("state3_entry : running_cnt = %3d\n", arg->running_cnt++);
-}
-
-int state3_task(void *private)
-{
-	return 1;
-}
-_EXPORT_STATE_SYMBOL(state3, state3_entry, state3_task, NULL, ".state");
-
-/* Test function */
-void state_section_test(void)
+int scheduler_init(void)
 {
 	int status;
 	extern struct tState _state_sec_start;
@@ -91,16 +53,26 @@ void state_section_test(void)
 	{
 		printf("state name: %s\n", state->name);
 	}
-	engine_init(&scheduler_eng, "test", &_state_sec_start, &_state_sec_end);
-	printf("===========================\n");
-	while (1) {
-		status = stateEngineRun(&scheduler_eng, &scheduler_arg);
-		if (status < 0) {
-			printf("scheduler_eng err code : %d\n", status);
-			return;
-		} else if (status == 1) {
-			printf("scheduler_eng : 正常退出\n");
-			return;
-		}
+	status = engine_init(&scheduler_eng, "test", &_state_sec_start,
+			     &_state_sec_end);
+	if (status < 0) {
+		printf("scheduler_init err code : %d\n", status);
 	}
+	printf("===========================\n");
+	return 0;
+}
+
+/* Test function */
+int scheduler_task(void)
+{
+	int status;
+	status = stateEngineRun(&scheduler_eng, &scheduler_arg);
+	if (status < 0) {
+		printf("scheduler_eng err code : %d\n", status);
+		return status;
+	} else if (status == 1) {
+		printf("scheduler_eng : 正常退出\n");
+		return status;
+	}
+	return 0;
 }

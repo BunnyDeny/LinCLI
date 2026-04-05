@@ -55,22 +55,20 @@ void *cli_out_entry(void *arg)
 	}
 }
 
+extern int scheduler_task(void);
+extern int scheduler_init(void);
+
 void *cli_task_thread_entry(void *arg)
 {
-	int status, size;
-	cli_io_init();
+	int status;
+	status = scheduler_init();
+	if (status != 0) {
+		printf("cli_task_thread_entry err code :%d\n", status);
+	}
 	while (1) {
-		size = cli_get_in_size();
-		if (size) {
-			char ch;
-			status = cli_in_pop((_u8 *)&ch, 1);
-			if (status) {
-				printf("pop in err : %d\n", status);
-			}
-			status = cli_out_push((_u8 *)&ch, 1);
-			if (status) {
-				printf("push out err : %d\n", status);
-			}
+		status = scheduler_task();
+		if (status != 0) {
+			printf("cli_task_thread_entry err code :%d\n", status);
 		}
 		usleep(10000);
 	}
@@ -78,8 +76,6 @@ void *cli_task_thread_entry(void *arg)
 
 int main()
 {
-	state_section_test();
-
 	// 设置终端为 raw 模式（禁用行缓冲）
 	struct termios t;
 	tcgetattr(STDIN_FILENO, &t);
