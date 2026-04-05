@@ -22,7 +22,7 @@ void cli_io_init(void)
 
 __attribute__((weak)) const char *pre_EMERG_gen(void)
 {
-	return "[EMERG]";
+	return COLOR_RED "[EMERG]";
 }
 
 __attribute__((weak)) const char *pre_ALERT_gen(void)
@@ -75,31 +75,31 @@ static const char *prefiex_gen(const char *level)
 	char lv = level[0];
 	const char *prefiex;
 	switch (lv) {
-	case KERN_EMERG:
+	case '0':
 		prefiex = pre_EMERG_gen();
 		break;
-	case KERN_ALERT:
+	case '1':
 		prefiex = pre_ALERT_gen();
 		break;
-	case KERN_CRIT:
+	case '2':
 		prefiex = pre_CRIT_gen();
 		break;
-	case KERN_ERR:
+	case '3':
 		prefiex = pre_ERR_gen();
 		break;
-	case KERN_WARNING:
+	case '4':
 		prefiex = pre_WARNING_gen();
 		break;
-	case KERN_NOTICE:
+	case '5':
 		prefiex = pre_NOTICE_gen();
 		break;
-	case KERN_INFO:
+	case '6':
 		prefiex = pre_INFO_gen();
 		break;
-	case KERN_DEBUG:
+	case '7':
 		prefiex = pre_DEBUG_gen();
 		break;
-	case KERN_CONT:
+	case 'c':
 		prefiex = pre_CONT_gen();
 		break;
 	default:
@@ -123,7 +123,9 @@ int cli_printk(const char *fmt, ...)
 	if (len > 0 && pre_len >= 0) {
 		memmove(buffer + pre_len, buffer, len + 1);
 		memcpy(buffer, _pre, pre_len);
-		return cli_out_push((_u8 *)buffer, pre_len + len);
+		strcat(buffer, COLOR_NONE);
+		return cli_out_push((_u8 *)buffer,
+				    pre_len + len + strlen(COLOR_NONE) + 1);
 	}
 	return len;
 }
