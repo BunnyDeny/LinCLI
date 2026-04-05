@@ -1,6 +1,7 @@
 #include "cli_io.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
@@ -69,28 +70,22 @@ static const char *prefiex_gen(const char *level)
 	return "[test]";
 }
 
-char buffer[128];
-char tmp[256];
+static char buffer[256];
 
 int cli_printk(const char *fmt, ...)
 {
-	int status;
 	va_list args;
 	va_start(args, fmt);
 	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
-
 	char pre[2] = { buffer[0], '\0' };
 	const char *_pre = prefiex_gen(pre);
-	snprintf(tmp, sizeof(tmp), "%s %s", _pre, buffer);
-
-	if (len > 0) {
-		status = cli_out_push((_u8 *)tmp, len);
-		if (status < 0) {
-			return status;
-		}
-	} else {
-		return len;
+	int pre_len = strlen(_pre);
+	if (len > 0 && pre_len > 0) {
+		/* 移动字符串，为前缀腾出空间 */
+		memmove(buffer + pre_len, buffer, len + 1);
+		memcpy(buffer, _pre, pre_len);
+		return cli_out_push((_u8 *)buffer, pre_len + len);
 	}
-	return 0;
+	return len;
 }
