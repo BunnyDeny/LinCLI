@@ -19,8 +19,6 @@ struct cli_io {
 
 extern struct cli_io _cli_io;
 
-void cli_io_init(void);
-
 static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	bool status;
@@ -90,5 +88,8 @@ static inline int cli_get_out_size(void)
 {
 	return _cli_io.out.size;
 }
+
+void cli_io_init(void);
+int printk(const char *fmt, ...);
 
 #endif

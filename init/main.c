@@ -43,10 +43,6 @@ void *cli_out_entry(void *arg)
 					return NULL;
 				}
 				write(STDOUT_FILENO, &ch, 1);
-
-				/*debug*/
-				printf("  <[userinput] acssi : %3d, char %c\n",
-				       (int)ch, ch);
 			} else {
 				printf("cli_out_pop err %d\n", status);
 			}
@@ -65,7 +61,6 @@ void *cli_task_thread_entry(void *arg)
 	if (status != 0) {
 		printf("cli_task_thread_entry err code :%d\n", status);
 	}
-	printf("调度器已启动\n");
 	while (1) {
 		status = scheduler_task();
 		if (status != 0) {
@@ -82,9 +77,6 @@ int main()
 	tcgetattr(STDIN_FILENO, &t);
 	t.c_lflag &= ~(ICANON | ECHO); // 禁用规范模式，回显
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
-
-	printf("主线程：已启动子线程，输入字符立即打印，按 Ctrl+D 退出...\n");
-
 	if (pthread_create(&cli_in_thread, NULL, cli_in_entry, NULL)) {
 		fprintf(stderr, "创建线程 cli_in_thread 失败\n");
 		return 1;

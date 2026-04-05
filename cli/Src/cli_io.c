@@ -1,4 +1,6 @@
 #include "cli_io.h"
+#include <stdarg.h>
+#include <stdio.h>
 
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
@@ -15,4 +17,23 @@ void cli_io_init(void)
 	_cli_io.in_pop_ref = 1;
 	_cli_io.out_push_ref = 1;
 	_cli_io.out_pop_ref = 1;
+}
+
+char buffer[128];
+int printk(const char *fmt, ...)
+{
+	int status;
+	va_list args;
+	va_start(args, fmt);
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	if (len > 0) {
+		status = cli_out_push((_u8 *)buffer, len);
+		if (status < 0) {
+			return status;
+		}
+	} else {
+		return len;
+	}
+	return 0;
 }
