@@ -70,7 +70,7 @@ static const char *prefiex_gen(const char *level)
 }
 
 char buffer[128];
-char tmp[128];
+char tmp[256];
 
 int cli_printk(const char *fmt, ...)
 {
@@ -82,7 +82,7 @@ int cli_printk(const char *fmt, ...)
 
 	char pre[2] = { buffer[0], '\0' };
 	const char *_pre = prefiex_gen(pre);
-	sprintf(tmp, "%s %s", _pre, buffer);
+	snprintf(tmp, sizeof(tmp), "%s %s", _pre, buffer);
 
 	if (len > 0) {
 		status = cli_out_push((_u8 *)tmp, len);
