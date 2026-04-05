@@ -55,16 +55,19 @@ struct tState {
 	void (*state_exit)(void *);
 };
 
-#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section) \
-	static struct tState state_##obj                       \
-		__attribute__((used, section(_section))) = {   \
-			.name = #obj,                          \
-			.state_entry = entry,                  \
-			.state_task = task,                    \
-			.state_exit = exit,                    \
-		}
-#define _FOR_EACH_STATE(_start, _end, _state) \
-	for ((_state) = (_start); (_state) < (_end); (_state)++)
+#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
+	static struct tState state_##obj __attribute__((             \
+		used, section(_section), aligned(sizeof(long)))) = { \
+		.name = #obj,                                        \
+		.state_entry = entry,                                \
+		.state_task = task,                                  \
+		.state_exit = exit,                                  \
+	}
+#define _FOR_EACH_STATE(_start, _end, _state)                \
+	for ((_state) = (struct tState *)(_start);           \
+	     (_state) < (struct tState *)(_end);             \
+	     (_state) = (struct tState *)((char *)(_state) + \
+					  sizeof(struct tState)))
 
 struct tStateEngine {
 	struct tState *from;
