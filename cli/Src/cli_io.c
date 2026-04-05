@@ -1,11 +1,7 @@
 #include "cli_io.h"
 #include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
-
-#include <stdlib.h>
 #include <unistd.h>
-#include <termios.h>
 
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
@@ -24,7 +20,11 @@ void cli_io_init(void)
 	_cli_io.out_pop_ref = 1;
 }
 
-void cli_putc(char ch);
+//移植的时候实现
+__attribute__((weak)) void cli_putc(char ch)
+{
+	write(STDOUT_FILENO, &ch, 1);
+}
 
 int cli_out_sync(void)
 {
