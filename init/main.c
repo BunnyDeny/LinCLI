@@ -12,51 +12,6 @@ static pthread_t cli_in_thread;
 static pthread_t cli_out_thread;
 static pthread_t cli_task_thread;
 
-void test1_entry(void *arg)
-{
-}
-
-int test1_task(void *arg)
-{
-	return 0;
-}
-
-void test1_exit(void *arg)
-{
-}
-_EXPORT_STATE_SYMBOL(my_test1, test1_entry, test1_task, test1_exit,
-		     ".my_test_section");
-
-void test2_entry(void *arg)
-{
-}
-
-int test2_task(void *arg)
-{
-	return 0;
-}
-
-void test2_exit(void *arg)
-{
-}
-_EXPORT_STATE_SYMBOL(my_test2, test2_entry, test2_task, test2_exit,
-		     ".my_test_section");
-
-void test3_entry(void *arg)
-{
-}
-
-int test3_task(void *arg)
-{
-	return 0;
-}
-
-void test3_exit(void *arg)
-{
-}
-_EXPORT_STATE_SYMBOL(my_test3, test3_entry, test3_task, test3_exit,
-		     ".my_test_section");
-
 void *cli_in_entry(void *arg)
 {
 	int ch, status;

@@ -69,15 +69,9 @@ void state_section_test(void)
 {
 	extern struct tState _state_sec_start;
 	extern struct tState _state_sec_end;
-	printf("=== State Section Test ===\n");
-	printf("sizeof(struct tState) = %zu\n", sizeof(struct tState));
-	printf("__alignof__(struct tState) = %zu\n", __alignof__(struct tState));
-	size_t aligned_size = ((sizeof(struct tState) + __alignof__(struct tState) - 1) & ~(__alignof__(struct tState) - 1));
-	printf("aligned size = %zu\n", aligned_size);
 	struct tState *state;
 	_FOR_EACH_STATE(&_state_sec_start, &_state_sec_end, state)
 	{
-		printf("0x%x\r\n", (int)state);
 		printf("state name: %s\n", state->name);
 	}
 	printf("==========================\n");
