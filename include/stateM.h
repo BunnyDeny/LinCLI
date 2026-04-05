@@ -55,14 +55,14 @@ struct tState {
 	void (*state_exit)(void *);
 };
 
-#define _EXPORT_STATE_SYMBOL(name, obj, entry, task, exit, section) \
-	static struct tState state_##obj\
-__attribute__((used, section(section))) = {                         \
-		.name = name,                                       \
-		.state_entry = entry,                               \
-		.state_task = task,                                 \
-		.state_exit = exit,                                 \
-	}
+#define _EXPORT_STATE_SYMBOL(_name, obj, entry, task, exit, _section) \
+	static struct tState state_##obj                              \
+		__attribute__((used, section(_section))) = {          \
+			.name = _name,                                \
+			.state_entry = entry,                         \
+			.state_task = task,                           \
+			.state_exit = exit,                           \
+		}
 
 struct tStateEngine {
 	struct tState *from;
