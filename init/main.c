@@ -4,10 +4,26 @@
 #include <unistd.h>
 #include <termios.h>
 #include "cli_io.h"
+#include "stateM.h"
 
 static pthread_t cli_in_thread;
 static pthread_t cli_out_thread;
 static pthread_t cli_task_thread;
+
+void test_entry(void *arg)
+{
+}
+
+int test_task(void *arg)
+{
+	return 0;
+}
+
+void test_exit(void *arg)
+{
+}
+_EXPORT_STATE_SYMBOL("my_test", my_test, test_entry, test_task, test_exit,
+		     ".my_test_section");
 
 void *cli_in_entry(void *arg)
 {

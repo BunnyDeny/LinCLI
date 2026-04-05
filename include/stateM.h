@@ -49,11 +49,20 @@
 
 struct tState {
 	struct rb_node node; /*user no need to care*/
-	char *name;
+	char name[32];
 	void (*state_entry)(void *);
 	int (*state_task)(void *);
 	void (*state_exit)(void *);
 };
+
+#define _EXPORT_STATE_SYMBOL(name, obj, entry, task, exit, section) \
+	static struct tState state_##obj\
+__attribute__((used, section(section))) = {                         \
+		.name = name,                                       \
+		.state_entry = entry,                               \
+		.state_task = task,                                 \
+		.state_exit = exit,                                 \
+	}
 
 struct tStateEngine {
 	struct tState *from;
