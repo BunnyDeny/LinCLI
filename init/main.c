@@ -80,7 +80,7 @@ int main()
 	// 设置终端为 raw 模式（禁用行缓冲）
 	struct termios t;
 	tcgetattr(STDIN_FILENO, &t);
-	t.c_lflag &= ~(ICANON | ECHO); // 禁用规范模式和回显
+	t.c_lflag &= ~(ICANON | ECHO); // 禁用规范模式，回显
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
 
 	printf("主线程：已启动子线程，输入字符立即打印，按 Ctrl+D 退出...\n");
