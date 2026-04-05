@@ -114,10 +114,15 @@ int stateEngineRun(struct tStateEngine *engine, void *private)
 		STATEM_SWITCH(engine->from, engine->to);
 		engine->from = engine->to;
 		STATEM_ENTRY(engine->from);
-		if (engine->from->state_entry)
+		if (engine->from->state_entry) {
 			engine->from->state_entry(private);
+		}
 	}
-	return engine->from->state_task(private);
+	if (engine->from->state_task) {
+		return engine->from->state_task(private);
+	} else {
+		return 0;
+	}
 }
 
 /**

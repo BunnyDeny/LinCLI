@@ -65,6 +65,7 @@ void *cli_task_thread_entry(void *arg)
 	if (status != 0) {
 		printf("cli_task_thread_entry err code :%d\n", status);
 	}
+	printf("调度器已启动\n");
 	while (1) {
 		status = scheduler_task();
 		if (status != 0) {
