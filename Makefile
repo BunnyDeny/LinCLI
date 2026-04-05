@@ -2,6 +2,7 @@ TARGET = a.out
 SUBDIRS = ./cli ./lib ./init
 C_INCLUDES += -Icli/Inc -Iinclude
 BUILD_dir = ./build
+LDFLAGS = -T ./default.ld
 CFLAGS += $(C_INCLUDES_ABS) -Wall -g
 BUILD_DIR = $(abspath $(BUILD_dir))
 C_INCLUDES_REL := $(patsubst -I%,%,$(C_INCLUDES))
