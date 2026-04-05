@@ -1,6 +1,6 @@
 TARGET = a.out
 SUBDIRS = ./cli ./lib ./init
-C_INCLUDES += -Icli/stateM/Inc -Iinclude
+C_INCLUDES += -Icli/Inc -Iinclude
 BUILD_dir = ./build
 CFLAGS += $(C_INCLUDES_ABS) -Wall -g
 BUILD_DIR = $(abspath $(BUILD_dir))
