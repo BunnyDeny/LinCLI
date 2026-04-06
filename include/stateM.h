@@ -55,21 +55,37 @@ struct tState {
 	void (*state_exit)(void *);
 } __attribute__((aligned(sizeof(long))));
 
-//在本工程的任意一个位置将你想要的状态通过此宏定义到参数_section表示的段中去，
-//然后在链接脚本中收集好你散乱定义在各个c文件定义到同一个_section的变量，并定义
-//好起始符号与结束符号格式类似：
-/*
-.scheduler : {
-    _scheduler_start = .;
-    *(.scheduler)
-    _scheduler_end = .;
-}
-*/
-//然后在某个地方调用engine_init传入在链接脚本中定义好的起始结束指针符号（注意extern声明时的类型是struct tState *）
-//初始化你的状态机引擎，最后在某个任务上下文调用stateEngineRun即可运行你的状态机了
-//参数obj指定了状态机的名字，主要用于状态切换的标识符，例如obj=state1，那么当你需要
-//调用state_switch切换状态的时候，你需要传入"state1"参数，当然这个双引号在这里是必须的
-//但是在_EXPORT_STATE_SYMBOL中是不需要的，因为宏里面加了#obj自动生成字符串
+/**
+ * @brief 导出状态机符号到指定段
+ *
+ * @param obj      状态机名字，用于state_switch()调用时的标识符（不加引号）
+ * @param entry    状态入口函数
+ * @param task     状态任务函数
+ * @param exit     状态退出函数
+ * @param _section 目标段名，需与链接脚本中的段名一致
+ *
+ * @details
+ * 使用例子：
+ * 1. 在链接脚本中定义段和起始结束符号：
+ *    .scheduler : {
+ *        _scheduler_start = .;
+ *        *(.scheduler)
+ *        _scheduler_end = .;
+ *    }
+ * 2. 使用本宏导出状态，注意obj不加引号：
+ *    _EXPORT_STATE_SYMBOL(cli_idle, cli_idle_entry, cli_idle_task, NULL, ".scheduler");
+ * 3. 在初始化代码中extern声明并调用engine_init：
+ *    extern struct tState _scheduler_start;
+ *    extern struct tState _scheduler_end;
+ *    engine_init(&engine, "cli_idle", &_scheduler_start, &_scheduler_end);
+ * 4. 在任务循环中调用stateEngineRun：
+ *    stateEngineRun(&engine, NULL);
+ * 5. 切换状态时调用state_switch传入目的状态通过_EXPORT_STATE_SYMBOL宏定义的时候
+ *    的obj参数（注意加引号）：
+ *    state_switch(&engine, "state1");
+ *
+ * @note 具体用法可参照本项目 init/scheduler.c 和 cli_project.ld
+ */
 #define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
 	static struct tState state_##obj __attribute__((             \
 		used, section(_section), aligned(sizeof(long)))) = { \
