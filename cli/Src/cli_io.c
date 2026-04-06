@@ -3,7 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 
-// char log_level[3] = "8";
 char log_level[3] = "8";
 
 struct cli_io _cli_io = {
