@@ -1,6 +1,6 @@
 /* State section definition for state machine */
-.state : {
+.scheduler : {
     _scheduler_start = .;
-    *(.state)
+    *(.scheduler)
     _scheduler_end = .;
 }

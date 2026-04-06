@@ -55,6 +55,21 @@ struct tState {
 	void (*state_exit)(void *);
 } __attribute__((aligned(sizeof(long))));
 
+//在本工程的任意一个位置将你想要的状态通过此宏定义到参数_section表示的段中去，
+//然后在链接脚本中收集好你散乱定义在各个c文件定义到同一个_section的变量，并定义
+//好起始符号与结束符号格式类似：
+/*
+.scheduler : {
+    _scheduler_start = .;
+    *(.scheduler)
+    _scheduler_end = .;
+}
+*/
+//然后在某个地方调用engine_init传入在链接脚本中定义好的起始结束指针符号（注意extern声明时的类型是struct tState *）
+//初始化你的状态机引擎，最后在某个任务上下文调用stateEngineRun即可运行你的状态机了
+//参数obj指定了状态机的名字，主要用于状态切换的标识符，例如obj=state1，那么当你需要
+//调用state_switch切换状态的时候，你需要传入"state1"参数，当然这个双引号在这里是必须的
+//但是在_EXPORT_STATE_SYMBOL中是不需要的，因为宏里面加了#obj自动生成字符串
 #define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
 	static struct tState state_##obj __attribute__((             \
 		used, section(_section), aligned(sizeof(long)))) = { \

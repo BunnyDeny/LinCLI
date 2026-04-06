@@ -31,7 +31,8 @@ int cli_idle_task(void *private)
 	return 0;
 }
 
-_EXPORT_STATE_SYMBOL(cli_idle, cli_idle_entry, cli_idle_task, NULL, ".state");
+_EXPORT_STATE_SYMBOL(cli_idle, cli_idle_entry, cli_idle_task, NULL,
+		     ".scheduler");
 
 int scheduler_init(void)
 {
