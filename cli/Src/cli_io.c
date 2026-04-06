@@ -42,42 +42,42 @@ int cli_out_sync(void)
 
 __attribute__((weak)) const char *pre_EMERG_gen(void)
 {
-	return COLOR_BOLD COLOR_RED "[EMERG]";
+	return COLOR_BOLD COLOR_RED "[EMERG] ";
 }
 
 __attribute__((weak)) const char *pre_ALERT_gen(void)
 {
-	return COLOR_MAGENTA "[ALERT]";
+	return COLOR_MAGENTA "[ALERT] ";
 }
 
 __attribute__((weak)) const char *pre_CRIT_gen(void)
 {
-	return COLOR_RED "[CRIT]";
+	return COLOR_RAINBOW_2 "[CRIT] ";
 }
 
 __attribute__((weak)) const char *pre_ERR_gen(void)
 {
-	return COLOR_RED "[ERR]";
+	return COLOR_RED "[ERR] ";
 }
 
 __attribute__((weak)) const char *pre_WARNING_gen(void)
 {
-	return COLOR_YELLOW "[WARNING]";
+	return COLOR_YELLOW "[WARNING] ";
 }
 
 __attribute__((weak)) const char *pre_NOTICE_gen(void)
 {
-	return COLOR_BLUE "[NOTICE]";
+	return COLOR_BOLD COLOR_GREEN "[NOTICE] ";
 }
 
 __attribute__((weak)) const char *pre_INFO_gen(void)
 {
-	return COLOR_GREEN "[INFO]";
+	return COLOR_BLUE "[INFO] " COLOR_NONE;
 }
 
 __attribute__((weak)) const char *pre_DEBUG_gen(void)
 {
-	return COLOR_CYAN "[DEBUG]";
+	return COLOR_RAINBOW_4 "[DEBUG] ";
 }
 
 __attribute__((weak)) const char *pre_DEFAULT_gen(void)
@@ -87,7 +87,7 @@ __attribute__((weak)) const char *pre_DEFAULT_gen(void)
 
 __attribute__((weak)) const char *pre_CONT_gen(void)
 {
-	return COLOR_CYAN "[CONT]";
+	return COLOR_CYAN "[CONT] ";
 }
 
 static const char *prefiex_gen(const char *level)
