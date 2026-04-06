@@ -8,14 +8,14 @@ struct tStateEngine scheduler_eng;
 
 void start_entry(void *private)
 {
-	cli_printk("[scheduler]初始化用户的一些应用\n");
+	pr_info("[scheduler]初始化用户的一些应用\n");
 }
 
 int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_idle");
 	if (status) {
-		cli_printk(KERN_EMERG "[scheduler]切换空闲任务异常\n");
+		pr_crit("[scheduler]切换空闲任务异常\n");
 		return status;
 	}
 	return 0;
@@ -23,7 +23,7 @@ int start_task(void *private)
 
 void start_exit(void *private)
 {
-	cli_printk("[scheduler]调度器启动程序执行完毕，将进入空闲状态\n");
+	pr_notice("[scheduler]调度器启动程序执行完毕，将进入空闲状态\n");
 }
 
 _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, start_exit,
@@ -31,9 +31,8 @@ _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, start_exit,
 
 void scheduler_idle_entry(void *private)
 {
-	cli_printk("[scheduler]进入空闲状态 scheduler_idle_entry\n");
-	cli_printk("[scheduler]空闲状态的行为是回显用户的按键输入\n");
-	cli_printk_test();
+	pr_info("[scheduler]进入空闲状态 scheduler_idle_entry\n");
+	pr_info("[scheduler]空闲状态的行为是回显用户的按键输入\n");
 }
 
 int scheduler_idle_task(void *private)
@@ -64,9 +63,10 @@ int scheduler_init(void)
 	status = engine_init(&scheduler_eng, "scheduler_start",
 			     &_scheduler_start, &_scheduler_end);
 	if (status < 0) {
+		pr_emerg("调度器初始化异常，请检查调度器状态机\n");
 		return status;
 	}
-	cli_printk("[scheduler]调度器初始化成功\n");
+	pr_notice("[scheduler]调度器初始化成功\n");
 	return 0;
 }
 
