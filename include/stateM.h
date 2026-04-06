@@ -56,35 +56,35 @@ struct tState {
 } __attribute__((aligned(sizeof(long))));
 
 /**
- * @brief 导出状态机符号到指定段
+ * @brief Export state machine symbols to specified section
  *
- * @param obj      状态机名字，用于state_switch()调用时的标识符（不加引号）
- * @param entry    状态入口函数
- * @param task     状态任务函数
- * @param exit     状态退出函数
- * @param _section 目标段名，需与链接脚本中的段名一致
+ * @param obj       State machine name, used as identifier for state_switch() call (without quotes)
+ * @param entry     State entry function
+ * @param task      State task function
+ * @param exit      State exit function
+ * @param _section  Target section name, must match the section name in the linker script
  *
  * @details
- * 使用例子：
- * 1. 在链接脚本中定义段和起始结束符号：
+ * Usage example:
+ * 1. Define section and start/end symbols in the linker script:
  *    .scheduler : {
  *        _scheduler_start = .;
  *        *(.scheduler)
  *        _scheduler_end = .;
  *    }
- * 2. 使用本宏导出状态，注意obj不加引号：
+ * 2. Use this macro to export the state, note that obj should not have quotes:
  *    _EXPORT_STATE_SYMBOL(cli_idle, cli_idle_entry, cli_idle_task, NULL, ".scheduler");
- * 3. 在初始化代码中extern声明并调用engine_init：
+ * 3. In initialization code, declare with extern and call engine_init:
  *    extern struct tState _scheduler_start;
  *    extern struct tState _scheduler_end;
  *    engine_init(&engine, "cli_idle", &_scheduler_start, &_scheduler_end);
- * 4. 在任务循环中调用stateEngineRun：
+ * 4. In the task loop, call stateEngineRun:
  *    stateEngineRun(&engine, NULL);
- * 5. 切换状态时调用state_switch传入目的状态通过_EXPORT_STATE_SYMBOL宏定义的时候
- *    的obj参数（注意加引号）：
+ * 5. To switch states, call state_switch with the destination state, using the obj parameter
+ *    from when the state was defined via _EXPORT_STATE_SYMBOL macro (note: add quotes):
  *    state_switch(&engine, "state1");
  *
- * @note 具体用法可参照本项目 init/scheduler.c 和 cli_project.ld
+ * @note For detailed usage, refer to init/scheduler.c and cli_project.ld in this project
  */
 #define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
 	static struct tState state_##obj __attribute__((             \
