@@ -60,7 +60,8 @@
 #define KERN_DEFAULT ""
 #define KERN_CONT "c"
 
-/* printk级别别名函数 */
+extern char log_level[3];
+
 #define pr_emerg(fmt, ...) cli_printk(KERN_EMERG fmt, ##__VA_ARGS__)
 #define pr_alert(fmt, ...) cli_printk(KERN_ALERT fmt, ##__VA_ARGS__)
 #define pr_crit(fmt, ...) cli_printk(KERN_CRIT fmt, ##__VA_ARGS__)
