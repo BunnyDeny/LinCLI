@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 // char log_level[3] = "8";
-char log_level[3] = KERN_ERR;
+char log_level[3] = "8";
 
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
@@ -148,21 +148,15 @@ int cli_printk(const char *fmt, ...)
 	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
-
-	/* 日志级别过滤: 数字0-7, 数字越小级别越高 */
 	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
-		/* 如果日志级别小于(log_level)，则过滤不打印 */
 		if (pre[0] > log_level[0]) {
 			return 0;
 		}
 	}
-
 	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
 	    strcmp("8", log_level)) {
 		return 0;
 	}
-	/* KERN_DEFAULT("") 和 KERN_CONT("c") 继承放行，允许打印 */
-
 	const char *_pre = prefiex_gen(pre);
 	if (is_kern_level(buffer[0])) {
 		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
