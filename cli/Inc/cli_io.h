@@ -7,6 +7,7 @@
 #define CLI_IO_SIZE 128
 #define CLI_PRINTK_BUF_SIZE 128
 #define COLOR_TERMINAL_EN 1
+#define DEBUG
 
 #if COLOR_TERMINAL_EN
 #define COLOR_NONE "\033[0m"
@@ -58,6 +59,21 @@
 #define KERN_DEBUG "7"
 #define KERN_DEFAULT ""
 #define KERN_CONT "c"
+
+/* printk级别别名函数 */
+#define pr_emerg(fmt, ...) cli_printk(KERN_EMERG fmt, ##__VA_ARGS__)
+#define pr_alert(fmt, ...) cli_printk(KERN_ALERT fmt, ##__VA_ARGS__)
+#define pr_crit(fmt, ...) cli_printk(KERN_CRIT fmt, ##__VA_ARGS__)
+#define pr_err(fmt, ...) cli_printk(KERN_ERR fmt, ##__VA_ARGS__)
+#define pr_warn(fmt, ...) cli_printk(KERN_WARNING fmt, ##__VA_ARGS__)
+#define pr_notice(fmt, ...) cli_printk(KERN_NOTICE fmt, ##__VA_ARGS__)
+#define pr_info(fmt, ...) cli_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#define pr_debug(fmt, ...) cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#define pr_cont(fmt, ...) cli_printk(KERN_CONT fmt, ##__VA_ARGS__)
+
+#ifdef DEBUG
+#define pr_devel(fmt, ...) cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#endif
 
 struct cli_io {
 	struct vector in;

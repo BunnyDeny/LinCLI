@@ -166,14 +166,14 @@ int cli_printk(const char *fmt, ...)
 
 void cli_printk_test(void)
 {
-	cli_printk(KERN_EMERG "这是EMERG级别 - 最严重的紧急情况\n");
-	cli_printk(KERN_ALERT "这是ALERT级别 - 需要立即处理\n");
-	cli_printk(KERN_CRIT "这是CRIT级别 - 严重故障\n");
-	cli_printk(KERN_ERR "这是ERR级别 - 错误\n");
-	cli_printk(KERN_WARNING "这是WARNING级别 - 警告\n");
-	cli_printk(KERN_NOTICE "这是NOTICE级别 - 正常但重要\n");
-	cli_printk(KERN_INFO "这是INFO级别 - 一般信息\n");
-	cli_printk(KERN_DEBUG "这是DEBUG级别 - 调试信息\n");
-	cli_printk(KERN_DEFAULT "这是DEFAULT级别 - 无前缀\n");
-	cli_printk(KERN_CONT "这是CONT级别 - 继续输出\n");
+	pr_emerg("这是EMERG级别 - 最严重的紧急情况\n");
+	pr_alert("这是ALERT级别 - 需要立即处理\n");
+	pr_crit("这是CRIT级别 - 严重故障\n");
+	pr_err("这是ERR级别 - 错误\n");
+	pr_warn("这是WARNING级别 - 警告\n");
+	pr_notice("这是NOTICE级别 - 正常但重要\n");
+	pr_info("这是INFO级别 - 一般信息\n");
+	pr_debug("这是DEBUG级别 - 调试信息\n");
+	cli_printk("这是DEFAULT级别 - 无前缀\n");
+	pr_cont("这是CONT级别 - 继续输出\n");
 }
