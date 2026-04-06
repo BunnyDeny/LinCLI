@@ -35,7 +35,7 @@ void *cli_task_thread_entry(void *arg)
 	while (1) {
 		status = scheduler_task();
 		if (status != 0) {
-			printf("cli_task_thread_entry err code :%d\n", status);
+			printf("scheduler_task err code :%d\n", status);
 		}
 		usleep(10000);
 	}

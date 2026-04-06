@@ -15,7 +15,7 @@ int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_idle");
 	if (status) {
-		cli_printk("[scheduler]切换空闲任务异常\n");
+		cli_printk(KERN_EMERG "[scheduler]切换空闲任务异常\n");
 		return status;
 	}
 	return 0;
