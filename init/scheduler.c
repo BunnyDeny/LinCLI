@@ -6,14 +6,37 @@ extern struct tState _scheduler_end;
 
 struct tStateEngine scheduler_eng;
 
-/* State functions implementation */
-void cli_idle_entry(void *private)
+void start_entry(void *private)
 {
-	cli_printk("[scheduler]进入空闲状态 cli_idle_entry\n");
+	cli_printk("[scheduler]初始化用户的一些应用\n");
+}
+
+int start_task(void *private)
+{
+	int status = state_switch(&scheduler_eng, "scheduler_idle");
+	if (status) {
+		cli_printk("[scheduler]切换空闲任务异常\n");
+		return status;
+	}
+	return 0;
+}
+
+void start_exit(void *private)
+{
+	cli_printk("[scheduler]调度器启动程序执行完毕，将进入空闲状态\n");
+}
+
+_EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, start_exit,
+		     ".scheduler");
+
+void scheduler_idle_entry(void *private)
+{
+	cli_printk("[scheduler]进入空闲状态 scheduler_idle_entry\n");
+	cli_printk("[scheduler]空闲状态的行为是回显用户的按键输入\n");
 	cli_printk_test();
 }
 
-int cli_idle_task(void *private)
+int scheduler_idle_task(void *private)
 {
 	int status, size;
 	size = cli_get_in_size();
@@ -31,15 +54,15 @@ int cli_idle_task(void *private)
 	return 0;
 }
 
-_EXPORT_STATE_SYMBOL(cli_idle, cli_idle_entry, cli_idle_task, NULL,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task,
+		     NULL, ".scheduler");
 
 int scheduler_init(void)
 {
 	int status;
 	cli_io_init();
-	status = engine_init(&scheduler_eng, "cli_idle", &_scheduler_start,
-			     &_scheduler_end);
+	status = engine_init(&scheduler_eng, "scheduler_start",
+			     &_scheduler_start, &_scheduler_end);
 	if (status < 0) {
 		return status;
 	}

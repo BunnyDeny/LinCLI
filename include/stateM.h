@@ -73,11 +73,11 @@ struct tState {
  *        _scheduler_end = .;
  *    }
  * 2. Use this macro to export the state, note that obj should not have quotes:
- *    _EXPORT_STATE_SYMBOL(cli_idle, cli_idle_entry, cli_idle_task, NULL, ".scheduler");
+ *    _EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task, NULL, ".scheduler");
  * 3. In initialization code, declare with extern and call engine_init:
  *    extern struct tState _scheduler_start;
  *    extern struct tState _scheduler_end;
- *    engine_init(&engine, "cli_idle", &_scheduler_start, &_scheduler_end);
+ *    engine_init(&engine, "scheduler_idle", &_scheduler_start, &_scheduler_end);
  * 4. In the task loop, call stateEngineRun:
  *    stateEngineRun(&engine, NULL);
  * 5. To switch states, call state_switch with the destination state, using the obj parameter
