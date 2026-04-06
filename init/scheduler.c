@@ -9,6 +9,7 @@ struct tStateEngine scheduler_eng;
 void start_entry(void *private)
 {
 	pr_info("[scheduler]初始化用户的一些应用\n");
+	cli_printk_test();
 }
 
 int start_task(void *private)

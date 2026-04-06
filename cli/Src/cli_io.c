@@ -3,6 +3,9 @@
 #include <string.h>
 #include <unistd.h>
 
+// char log_level[3] = "8";
+char log_level[3] = KERN_ERR;
+
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
 	.in_pop_ref = 0,
@@ -145,6 +148,21 @@ int cli_printk(const char *fmt, ...)
 	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
+
+	/* 日志级别过滤: 数字0-7, 数字越小级别越高 */
+	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
+		/* 如果日志级别小于(log_level)，则过滤不打印 */
+		if (pre[0] > log_level[0]) {
+			return 0;
+		}
+	}
+
+	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
+	    strcmp("8", log_level)) {
+		return 0;
+	}
+	/* KERN_DEFAULT("") 和 KERN_CONT("c") 继承放行，允许打印 */
+
 	const char *_pre = prefiex_gen(pre);
 	if (is_kern_level(buffer[0])) {
 		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
@@ -166,6 +184,7 @@ int cli_printk(const char *fmt, ...)
 
 void cli_printk_test(void)
 {
+	cli_printk("########################################\n");
 	pr_emerg("这是EMERG级别 - 最严重的紧急情况\n");
 	pr_alert("这是ALERT级别 - 需要立即处理\n");
 	pr_crit("这是CRIT级别 - 严重故障\n");
@@ -176,4 +195,5 @@ void cli_printk_test(void)
 	pr_debug("这是DEBUG级别 - 调试信息\n");
 	cli_printk("这是DEFAULT级别 - 无前缀\n");
 	pr_cont("这是CONT级别 - 继续输出\n");
+	cli_printk("########################################\n");
 }
