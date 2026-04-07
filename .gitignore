@@ -53,4 +53,4 @@ dkms.conf
 
 # debug information files
 *.dwo
-build/a.out
+build/
