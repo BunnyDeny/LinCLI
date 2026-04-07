@@ -8,7 +8,7 @@
                 "id": "tools",
                 "tooltip": "构建项目"
             },
-            "command": "make",
+            "command": "cmake -S . -B build",
         },
         {
             "label": "clean",
@@ -17,7 +17,7 @@
                 "id": "flame",
                 "tooltip": "清理项目"
             },
-            "command": "make clean",
+            "command": "rm -rf build",
         },
         {
             "label": "rebuild",
@@ -26,7 +26,7 @@
                 "id": "rocket",
                 "tooltip": "重新编译项目"
             },
-            "command": "make ag",
+            "command": "rm -rf build && cmake -S . -B build",
         },
         {
             "label": "run",
@@ -35,7 +35,7 @@
                 "id": "gear",
                 "tooltip": "运行项目"
             },
-            "command": "make run",
+            "command": "./build/bin/cli_init",
         },
     ]
 }
