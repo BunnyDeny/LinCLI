@@ -1,14 +1,34 @@
 #include "stateM.h"
 #include "cli_io.h"
+#include "init_d.h"
 
 extern struct tState _scheduler_start;
 extern struct tState _scheduler_end;
 
 struct tStateEngine scheduler_eng;
 
+void first_init_d(void *private)
+{
+	pr_info("%s", (char *)private);
+}
+_EXPORT_INIT_SYMBOL(init_d1, "This is the first my_init_d", first_init_d);
+_EXPORT_INIT_SYMBOL(init_d2, "This is the first my_init_d", first_init_d);
+_EXPORT_INIT_SYMBOL(init_d3, "This is the first my_init_d", first_init_d);
+
 void start_entry(void *private)
 {
 	pr_info("[scheduler]初始化用户的一些应用\n");
+
+	struct init_d *p_init_d;
+	pr_debug("_init_d_start: %p\n", _init_d_start);
+	pr_debug("_init_d_end: %p\n", _init_d_end);
+	for ((p_init_d) = (_init_d_start); (p_init_d) < (_init_d_end);
+	     (p_init_d)++) {
+		pr_info("%p\n", p_init_d);
+		if (p_init_d && p_init_d->_init_entry) {
+			p_init_d->_init_entry(p_init_d->_private);
+		}
+	}
 }
 
 int start_task(void *private)
