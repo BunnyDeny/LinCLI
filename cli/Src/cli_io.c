@@ -139,6 +139,35 @@ static inline int is_kern_level(char c)
 
 static char buffer[CLI_PRINTK_BUF_SIZE];
 
+/**
+ * @brief Core CLI log output function
+ *
+ * This function provides level-based log printing with support for
+ * log level filtering and prefix generation.
+ *
+ * @param fmt Format string, compatible with printf
+ * @param ... Variable arguments
+ * @return Returns the number of characters printed on success, negative error code on failure
+ *
+ * @note Unless using KERN_DEFAULT (level "8") level log printing,
+ *       it is recommended to use the simpler macros: pr_emerg, pr_alert, pr_crit, pr_err,
+ *       pr_warn, pr_notice, pr_info, pr_debug, pr_cont
+ *
+ * @note Log level filtering rules (set via global variable log_level):
+ *       - log_level = "0": Highest filtering level, most strict, only prints EMERG (level 0)
+ *       - log_level = "1"~"7": Prints logs at the corresponding level and above
+ *       - log_level = "8": Lowest filtering level, most permissive, prints all logs (including prefix-less strings)
+ *       - Example: When log_level = "4", only logs at level 0~4 are printed, levels 5~7 are filtered
+ *
+ * @note Kernel level prefix description:
+ *       - "0"~"7" are standard kernel levels, the function automatically adds [EMERG]~[DEBUG] prefixes
+ *       - "8" is KERN_DEFAULT, indicates no level prefix, used for printing ordinary strings
+ *       - "c" is KERN_CONT, same as "8" at the lowest level
+ *       - When log_level is set to "0"~"7", both "c" and "8" will be filtered out
+ *
+ * @note Prefix and color customization: Functions like pre_EMERG_gen, pre_ALERT_gen are defined
+ *       with weak attribute, developers can redefine these functions to customize log prefix and color
+ */
 int cli_printk(const char *fmt, ...)
 {
 	int status;
