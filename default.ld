@@ -185,7 +185,17 @@ SECTIONS
   _edata = .;
   PROVIDE (edata = .);
   . = ALIGN(ALIGNOF(NEXT_SECTION));
-  INCLUDE cli_project.ld
+  /* State section definition for state machine */
+  .scheduler : {
+      _scheduler_start = .;
+      *(.scheduler)
+      _scheduler_end = .;
+  }
+  .my_init_d : {
+      _init_d_start = .;
+      *(.my_init_d)
+      _init_d_end = .;
+  }
   __bss_start = .;
   .bss            :
   {
