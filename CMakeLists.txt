@@ -5,6 +5,10 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# 定义可执行文件名称和链接脚本
+set(CLI_INIT_NAME "a.out")
+set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/default.ld")
+
 # Set output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -12,8 +16,3 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(lib)
 add_subdirectory(cli)
 add_subdirectory(init)
-
-# Linker script - set as linker flags for cli_init target
-set_target_properties(cli_init PROPERTIES
-    LINK_FLAGS "-T ${CMAKE_SOURCE_DIR}/default.ld"
-)
