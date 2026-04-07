@@ -21,4 +21,15 @@ extern struct init_d _init_d_end;
 #define _FOR_EACH_INIT_D(_start, _end, _init_d) \
 	for ((_init_d) = (_start); (_init_d) < (_end); (_init_d)++)
 
+#define CALL_INIT_D                                                        \
+	do {                                                               \
+		struct init_d *p_init_d;                                   \
+		_FOR_EACH_INIT_D(&_init_d_start, &_init_d_end, p_init_d)   \
+		{                                                          \
+			if (p_init_d && p_init_d->_init_entry) {           \
+				p_init_d->_init_entry(p_init_d->_private); \
+			}                                                  \
+		}                                                          \
+	} while (0)
+
 #endif

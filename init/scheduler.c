@@ -18,14 +18,7 @@ _EXPORT_INIT_SYMBOL(init_d3, "This is the first init_d3\n", first_init_d);
 void start_entry(void *private)
 {
 	pr_info("[scheduler]初始化用户的一些应用\n");
-
-	struct init_d *p_init_d;
-	_FOR_EACH_INIT_D(&_init_d_start, &_init_d_end, p_init_d)
-	{
-		if (p_init_d && p_init_d->_init_entry) {
-			p_init_d->_init_entry(p_init_d->_private);
-		}
-	}
+	CALL_INIT_D;
 }
 
 int start_task(void *private)
