@@ -35,7 +35,7 @@
                 "id": "gear",
                 "tooltip": "运行项目"
             },
-            "command": "./build/bin/a.out",
+            "command": "make run",
         },
     ]
 }

@@ -1,14 +1,9 @@
 .PHONY: all clean build run ag
-
 all: build
-
 build:
-	cmake -S . -B build && make -C build
-
+	@cmake -S . -B build && make -C build
 run: build
-	./build/bin/a.out
-
+	@./build/bin/a.out
 clean:
-	rm -rf build
-
+	@rm -rf build
 ag: clean build
