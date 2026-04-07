@@ -8,7 +8,7 @@
                 "id": "tools",
                 "tooltip": "构建项目"
             },
-            "command": "cmake -S . -B build && make -C build",
+            "command": "make",
         },
         {
             "label": "clean",
@@ -17,7 +17,7 @@
                 "id": "flame",
                 "tooltip": "清理项目"
             },
-            "command": "rm -rf build",
+            "command": "make clean",
         },
         {
             "label": "rebuild",
@@ -26,7 +26,7 @@
                 "id": "rocket",
                 "tooltip": "重新编译项目"
             },
-            "command": "rm -rf build && cmake -S . -B build && make -C build",
+            "command": "make ag",
         },
         {
             "label": "run",
