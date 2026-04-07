@@ -84,9 +84,7 @@ int scheduler_task(void)
 {
 	int status;
 	status = stateEngineRun(&scheduler_eng, NULL);
-	if (status < 0) {
-		return status;
-	} else if (status == 1) {
+	if (status) {
 		return status;
 	}
 	if (cli_out_sync()) {
