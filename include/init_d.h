@@ -15,8 +15,8 @@ struct init_d {
 		._init_entry = init_entry,                               \
 	}
 
-extern struct init_d *_init_d_start;
-extern struct init_d *_init_d_end;
+extern struct init_d _init_d_start;
+extern struct init_d _init_d_end;
 
 #define _FOR_EACH_INIT_D(_start, _end, _init_d) \
 	for ((_init_d) = (_start); (_init_d) < (_end); (_init_d)++)
