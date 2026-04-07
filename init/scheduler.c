@@ -7,17 +7,14 @@ extern struct tState _scheduler_end;
 
 struct tStateEngine scheduler_eng;
 
-void first_init_d(void *private)
+static void first_init_d(void *private)
 {
 	pr_info("%s", (char *)private);
 }
-_EXPORT_INIT_SYMBOL(init_d1, "This is the first init_d1\n", first_init_d);
-_EXPORT_INIT_SYMBOL(init_d2, "This is the first init_d2\n", first_init_d);
-_EXPORT_INIT_SYMBOL(init_d3, "This is the first init_d3\n", first_init_d);
+_EXPORT_INIT_SYMBOL(first_init_d, "This is init_d example\n", first_init_d);
 
 void start_entry(void *private)
 {
-	pr_info("[scheduler]初始化用户的一些应用\n");
 	CALL_INIT_D;
 }
 
