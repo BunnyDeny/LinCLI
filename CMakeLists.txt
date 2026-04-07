@@ -5,6 +5,9 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# 添加调试信息
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+
 # 定义可执行文件名称和链接脚本
 set(CLI_INIT_NAME "a.out")
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/default.ld")
