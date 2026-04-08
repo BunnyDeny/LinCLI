@@ -9,7 +9,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 
 # 定义可执行文件名称和链接脚本
-set(CLI_INIT_NAME "a.out")
+set(OUTPUT_NAME "a.out")
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/default.ld")
 
 # Set output directory
