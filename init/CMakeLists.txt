@@ -18,6 +18,3 @@ target_include_directories(${PRO_NAME} PUBLIC
     ${INCLUDE_DIRS}
 )
 target_link_libraries(${PRO_NAME} PUBLIC ${DENPS})
-set_target_properties(${PRO_NAME} PROPERTIES
-    LINK_FLAGS "-T ${LINKER_SCRIPT}"
-)
