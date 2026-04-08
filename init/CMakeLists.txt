@@ -7,7 +7,7 @@ set(INCLUDE_DIRS
 
 set(SUBDIRS .)
 
-set(PRO_NAME ${OUTPUT_NAME})
+set(PRO_NAME cli_init)
 
 set(DENPS cli_core cli_lib)
 
@@ -18,7 +18,7 @@ foreach(dir ${SUBDIRS})
     list(APPEND SOURCES ${TMP})
 endforeach()
 
-add_executable(${PRO_NAME} ${SOURCES})
+add_library(${PRO_NAME} STATIC ${SOURCES})
 
 target_include_directories(${PRO_NAME} PUBLIC
     ${INCLUDE_DIRS}

@@ -24,3 +24,10 @@ set(MODULES lib cli init)
 foreach(mod ${MODULES})
     add_subdirectory(${mod})
 endforeach()
+
+# 在顶层链接所有静态库为可执行文件
+add_executable(${OUTPUT_NAME} ${CMAKE_SOURCE_DIR}/init/main.c)
+target_link_libraries(${OUTPUT_NAME} PRIVATE cli_lib cli_core cli_init)
+set_target_properties(${OUTPUT_NAME} PROPERTIES
+    LINK_FLAGS "-T ${LINKER_SCRIPT}"
+)
