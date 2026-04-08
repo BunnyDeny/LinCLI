@@ -5,8 +5,8 @@ set(INCLUDE_DIRS
 set(SUBDIRS .)
 set(PRO_NAME cli_lib)
 set(DENPS )
-project(${PRO_NAME})
 
+project(${PRO_NAME})
 foreach(dir ${SUBDIRS})
     file(GLOB_RECURSE TMP "${dir}/*.c")
     list(APPEND SOURCES ${TMP})
