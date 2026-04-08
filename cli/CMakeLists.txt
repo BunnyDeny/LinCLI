@@ -1,18 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 project(cli_core)
 
-# Find all source files in Src directory
-file(GLOB SOURCES "Src/*.c")
-
-# Create static library
-add_library(cli_core STATIC ${SOURCES})
-
-# Include directories
-target_include_directories(cli_core PUBLIC
+set(INCLUDE_DIRS 
     ${CMAKE_CURRENT_SOURCE_DIR}/Inc
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/lib
 )
+set(SUBDIRS Src)
 
-# Link the library
+foreach(dir ${SUBDIRS})
+    file(GLOB_RECURSE TMP "${dir}/*.c")
+    list(APPEND SOURCES ${TMP})
+endforeach()
+
+add_library(cli_core STATIC ${SOURCES})
+
+target_include_directories(cli_core PUBLIC
+    ${INCLUDE_DIRS}
+)
+
 target_link_libraries(cli_core PUBLIC cli_lib)
