@@ -15,6 +15,7 @@ project(${PRO_NAME})
 
 foreach(dir ${SUBDIRS})
     file(GLOB_RECURSE TMP "${dir}/*.c")
+    list(REMOVE_ITEM TMP "${CMAKE_CURRENT_SOURCE_DIR}/main.c")
     list(APPEND SOURCES ${TMP})
 endforeach()
 
