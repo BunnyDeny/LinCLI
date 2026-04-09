@@ -15,6 +15,7 @@ void *cli_in_entry(void *arg)
 	// 使用 getchar() 直接读取单个字符
 	while (1) {
 		ch = getchar();
+		// printf("接受到字符:%c , 对应的ascci: %3d\n", ch, ch);
 		status = cli_in_push((_u8 *)&ch, 1);
 		if (status) {
 			//printf("cli_in push err:%d\n", status);
