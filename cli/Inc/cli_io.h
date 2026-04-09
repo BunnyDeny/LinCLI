@@ -61,6 +61,7 @@
 #define KERN_CONT "c"
 
 extern char log_level[3];
+extern _u8 cli_in_push_lock;
 
 #define pr_emerg(fmt, ...) cli_printk(KERN_EMERG fmt, ##__VA_ARGS__)
 #define pr_alert(fmt, ...) cli_printk(KERN_ALERT fmt, ##__VA_ARGS__)
@@ -132,7 +133,12 @@ static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 
 static inline int cli_in_push(_u8 *data, int size)
 {
-	return _cli_io_push(&_cli_io.in, data, size, &_cli_io.in_push_ref);
+	if (cli_in_push_lock) {
+		return -1;
+	} else {
+		return _cli_io_push(&_cli_io.in, data, size,
+				    &_cli_io.in_push_ref);
+	}
 }
 
 static inline int cli_out_push(_u8 *data, int size)
@@ -164,5 +170,8 @@ void cli_io_init(void);
 int cli_out_sync(void);
 int cli_printk(const char *fmt, ...);
 void cli_printk_test(void);
+int cli_in_clear(void);
+void set_cli_in_push_lock(void);
+void reset_cli_in_push_lock(void);
 
 #endif

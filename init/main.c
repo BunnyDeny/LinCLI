@@ -17,7 +17,7 @@ void *cli_in_entry(void *arg)
 		ch = getchar();
 		status = cli_in_push((_u8 *)&ch, 1);
 		if (status) {
-			printf("cli_in push err:%d\n", status);
+			//printf("cli_in push err:%d\n", status);
 		}
 	}
 }

@@ -41,7 +41,8 @@ _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, start_exit,
 void scheduler_idle_entry(void *private)
 {
 	pr_info("[scheduler]进入空闲状态 scheduler_idle_entry\n");
-	pr_info("[scheduler]空闲状态的行为是回显用户的按键输入\n");
+	reset_cli_in_push_lock();
+	pr_notice("cli_in_push函数已解锁, 开始接受用户按键输入\n");
 }
 
 int scheduler_idle_task(void *private)

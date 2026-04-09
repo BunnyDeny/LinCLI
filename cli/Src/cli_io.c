@@ -5,6 +5,8 @@
 
 char log_level[3] = "8";
 
+_u8 cli_in_push_lock = 1;
+
 struct cli_io _cli_io = {
 	.in_push_ref = 0,
 	.in_pop_ref = 0,
@@ -218,4 +220,22 @@ void cli_printk_test(void)
 	cli_printk("这是DEFAULT级别 - 无前缀\n");
 	pr_cont("这是CONT级别 - 继续输出\n");
 	cli_printk("########################################\n");
+}
+
+int cli_in_clear(void)
+{
+	_u8 tmp;
+	int remain = _cli_io.in.size;
+	int status = cli_in_pop(&tmp, remain);
+	return _cli_io.in.size ? 1 : 0;
+}
+
+void set_cli_in_push_lock(void)
+{
+	cli_in_push_lock = 1;
+}
+
+void reset_cli_in_push_lock(void)
+{
+	cli_in_push_lock = 0;
 }
