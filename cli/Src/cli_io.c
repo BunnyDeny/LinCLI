@@ -198,6 +198,9 @@ int cli_in_clear(void)
 	_u8 tmp;
 	int remain = _cli_io.in.size;
 	int status = cli_in_pop(&tmp, remain);
+	if (status) {
+		return status;
+	}
 	return _cli_io.in.size ? 1 : 0;
 }
 

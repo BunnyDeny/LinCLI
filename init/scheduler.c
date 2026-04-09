@@ -1,6 +1,7 @@
 #include "stateM.h"
 #include "cli_io.h"
 #include "init_d.h"
+#include "cli_disp_char.h"
 
 extern struct tState _scheduler_start;
 extern struct tState _scheduler_end;
@@ -55,10 +56,7 @@ int scheduler_idle_task(void *private)
 		if (status) {
 			return status;
 		}
-		status = cli_out_push((_u8 *)&ch, 1);
-		if (status) {
-			return status;
-		}
+		status = cli_dispose_char(ch);
 	}
 	return 0;
 }

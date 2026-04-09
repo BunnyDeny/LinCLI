@@ -25,3 +25,24 @@ static bool is_valid_char(char c)
 	};
 	return char_table[(unsigned char)c];
 }
+
+int cli_dispose_char(char ch)
+{
+	int status;
+	if (is_valid_char(ch)) {
+		status = cli_out_push((_u8 *)&ch, 1);
+		return status;
+	} else {
+		switch (ch) {
+		case '\n':
+			status = cli_out_push((_u8 *)"\n", 2);
+			pr_debug("检测到回车\n");
+			return status;
+		case '\x0c':
+			break;
+		default:
+			break;
+		}
+	}
+	return 0;
+}
