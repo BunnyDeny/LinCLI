@@ -57,6 +57,9 @@ int scheduler_idle_task(void *private)
 			return status;
 		}
 		status = cli_dispose_char(ch);
+		if (status) {
+			return status;
+		}
 	}
 	return 0;
 }

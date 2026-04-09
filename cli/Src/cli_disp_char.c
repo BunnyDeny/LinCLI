@@ -35,8 +35,8 @@ int cli_dispose_char(char ch)
 	} else {
 		switch (ch) {
 		case '\n':
-			status = cli_out_push((_u8 *)"\n", 2);
 			pr_debug("检测到回车\n");
+			status = cli_out_push((_u8 *)"\n", 2);
 			return status;
 		case '\x0c':
 			break;

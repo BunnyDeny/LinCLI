@@ -167,6 +167,8 @@ int cli_printk(const char *fmt, ...)
 		memmove(buffer + pre_len, buffer, len + 1);
 		memcpy(buffer, _pre, pre_len);
 		strcat(buffer, COLOR_NONE);
+		if (cli_out_sync())
+			return -2;
 		status = cli_out_push((_u8 *)buffer,
 				      pre_len + len + strlen(COLOR_NONE));
 		if (status)
