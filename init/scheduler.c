@@ -32,7 +32,7 @@ int start_task(void *private)
 
 void start_exit(void *private)
 {
-	pr_notice("[scheduler]调度器启动程序执行完毕，将进入空闲状态\n");
+	pr_info("[scheduler]调度器启动程序执行完毕，将进入空闲状态\n");
 }
 
 _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, start_exit,
@@ -42,7 +42,7 @@ void scheduler_idle_entry(void *private)
 {
 	pr_info("[scheduler]进入空闲状态 scheduler_idle_entry\n");
 	reset_cli_in_push_lock();
-	pr_notice("cli_in_push函数已解锁, 开始接受用户按键输入\n");
+	pr_info("cli_in_push函数已解锁, 开始接受用户按键输入\n");
 }
 
 int scheduler_idle_task(void *private)
@@ -76,7 +76,7 @@ int scheduler_init(void)
 		pr_emerg("调度器初始化异常，请检查调度器状态机\n");
 		return status;
 	}
-	pr_notice("[scheduler]调度器初始化成功\n");
+	pr_info("[scheduler]调度器初始化成功\n");
 	return 0;
 }
 
