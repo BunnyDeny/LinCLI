@@ -71,6 +71,8 @@ void scheduler_idle_exit(void *private)
 	if (status < 0) {
 		pr_warn("清除in缓冲区失败\n");
 	}
+	reset_cli_in_push_lock();
+	pr_info("cli_in_push函数上锁, 禁止程序写入cli_in\n");
 }
 
 _EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task,
