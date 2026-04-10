@@ -64,11 +64,6 @@ int scheduler_idle_task(void *private)
 			switch (status) {
 			case '\n':
 				pr_debug("处理回车以及命令解析的状态转换\n");
-				status = cli_out_push((_u8 *)"\n", 2);
-				if (status < 0) {
-					pr_err("cli_out_push异常, scheduler_idle_task\n");
-					return status;
-				}
 				break;
 			case '\x0c':
 				pr_debug("处理清除屏幕\n");
