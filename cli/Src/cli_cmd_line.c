@@ -79,7 +79,6 @@ _EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
 
 int cmd_line_exit_handler(void *pch)
 {
-	/*重置状态，便于下一次解析字符*/
 	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
 		    &_cli_cmd_line_end);
 	return cmd_line_exit;
