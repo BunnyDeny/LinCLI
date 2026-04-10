@@ -1,4 +1,5 @@
 #include "cli_io.h"
+#include <string.h>
 
 static bool is_valid_char(char c)
 {
@@ -37,6 +38,22 @@ int cli_dispose_char(char ch)
 		}
 		return 0;
 	} else {
-		return ch;
+		switch (ch) {
+		case '\n':
+			pr_debug("处理回车以及命令解析的状态转换\n");
+			break;
+		case '\x0c':
+			const char *clear_screen = "\033[H\033[2J";
+			status = cli_out_push((_u8 *)clear_screen,
+					      strlen(clear_screen) + 1);
+			if (status < 0) {
+				pr_err("[scheduler_idle_task] cli_out_push异常\n");
+				return status;
+			}
+			break;
+		default:
+			break;
+		}
+		return 0;
 	}
 }
