@@ -4,6 +4,7 @@
 #include "stateM.h"
 
 #define CMD_LINE_BUF_SIZE 256
+#define cmd_line_exit 1
 
 static bool is_valid_char(char c);
 
@@ -22,58 +23,69 @@ struct tStateEngine cmd_line_mec;
 extern struct tState _cli_cmd_line_start;
 extern struct tState _cli_cmd_line_end;
 
-void cmd_line_start_entry(void *pch)
-{
-	pr_notice("cmd_line_entry\n");
-}
-int cmd_line_start_task(void *pch)
-{
-	int status;
-	pr_notice("cmd_line_task\n");
-	char ch = *((char *)pch);
-	if (is_valid_char(ch)) {
-		status = state_switch(&cmd_line_mec, "valid_char");
-		if (status < 0) {
-			return status;
-		}
-	}
-	return 0;
-}
-void cmd_line_start_exit(void *pch)
-{
-	pr_notice("cmd_line_exit\n");
-}
-_EXPORT_STATE_SYMBOL(cmd_line_start, cmd_line_start_entry, cmd_line_start_task,
-		     cmd_line_start_exit, ".cli_cmd_line");
-
-void valid_char_entry(void *pch)
-{
-	pr_notice("接收到合法字符%c\n", *((char *)pch));
-}
-int valid_char_task(void *pch)
-{
-	int status;
-	char ch = *((char *)pch);
-	pr_notice("valid_char_task 处理字符%c\n", ch);
-	status = state_switch(&cmd_line_mec, "cmd_line_start");
-	if (status < 0) {
-		return status;
-	}
-	return 0;
-}
-void valid_char_exit(void *pch)
-{
-	pr_notice("valid_char_exit\n");
-}
-_EXPORT_STATE_SYMBOL(valid_char, valid_char_entry, valid_char_task,
-		     valid_char_exit, ".cli_cmd_line");
-
 void cli_cmd_line_state_mec_init(void *arg)
 {
 	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
 		    &_cli_cmd_line_end);
 }
 _EXPORT_INIT_SYMBOL(cli_cmd_line, NULL, cli_cmd_line_state_mec_init);
+
+int cmd_line_start_task(void *pch)
+{
+	int status;
+	char ch = *((char *)pch);
+	if (is_valid_char(ch)) {
+		status = state_switch(&cmd_line_mec, "valid_char");
+		if (status < 0) {
+			return status;
+		}
+	} else {
+		status = state_switch(&cmd_line_mec, "unvalid_char");
+		if (status < 0) {
+			return status;
+		}
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
+		     ".cli_cmd_line");
+
+int valid_char_task(void *pch)
+{
+	int status;
+	char ch = *((char *)pch);
+	pr_notice("valid_char_task 处理字符%c\n", ch);
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
+
+int unvalid_char_task(void *pch)
+{
+	int status;
+	char ch = *((char *)pch);
+	pr_notice("valid_char_task 非法字符, 对应ascci: %d\n", (int)ch);
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
+		     ".cli_cmd_line");
+
+int cmd_line_exit_handler(void *pch)
+{
+	/*重置状态，便于下一次解析字符*/
+	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
+		    &_cli_cmd_line_end);
+	return cmd_line_exit;
+}
+_EXPORT_STATE_SYMBOL(exit_handler, NULL, cmd_line_exit_handler, NULL,
+		     ".cli_cmd_line");
 
 __attribute__((used)) static bool is_valid_char(char c)
 {
@@ -103,11 +115,13 @@ __attribute__((used)) static bool is_valid_char(char c)
 
 int cli_cmd_line_task(char ch)
 {
-	int status;
-	status = stateEngineRun(&cmd_line_mec, &ch);
-	if (status < 0) {
-		pr_err("cli_cmd_line状态机异常\n");
-		return -1;
+	int status = 0;
+	while (status != cmd_line_exit) {
+		status = stateEngineRun(&cmd_line_mec, &ch);
+		if (status < 0) {
+			pr_err("cli_cmd_line状态机异常\n");
+			return -1;
+		}
 	}
 	return 0;
 }
