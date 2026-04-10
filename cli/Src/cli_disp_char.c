@@ -31,21 +31,12 @@ int cli_dispose_char(char ch)
 	int status;
 	if (is_valid_char(ch)) {
 		status = cli_out_push((_u8 *)&ch, 1);
-		return status;
-	} else {
-		switch (ch) {
-		case '\n':
-			pr_debug("检测到回车\n");
-			status = cli_out_push((_u8 *)"\n", 2);
-			if (status < 0) {
-				pr_err("cli_out_push异常, 发生在cli_dispose_char\n");
-				return status;
-			} else {
-				return '\n';
-			}
-		default:
-			break;
+		if (status < 0) {
+			pr_err("cli_out_push异常, 发生在cli_dispose_char\n");
+			return status;
 		}
+		return 0;
+	} else {
+		return ch;
 	}
-	return 0;
 }
