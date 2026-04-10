@@ -101,7 +101,6 @@ struct tStateEngine {
 	struct tState *from;
 	struct tState *to;
 	struct rb_root state_tree_root;
-	void *private;
 };
 
 int engine_init(struct tStateEngine *engine, char *startup_state,

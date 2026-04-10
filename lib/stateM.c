@@ -100,7 +100,6 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
  */
 int stateEngineRun(struct tStateEngine *engine, void *private)
 {
-	engine->private = private;
 	if (engine == NULL)
 		return -1;
 	if (engine->from != engine->to) {
@@ -158,5 +157,5 @@ int state_switch(struct tStateEngine *engine, char *name)
 		return -2;
 	}
 	engine->to = _to;
-	return stateEngineRun(engine, engine->private);
+	return 0;
 }

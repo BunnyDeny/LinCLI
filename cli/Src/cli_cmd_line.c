@@ -28,10 +28,14 @@ void cmd_line_start_entry(void *pch)
 }
 int cmd_line_start_task(void *pch)
 {
+	int status;
 	pr_notice("cmd_line_task\n");
 	char ch = *((char *)pch);
 	if (is_valid_char(ch)) {
-		state_switch(&cmd_line_mec, "valid_char");
+		status = state_switch(&cmd_line_mec, "valid_char");
+		if (status < 0) {
+			return status;
+		}
 	}
 	return 0;
 }
@@ -44,14 +48,22 @@ _EXPORT_STATE_SYMBOL(cmd_line_start, cmd_line_start_entry, cmd_line_start_task,
 
 void valid_char_entry(void *pch)
 {
+	pr_notice("接收到合法字符%c\n", *((char *)pch));
 }
 int valid_char_task(void *pch)
 {
-	pr_notice("接收到合法字符%c\n", *((char *)pch));
+	int status;
+	char ch = *((char *)pch);
+	pr_notice("valid_char_task 处理字符%c\n", ch);
+	status = state_switch(&cmd_line_mec, "cmd_line_start");
+	if (status < 0) {
+		return status;
+	}
 	return 0;
 }
 void valid_char_exit(void *pch)
 {
+	pr_notice("valid_char_exit\n");
 }
 _EXPORT_STATE_SYMBOL(valid_char, valid_char_entry, valid_char_task,
 		     valid_char_exit, ".cli_cmd_line");
