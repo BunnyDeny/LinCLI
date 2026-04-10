@@ -3,37 +3,6 @@
 #include "init_d.h"
 #include "stateM.h"
 
-struct tStateEngine cmd_line_mec;
-
-extern struct tState _cli_cmd_line_start;
-extern struct tState _cli_cmd_line_end;
-
-void cmd_line_start_entry(void *private)
-{
-	pr_notice("cmd_line_entry\n");
-}
-
-int cmd_line_start_task(void *private)
-{
-	pr_notice("cmd_line_task\n");
-	return 0;
-}
-
-void cmd_line_start_exit(void *private)
-{
-	pr_notice("cmd_line_exit\n");
-}
-
-_EXPORT_STATE_SYMBOL(cmd_line_start, cmd_line_start_entry, cmd_line_start_task,
-		     cmd_line_start_exit, ".cli_cmd_line");
-
-void cli_cmd_line_state_mec_init(void *arg)
-{
-	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
-		    &_cli_cmd_line_end);
-}
-_EXPORT_INIT_SYMBOL(cli_cmd_line, NULL, cli_cmd_line_state_mec_init);
-
 #define CMD_LINE_BUF_SIZE 256
 
 static bool is_valid_char(char c);
@@ -47,6 +16,52 @@ struct cmd_line {
 	.size = 0,
 	.buf = { 0 },
 };
+
+struct tStateEngine cmd_line_mec;
+
+extern struct tState _cli_cmd_line_start;
+extern struct tState _cli_cmd_line_end;
+
+void cmd_line_start_entry(void *pch)
+{
+	pr_notice("cmd_line_entry\n");
+}
+int cmd_line_start_task(void *pch)
+{
+	pr_notice("cmd_line_task\n");
+	char ch = *((char *)pch);
+	if (is_valid_char(ch)) {
+		state_switch(&cmd_line_mec, "valid_char");
+	}
+	return 0;
+}
+void cmd_line_start_exit(void *pch)
+{
+	pr_notice("cmd_line_exit\n");
+}
+_EXPORT_STATE_SYMBOL(cmd_line_start, cmd_line_start_entry, cmd_line_start_task,
+		     cmd_line_start_exit, ".cli_cmd_line");
+
+void valid_char_entry(void *pch)
+{
+}
+int valid_char_task(void *pch)
+{
+	pr_notice("接收到合法字符%c\n", *((char *)pch));
+	return 0;
+}
+void valid_char_exit(void *pch)
+{
+}
+_EXPORT_STATE_SYMBOL(valid_char, valid_char_entry, valid_char_task,
+		     valid_char_exit, ".cli_cmd_line");
+
+void cli_cmd_line_state_mec_init(void *arg)
+{
+	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
+		    &_cli_cmd_line_end);
+}
+_EXPORT_INIT_SYMBOL(cli_cmd_line, NULL, cli_cmd_line_state_mec_init);
 
 __attribute__((used)) static bool is_valid_char(char c)
 {

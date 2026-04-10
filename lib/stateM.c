@@ -100,6 +100,7 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
  */
 int stateEngineRun(struct tStateEngine *engine, void *private)
 {
+	engine->private = private;
 	if (engine == NULL)
 		return -1;
 	if (engine->from != engine->to) {
@@ -153,9 +154,9 @@ int state_switch(struct tStateEngine *engine, char *name)
 	if (engine == NULL)
 		return -1;
 	struct tState *_to = state_search(&engine->state_tree_root, name);
-	if (_to == NULL) {
-		return -2; /* no state in pool matched the name */
+	if (_to == NULL || _to == engine->from) {
+		return -2;
 	}
 	engine->to = _to;
-	return 0;
+	return stateEngineRun(engine, engine->private);
 }
