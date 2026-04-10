@@ -61,6 +61,10 @@ static bool is_valid_char(char c)
 int cli_dispose_char(char ch)
 {
 	int status;
+	if (ch == '\x1b') {
+		pr_debug("检测到可能的转义序列\n");
+	}
+
 	if (is_valid_char(ch)) {
 		status = cmd_line_input_valid_char(ch);
 		if (status < 0) {
