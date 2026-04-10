@@ -89,7 +89,6 @@ int ESC_handler(void *pch)
 	int status, esc_params_count = 2;
 	char esc_params[2];
 	pr_debug("ESC_handler\n");
-
 	while (esc_params_count) {
 		if (cli_get_in_size()) {
 			char ch;
