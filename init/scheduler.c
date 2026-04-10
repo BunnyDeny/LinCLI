@@ -64,8 +64,16 @@ int scheduler_idle_task(void *private)
 	return 0;
 }
 
+void scheduler_idle_exit(void *private)
+{
+	int status = cli_in_clear();
+	if (status) {
+		pr_warn("清除in缓冲区失败\n");
+	}
+}
+
 _EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task,
-		     NULL, ".scheduler");
+		     scheduler_idle_exit, ".scheduler");
 
 int scheduler_init(void)
 {
