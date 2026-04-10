@@ -50,7 +50,7 @@ int scheduler_idle_task(void *private)
 		if (status < 0) {
 			return status;
 		}
-		status = cli_dispose_char(ch);
+		status = cli_cmd_line_task(ch);
 		if (status < 0) {
 			return status;
 		}

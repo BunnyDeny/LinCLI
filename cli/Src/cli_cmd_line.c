@@ -8,28 +8,28 @@ struct tStateEngine cmd_line_mec;
 extern struct tState _cli_cmd_line_start;
 extern struct tState _cli_cmd_line_end;
 
-void cmd_line_entry(void *private)
+void cmd_line_start_entry(void *private)
 {
 	pr_notice("cmd_line_entry\n");
 }
 
-int cmd_line_task(void *private)
+int cmd_line_start_task(void *private)
 {
 	pr_notice("cmd_line_task\n");
 	return 0;
 }
 
-void cmd_line_exit(void *private)
+void cmd_line_start_exit(void *private)
 {
 	pr_notice("cmd_line_exit\n");
 }
 
-_EXPORT_STATE_SYMBOL(cmd_line, cmd_line_entry, cmd_line_task, cmd_line_exit,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cmd_line_start, cmd_line_start_entry, cmd_line_start_task,
+		     cmd_line_start_exit, ".cli_cmd_line");
 
 void cli_cmd_line_state_mec_init(void *arg)
 {
-	engine_init(&cmd_line_mec, "cmd_line", &_cli_cmd_line_start,
+	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
 		    &_cli_cmd_line_end);
 }
 _EXPORT_INIT_SYMBOL(cli_cmd_line, NULL, cli_cmd_line_state_mec_init);
@@ -74,7 +74,7 @@ __attribute__((used)) static bool is_valid_char(char c)
 	return char_table[(unsigned char)c];
 }
 
-int cli_dispose_char(char ch)
+int cli_cmd_line_task(char ch)
 {
 	int status;
 	status = stateEngineRun(&cmd_line_mec, &ch);
