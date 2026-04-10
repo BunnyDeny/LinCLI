@@ -196,6 +196,11 @@ SECTIONS
       *(.my_init_d)
       _init_d_end = .;
   }
+  .cli_cmd_line : {
+      _cli_cmd_line_start = .;
+      *(.cli_cmd_line)
+      _cli_cmd_line_end = .;
+  }
   __bss_start = .;
   .bss            :
   {

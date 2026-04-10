@@ -2,23 +2,16 @@
 #include "cli_io.h"
 #include "init_d.h"
 #include <string.h>
-#include "cli_disp_char.h"
+#include "cli_cmd_line.h"
 
 extern struct tState _scheduler_start;
 extern struct tState _scheduler_end;
 
 struct tStateEngine scheduler_eng;
 
-static void example_init_d(void *private)
-{
-	pr_info("%s", (char *)private);
-}
-_EXPORT_INIT_SYMBOL(example_init_d, "This is a _EXPORT_INIT_SYMBOL example\n",
-		    example_init_d);
-
 void start_entry(void *private)
 {
-	pr_info("执行用户通过_EXPORT_INIT_SYMBOL导出的初始化程序\n");
+	pr_info("执行_EXPORT_INIT_SYMBOL导出的初始化程序\n");
 	CALL_INIT_D;
 }
 

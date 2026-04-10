@@ -1,5 +1,38 @@
 #include "cli_io.h"
 #include <string.h>
+#include "init_d.h"
+#include "stateM.h"
+
+struct tStateEngine cmd_line_mec;
+
+extern struct tState _cli_cmd_line_start;
+extern struct tState _cli_cmd_line_end;
+
+void cmd_line_entry(void *private)
+{
+	pr_notice("cmd_line_entry\n");
+}
+
+int cmd_line_task(void *private)
+{
+	pr_notice("cmd_line_task\n");
+	return 0;
+}
+
+void cmd_line_exit(void *private)
+{
+	pr_notice("cmd_line_exit\n");
+}
+
+_EXPORT_STATE_SYMBOL(cmd_line, cmd_line_entry, cmd_line_task, cmd_line_exit,
+		     ".cli_cmd_line");
+
+void cli_cmd_line_state_mec_init(void *arg)
+{
+	engine_init(&cmd_line_mec, "cmd_line", &_cli_cmd_line_start,
+		    &_cli_cmd_line_end);
+}
+_EXPORT_INIT_SYMBOL(cli_cmd_line, NULL, cli_cmd_line_state_mec_init);
 
 #define CMD_LINE_BUF_SIZE 256
 
@@ -15,24 +48,7 @@ struct cmd_line {
 	.buf = { 0 },
 };
 
-int cmd_line_input_valid_char(char c)
-{
-	int status;
-	if (!is_valid_char(c)) {
-		return -1;
-	}
-	status = cli_out_push((_u8 *)&c, 1);
-	if (status < 0) {
-		pr_err("[cmd_line_input_valid_char] cli_out_push异常\n");
-		return status;
-	} else {
-		cmd_line.pos++;
-		cmd_line.size++;
-	}
-	return 0;
-}
-
-static bool is_valid_char(char c)
+__attribute__((used)) static bool is_valid_char(char c)
 {
 	static const bool char_table[256] = {
 		['a'] = 1, ['b'] = 1,  ['c'] = 1, ['d'] = 1,  ['e'] = 1,
@@ -61,33 +77,10 @@ static bool is_valid_char(char c)
 int cli_dispose_char(char ch)
 {
 	int status;
-	if (ch == '\x1b') {
-		pr_debug("检测到可能的转义序列\n");
+	status = stateEngineRun(&cmd_line_mec, &ch);
+	if (status < 0) {
+		pr_err("cli_cmd_line状态机异常\n");
+		return -1;
 	}
-
-	if (is_valid_char(ch)) {
-		status = cmd_line_input_valid_char(ch);
-		if (status < 0) {
-			return status;
-		}
-		return 0;
-	} else {
-		switch (ch) {
-		case '\n':
-			pr_debug("处理回车以及命令解析的状态转换\n");
-			break;
-		case '\x0c':
-			const char *clear_screen = "\033[H\033[2J";
-			status = cli_out_push((_u8 *)clear_screen,
-					      strlen(clear_screen) + 1);
-			if (status < 0) {
-				pr_err("[scheduler_idle_task] cli_out_push异常\n");
-				return status;
-			}
-			break;
-		default:
-			break;
-		}
-		return 0;
-	}
+	return 0;
 }
