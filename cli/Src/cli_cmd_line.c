@@ -53,8 +53,10 @@ _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 int valid_char_task(void *pch)
 {
 	int status;
-	char ch = *((char *)pch);
-	pr_debug("valid_char_task 处理字符%c\n", ch);
+	status = cli_out_push((_u8 *)pch, 1);
+	if (status < 0) {
+		return -1;
+	}
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
