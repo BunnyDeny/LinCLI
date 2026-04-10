@@ -35,10 +35,10 @@ int cli_out_sync(void)
 	while (cli_get_out_size() > 0) {
 		char ch;
 		int status = cli_out_pop((_u8 *)&ch, 1);
-		if (status == 0) {
-			cli_putc(ch);
-		} else {
+		if (status < 0) {
 			return status;
+		} else {
+			cli_putc(ch);
 		}
 	}
 	return 0;
@@ -171,7 +171,7 @@ int cli_printk(const char *fmt, ...)
 			return -2;
 		status = cli_out_push((_u8 *)buffer,
 				      pre_len + len + strlen(COLOR_NONE));
-		if (status)
+		if (status < 0)
 			return status;
 		if (cli_out_sync())
 			return -2;
@@ -200,10 +200,10 @@ int cli_in_clear(void)
 	_u8 tmp;
 	int remain = _cli_io.in.size;
 	int status = cli_in_pop(&tmp, remain);
-	if (status) {
+	if (status < 0) {
 		return status;
 	}
-	return _cli_io.in.size ? 1 : 0;
+	return _cli_io.in.size ? (-1) : 0;
 }
 
 void set_cli_in_push_lock(void)

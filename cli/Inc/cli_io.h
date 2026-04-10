@@ -95,7 +95,7 @@ static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	bool status;
 	if (*ref > 2) {
-		return *ref;
+		return -(*ref);
 	}
 	if (*ref == 0) {
 		return -2; /*uninited*/
@@ -109,7 +109,7 @@ static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	if (*ref > 2) {
-		return *ref;
+		return -(*ref);
 	}
 	if (*ref == 0) {
 		return -2; /*uninited*/

@@ -24,7 +24,7 @@ void start_entry(void *private)
 int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_idle");
-	if (status) {
+	if (status < 0) {
 		pr_crit("[scheduler]切换空闲任务异常\n");
 		return status;
 	}
@@ -53,11 +53,11 @@ int scheduler_idle_task(void *private)
 	if (size) {
 		char ch;
 		status = cli_in_pop((_u8 *)&ch, 1);
-		if (status) {
+		if (status < 0) {
 			return status;
 		}
 		status = cli_dispose_char(ch);
-		if (status) {
+		if (status < 0) {
 			return status;
 		}
 	}
@@ -67,7 +67,7 @@ int scheduler_idle_task(void *private)
 void scheduler_idle_exit(void *private)
 {
 	int status = cli_in_clear();
-	if (status) {
+	if (status < 0) {
 		pr_warn("清除in缓冲区失败\n");
 	}
 }
@@ -94,7 +94,7 @@ int scheduler_task(void)
 {
 	int status;
 	status = stateEngineRun(&scheduler_eng, NULL);
-	if (status) {
+	if (status < 0) {
 		return status;
 	}
 	if (cli_out_sync()) {

@@ -37,9 +37,12 @@ int cli_dispose_char(char ch)
 		case '\n':
 			pr_debug("检测到回车\n");
 			status = cli_out_push((_u8 *)"\n", 2);
-			return status;
-		case '\x0c':
-			break;
+			if (status < 0) {
+				pr_err("cli_out_push异常, 发生在cli_dispose_char\n");
+				return status;
+			} else {
+				return '\n';
+			}
 		default:
 			break;
 		}

@@ -17,7 +17,7 @@ void *cli_in_entry(void *arg)
 		ch = getchar();
 		// printf("接受到字符:%c , 对应的ascci: %3d\n", ch, ch);
 		status = cli_in_push((_u8 *)&ch, 1);
-		if (status) {
+		if (status < 0) {
 			//printf("cli_in push err:%d\n", status);
 		}
 	}
@@ -30,13 +30,13 @@ void *cli_task_thread_entry(void *arg)
 {
 	int status;
 	status = scheduler_init();
-	if (status != 0) {
+	if (status < 0) {
 		printf("cli_task_thread_entry err code :%d\n", status);
 		return NULL;
 	}
 	while (1) {
 		status = scheduler_task();
-		if (status != 0) {
+		if (status < 0) {
 			printf("scheduler_task err code :%d\n", status);
 		}
 		usleep(10000);
