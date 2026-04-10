@@ -54,7 +54,7 @@ int valid_char_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
-	pr_notice("valid_char_task 处理字符%c\n", ch);
+	pr_debug("valid_char_task 处理字符%c\n", ch);
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
@@ -67,15 +67,50 @@ int unvalid_char_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
-	pr_notice("valid_char_task 非法字符, 对应ascci: %d\n", (int)ch);
+	pr_debug("valid_char_task 非法字符, 对应ascci: %d\n", (int)ch);
+	if ((int)ch == 27) { // ESC
+		status = state_switch(&cmd_line_mec, "ESC_handler");
+		if (status < 0) {
+			return status;
+		}
+	} else {
+		status = state_switch(&cmd_line_mec, "exit_handler");
+		if (status < 0) {
+			return status;
+		}
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
+		     ".cli_cmd_line");
+
+int ESC_handler(void *pch)
+{
+	int status, esc_params_count = 2;
+	char esc_params[2];
+	pr_debug("ESC_handler\n");
+
+	while (esc_params_count) {
+		if (cli_get_in_size()) {
+			char ch;
+			status = cli_in_pop((_u8 *)&ch, 1);
+			if (status < 0) {
+				return status;
+			}
+			esc_params[2 - esc_params_count] = ch;
+			esc_params_count--;
+		}
+	}
+	for (int i = 0; i < 2; i++) {
+		pr_debug("esc参数%d : %c\n", i, esc_params[i]);
+	}
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
 	}
 	return 0;
 }
-_EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
 
 int cmd_line_exit_handler(void *pch)
 {
