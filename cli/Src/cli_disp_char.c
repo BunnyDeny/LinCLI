@@ -1,6 +1,37 @@
 #include "cli_io.h"
 #include <string.h>
 
+#define CMD_LINE_BUF_SIZE 256
+
+static bool is_valid_char(char c);
+
+struct cmd_line {
+	_u8 pos;
+	char buf[CMD_LINE_BUF_SIZE];
+	_u8 size;
+} cmd_line = {
+	.pos = 0,
+	.size = 0,
+	.buf = { 0 },
+};
+
+int cmd_line_input_valid_char(char c)
+{
+	int status;
+	if (!is_valid_char(c)) {
+		return -1;
+	}
+	status = cli_out_push((_u8 *)&c, 1);
+	if (status < 0) {
+		pr_err("[cmd_line_input_valid_char] cli_out_push异常\n");
+		return status;
+	} else {
+		cmd_line.pos++;
+		cmd_line.size++;
+	}
+	return 0;
+}
+
 static bool is_valid_char(char c)
 {
 	static const bool char_table[256] = {
@@ -31,9 +62,8 @@ int cli_dispose_char(char ch)
 {
 	int status;
 	if (is_valid_char(ch)) {
-		status = cli_out_push((_u8 *)&ch, 1);
+		status = cmd_line_input_valid_char(ch);
 		if (status < 0) {
-			pr_err("cli_out_push异常, 发生在cli_dispose_char\n");
 			return status;
 		}
 		return 0;
