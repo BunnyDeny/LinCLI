@@ -168,8 +168,46 @@ _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
 int backspace_handler(void *pch)
 {
 	int status;
-
-	pr_notice("backspace_handler\n");
+	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
+		status = cli_out_push((_u8 *)"\b \b", 4);
+		if (status < 0) {
+			return -1;
+		}
+		goto label_size_pos_dis;
+	} else if (cmd_line.pos == 0) {
+		goto label_exit2;
+	} else if (cmd_line.pos < cmd_line.size) {
+		status = cli_out_push((_u8 *)"\b \b", 4);
+		if (status < 0) {
+			return -1;
+		}
+		for (int i = cmd_line.pos - 1; i < cmd_line.size - 1; i++) {
+			cmd_line.buf[i] = cmd_line.buf[i + 1];
+		}
+		cmd_line.buf[cmd_line.size - 1] = ' ';
+		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos - 1],
+				      cmd_line.size - cmd_line.pos + 1);
+		if (status < 0) {
+			return -1;
+		}
+		if (cli_out_sync()) {
+			return -1;
+		}
+		int pos_move_cnt = cmd_line.size - cmd_line.pos + 1;
+		while (pos_move_cnt--) {
+			status = cli_out_push((_u8 *)"\033[D", 4);
+			if (status < 0) {
+				return -1;
+			}
+			if (cli_out_sync()) {
+				return -1;
+			}
+		}
+	}
+label_size_pos_dis:
+	cmd_line.size--;
+	cmd_line.pos--;
+label_exit2:
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
