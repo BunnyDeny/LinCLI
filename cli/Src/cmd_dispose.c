@@ -1,5 +1,8 @@
 #include "cmd_dispose.h"
 #include "init_d.h"
+#include "stateM.h"
+#include "cli_io.h"
+#include "cli_cmd_line.h"
 
 int dispose_start(void *arg)
 {
