@@ -5,7 +5,7 @@ set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/lib
 )
 set(SUBDIRS Src)
-set(PRO_NAME cli_core)
+get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${PRO_NAME})
 foreach(dir ${SUBDIRS})

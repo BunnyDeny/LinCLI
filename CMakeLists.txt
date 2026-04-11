@@ -14,9 +14,9 @@ endforeach()
 
 # 直接链接 object 文件而不是库
 add_executable(${OUTPUT_NAME}
-    $<TARGET_OBJECTS:cli_lib>
-    $<TARGET_OBJECTS:cli_core>
-    $<TARGET_OBJECTS:cli_init>
+    $<TARGET_OBJECTS:lib>
+    $<TARGET_OBJECTS:cli>
+    $<TARGET_OBJECTS:init>
 )
 target_include_directories(${OUTPUT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include

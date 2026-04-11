@@ -4,7 +4,7 @@ set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/cli/Inc
 )
 set(SUBDIRS .)
-set(PRO_NAME cli_init)
+get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${PRO_NAME})
 foreach(dir ${SUBDIRS})
