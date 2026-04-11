@@ -53,10 +53,33 @@ _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 int valid_char_task(void *pch)
 {
 	int status;
-	status = cli_out_push((_u8 *)pch, 1);
-	if (status < 0) {
-		return -1;
+	char ch = *((char *)pch);
+	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
+		pr_warn("超出单个命令最长限制\n");
+		goto label_cmd_line_exit;
 	}
+	if (cmd_line.pos == cmd_line.size) {
+		status = cli_out_push((_u8 *)pch, 1);
+		if (status < 0) {
+			return -1;
+		}
+		goto label_size_pos_inc;
+	} else if (cmd_line.pos < cmd_line.size) {
+		for (int i = cmd_line.pos + 1; i < cmd_line.size + 1; i++) {
+			cmd_line.buf[i] = cmd_line.buf[i - 1];
+		}
+		cmd_line.buf[cmd_line.pos] = ch;
+		status = cli_out_push((_u8 *)cmd_line.buf,
+				      cmd_line.size - cmd_line.pos);
+		if (status < 0) {
+			return -1;
+		}
+		goto label_size_pos_inc;
+	}
+label_size_pos_inc:
+	cmd_line.size++;
+	cmd_line.pos++;
+label_cmd_line_exit:
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
