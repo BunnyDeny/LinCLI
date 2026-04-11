@@ -101,7 +101,6 @@ int unvalid_char_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
-	//pr_debug("valid_char_task 非法字符, 对应ascci: %d\n", (int)ch);
 	if ((int)ch == 27) { // ESC
 		status = state_switch(&cmd_line_mec, "ESC_handler");
 		if (status < 0) {
@@ -134,7 +133,6 @@ int ESC_handler(void *pch)
 		}
 	}
 	if (esc_params[1] == 'D' && cmd_line.pos > 0) {
-		//pr_notice("左移动\n");
 		char *left_move = "\x1b[D";
 		status = cli_out_push((_u8 *)left_move, strlen(left_move) + 1);
 		if (status < 0) {
@@ -142,7 +140,6 @@ int ESC_handler(void *pch)
 		}
 		cmd_line.pos--;
 	} else if (esc_params[1] == 'C' && cmd_line.pos < cmd_line.size) {
-		//pr_notice("右移动\n");
 		char *left_move = "\x1b[C";
 		status = cli_out_push((_u8 *)left_move, strlen(left_move) + 1);
 		if (status < 0) {
