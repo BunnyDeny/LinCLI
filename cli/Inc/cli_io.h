@@ -103,7 +103,11 @@ static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 	(*ref)++;
 	status = push_back(v, data, size);
 	(*ref)--;
-	return status ? 0 : -1;
+	if (status == false) {
+		return -1;
+	} else {
+		return 0;
+	}
 }
 
 static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)

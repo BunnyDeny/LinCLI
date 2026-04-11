@@ -75,11 +75,16 @@ int valid_char_task(void *pch)
 		if (status < 0) {
 			return -1;
 		}
+		if (cli_out_sync()) {
+			return -1;
+		}
 		int pos_move_cnt = cmd_line.size - cmd_line.pos;
 		while (pos_move_cnt--) {
-			status = cli_out_push((_u8 *)"\033[D",
-					      strlen("\033[D") + 1);
+			status = cli_out_push((_u8 *)"\033[D", 4);
 			if (status < 0) {
+				return -1;
+			}
+			if (cli_out_sync()) {
 				return -1;
 			}
 		}
