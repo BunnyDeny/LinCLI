@@ -106,6 +106,11 @@ int unvalid_char_task(void *pch)
 		if (status < 0) {
 			return status;
 		}
+	} else if ((int)ch == 127) { //backspace
+		status = state_switch(&cmd_line_mec, "backspace_handler");
+		if (status < 0) {
+			return status;
+		}
 	} else {
 		status = state_switch(&cmd_line_mec, "exit_handler");
 		if (status < 0) {
@@ -154,6 +159,20 @@ int ESC_handler(void *pch)
 	return 0;
 }
 _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
+
+int backspace_handler(void *pch)
+{
+	int status;
+
+	pr_notice("backspace_handler\n");
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
+		     ".cli_cmd_line");
 
 int cmd_line_exit_handler(void *pch)
 {
