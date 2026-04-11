@@ -11,8 +11,19 @@ set(MODULES lib cli init)
 foreach(mod ${MODULES})
     add_subdirectory(${mod})
 endforeach()
-add_executable(${OUTPUT_NAME} ${CMAKE_SOURCE_DIR}/init/main.c)
-target_link_libraries(${OUTPUT_NAME} PRIVATE cli_lib cli_core cli_init)
+
+# 直接链接 object 文件而不是库
+add_executable(${OUTPUT_NAME}
+    ${CMAKE_SOURCE_DIR}/init/main.c
+    $<TARGET_OBJECTS:cli_lib>
+    $<TARGET_OBJECTS:cli_core>
+    $<TARGET_OBJECTS:cli_init>
+)
+target_include_directories(${OUTPUT_NAME} PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/cli/Inc
+)
+target_link_libraries(${OUTPUT_NAME} PRIVATE m)
 set_target_properties(${OUTPUT_NAME} PROPERTIES
     LINK_FLAGS "-T ${LINKER_SCRIPT}"
 )

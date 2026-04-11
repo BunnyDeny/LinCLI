@@ -1,20 +1,23 @@
 cmake_minimum_required(VERSION 3.10)
-set(INCLUDE_DIRS 
+set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/cli/Inc
 )
 set(SUBDIRS .)
 set(PRO_NAME cli_init)
-set(DENPS cli_core cli_lib)
 
 project(${PRO_NAME})
+# 显式排除 main.c
+set(SOURCES "")
 foreach(dir ${SUBDIRS})
     file(GLOB_RECURSE TMP "${dir}/*.c")
-    list(REMOVE_ITEM TMP "${CMAKE_CURRENT_SOURCE_DIR}/main.c")
-    list(APPEND SOURCES ${TMP})
+    foreach(src ${TMP})
+        if(NOT src MATCHES "main\\.c$")
+            list(APPEND SOURCES ${src})
+        endif()
+    endforeach()
 endforeach()
-add_library(${PRO_NAME} STATIC ${SOURCES})
+add_library(${PRO_NAME} OBJECT ${SOURCES})
 target_include_directories(${PRO_NAME} PUBLIC
     ${INCLUDE_DIRS}
 )
-target_link_libraries(${PRO_NAME} PUBLIC ${DENPS})
