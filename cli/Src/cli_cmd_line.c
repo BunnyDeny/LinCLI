@@ -130,10 +130,9 @@ _EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
 int ESC_handler(void *pch)
 {
 	int status, esc_params_count = 2;
-	char esc_params[2];
+	char esc_params[2], ch;
 	while (esc_params_count) {
 		if (cli_get_in_size()) {
-			char ch;
 			status = cli_in_pop((_u8 *)&ch, 1);
 			if (status < 0) {
 				return status;
@@ -156,6 +155,18 @@ int ESC_handler(void *pch)
 			return -1;
 		}
 		cmd_line.pos++;
+	} else if (esc_params[1] == '3') {
+		status = cli_in_pop((_u8 *)&ch, 1);
+		if (status < 0) {
+			return status;
+		}
+		if (ch == '~') {
+			status = state_switch(&cmd_line_mec, "delete");
+			if (status < 0) {
+				return status;
+			}
+			return 0;
+		}
 	}
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
@@ -164,6 +175,46 @@ int ESC_handler(void *pch)
 	return 0;
 }
 _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
+
+int delete(void *pch)
+{
+	int status;
+	if (cmd_line.pos == cmd_line.size) {
+		goto delete_exit;
+	} else if (cmd_line.pos < cmd_line.size) {
+		for (int i = cmd_line.pos; i < cmd_line.size; i++) {
+			cmd_line.buf[i] = cmd_line.buf[i + 1];
+		}
+		cmd_line.buf[cmd_line.size - 1] = ' ';
+		int writeNums = cmd_line.size - cmd_line.pos;
+		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
+				      writeNums);
+		if (status < 0) {
+			return -1;
+		}
+		if (cli_out_sync()) {
+			return -1;
+		}
+		int pos_move_cnt = cmd_line.size - cmd_line.pos;
+		while (pos_move_cnt--) {
+			status = cli_out_push((_u8 *)"\033[D", 4);
+			if (status < 0) {
+				return -1;
+			}
+			if (cli_out_sync()) {
+				return -1;
+			}
+		}
+		cmd_line.size--;
+	}
+delete_exit:
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
 
 int backspace_handler(void *pch)
 {
