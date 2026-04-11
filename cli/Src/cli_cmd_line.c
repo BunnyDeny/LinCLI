@@ -299,8 +299,10 @@ _EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, enter_exit,
 
 int cmd_line_exit_handler(void *pch)
 {
-	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
-		    &_cli_cmd_line_end);
+	int status = state_switch(&cmd_line_mec, "cmd_line_start");
+	if (status < 0) {
+		return status;
+	}
 	return cmd_line_exit;
 }
 _EXPORT_STATE_SYMBOL(exit_handler, NULL, cmd_line_exit_handler, NULL,
