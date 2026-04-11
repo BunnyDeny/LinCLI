@@ -92,7 +92,7 @@ int unvalid_char_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
-	pr_debug("valid_char_task 非法字符, 对应ascci: %d\n", (int)ch);
+	//pr_debug("valid_char_task 非法字符, 对应ascci: %d\n", (int)ch);
 	if ((int)ch == 27) { // ESC
 		status = state_switch(&cmd_line_mec, "ESC_handler");
 		if (status < 0) {
@@ -113,7 +113,6 @@ int ESC_handler(void *pch)
 {
 	int status, esc_params_count = 2;
 	char esc_params[2];
-	pr_debug("ESC_handler\n");
 	while (esc_params_count) {
 		if (cli_get_in_size()) {
 			char ch;
@@ -125,8 +124,22 @@ int ESC_handler(void *pch)
 			esc_params_count--;
 		}
 	}
-	for (int i = 0; i < 2; i++) {
-		pr_debug("esc参数%d : %c\n", i, esc_params[i]);
+	if (esc_params[1] == 'D' && cmd_line.pos > 0) {
+		//pr_notice("左移动\n");
+		char *left_move = "\x1b[D";
+		status = cli_out_push((_u8 *)left_move, strlen(left_move) + 1);
+		if (status < 0) {
+			return -1;
+		}
+		cmd_line.pos--;
+	} else if (esc_params[1] == 'C' && cmd_line.pos < cmd_line.size) {
+		//pr_notice("右移动\n");
+		char *left_move = "\x1b[C";
+		status = cli_out_push((_u8 *)left_move, strlen(left_move) + 1);
+		if (status < 0) {
+			return -1;
+		}
+		cmd_line.pos++;
 	}
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
