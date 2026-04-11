@@ -2,20 +2,18 @@
 #include <string.h>
 #include "init_d.h"
 #include "stateM.h"
-
-#define CMD_LINE_BUF_SIZE 256
-#define cmd_line_exit 1
+#include "cli_cmd_line.h"
 
 static bool is_valid_char(char c);
 
-struct cmd_line {
-	_u8 pos;
-	char buf[CMD_LINE_BUF_SIZE];
-	_u8 size;
-} cmd_line = {
+struct cmd_line cmd_line = {
 	.pos = 0,
 	.size = 0,
 	.buf = { 0 },
+};
+
+struct origin_cmd origin_cmd = {
+	.size = 0,
 };
 
 struct tStateEngine cmd_line_mec;
@@ -113,6 +111,11 @@ int unvalid_char_task(void *pch)
 		}
 	} else if ((int)ch == 127) { //backspace
 		status = state_switch(&cmd_line_mec, "backspace_handler");
+		if (status < 0) {
+			return status;
+		}
+	} else if (ch == '\n') {
+		status = state_switch(&cmd_line_mec, "enter");
 		if (status < 0) {
 			return status;
 		}
@@ -266,6 +269,32 @@ label_exit2:
 	return 0;
 }
 _EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
+		     ".cli_cmd_line");
+
+void enter_entry(void *pch)
+{
+	memset(origin_cmd.buf, 0, CMD_LINE_BUF_SIZE);
+}
+int enter_press(void *pch)
+{
+	int status;
+	origin_cmd.size = cmd_line.size;
+	for (int i = 0; i < origin_cmd.size; i++) {
+		origin_cmd.buf[i] = cmd_line.buf[i];
+	}
+	status = state_switch(&cmd_line_mec, "dispose_start");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+void enter_exit(void *pch)
+{
+	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
+	cmd_line.size = 0;
+	cmd_line.pos = 0;
+}
+_EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, enter_exit,
 		     ".cli_cmd_line");
 
 int cmd_line_exit_handler(void *pch)
