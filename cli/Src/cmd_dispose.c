@@ -1,12 +1,6 @@
 #include "cmd_dispose.h"
 #include "init_d.h"
 
-void cmd_dispose_hello(void *arg)
-{
-	pr_notice("%s", arg);
-}
-_EXPORT_INIT_SYMBOL(cmd_dispose, "cmd_dispose hello\n", cmd_dispose_hello);
-
 int dispose_start(void *arg)
 {
 	int status;
