@@ -17,7 +17,7 @@ void start_entry(void *private)
 
 int start_task(void *private)
 {
-	int status = state_switch(&scheduler_eng, "scheduler_idle");
+	int status = state_switch(&scheduler_eng, "scheduler_state");
 	if (status < 0) {
 		pr_crit("[scheduler]切换空闲任务异常\n");
 		return status;
@@ -25,22 +25,16 @@ int start_task(void *private)
 	return 0;
 }
 
-void start_exit(void *private)
-{
-	pr_info("[scheduler]调度器启动程序执行完毕，将进入空闲状态\n");
-}
-
-_EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, start_exit,
+_EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 		     ".scheduler");
 
-void scheduler_idle_entry(void *private)
+void scheduler_entry(void *private)
 {
-	pr_info("[scheduler]进入空闲状态 scheduler_idle_entry\n");
 	reset_cli_in_push_lock();
-	pr_info("cli_in_push函数已解锁, 开始接受用户按键输入\n");
+	pr_info("cli_in_push接口已解锁, 开始接受用户按键输入\n");
 }
 
-int scheduler_idle_task(void *private)
+int _scheduler_task(void *private)
 {
 	int status, size;
 	size = cli_get_in_size();
@@ -58,18 +52,8 @@ int scheduler_idle_task(void *private)
 	return 0;
 }
 
-void scheduler_idle_exit(void *private)
-{
-	int status = cli_in_clear();
-	if (status < 0) {
-		pr_warn("清除in缓冲区失败\n");
-	}
-	reset_cli_in_push_lock();
-	pr_info("cli_in_push函数上锁, 禁止程序写入cli_in\n");
-}
-
-_EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task,
-		     scheduler_idle_exit, ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_state, scheduler_entry, _scheduler_task, NULL,
+		     ".scheduler");
 
 int scheduler_init(void)
 {
