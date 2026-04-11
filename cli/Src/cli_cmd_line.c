@@ -293,6 +293,7 @@ void enter_exit(void *pch)
 	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
 	cmd_line.size = 0;
 	cmd_line.pos = 0;
+	set_cli_in_push_lock();
 }
 _EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, enter_exit,
 		     ".cli_cmd_line");
@@ -303,6 +304,7 @@ int cmd_line_exit_handler(void *pch)
 	if (status < 0) {
 		return status;
 	}
+	reset_cli_in_push_lock();
 	return cmd_line_exit;
 }
 _EXPORT_STATE_SYMBOL(exit_handler, NULL, cmd_line_exit_handler, NULL,
