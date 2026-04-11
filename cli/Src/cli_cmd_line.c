@@ -63,16 +63,25 @@ int valid_char_task(void *pch)
 		if (status < 0) {
 			return -1;
 		}
+		cmd_line.buf[cmd_line.pos] = ch;
 		goto label_size_pos_inc;
 	} else if (cmd_line.pos < cmd_line.size) {
-		for (int i = cmd_line.pos + 1; i < cmd_line.size + 1; i++) {
+		for (int i = cmd_line.size + 1; i >= cmd_line.pos + 1; i--) {
 			cmd_line.buf[i] = cmd_line.buf[i - 1];
 		}
 		cmd_line.buf[cmd_line.pos] = ch;
-		status = cli_out_push((_u8 *)cmd_line.buf,
-				      cmd_line.size - cmd_line.pos);
+		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
+				      cmd_line.size - cmd_line.pos + 1);
 		if (status < 0) {
 			return -1;
+		}
+		int pos_move_cnt = cmd_line.size - cmd_line.pos;
+		while (pos_move_cnt--) {
+			status = cli_out_push((_u8 *)"\033[D",
+					      strlen("\033[D") + 1);
+			if (status < 0) {
+				return -1;
+			}
 		}
 		goto label_size_pos_inc;
 	}
