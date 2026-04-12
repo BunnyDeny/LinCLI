@@ -6,13 +6,6 @@
 
 struct tStateEngine dispose_mec;
 
-void dispose_init(void *arg)
-{
-	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
-		    &_dispose_end);
-}
-_EXPORT_INIT_SYMBOL(dispose_init, NULL, dispose_init);
-
 int dispose_start_task(void *cmd)
 {
 	pr_notice("准备解析命令: %s\n", (char *)cmd);
