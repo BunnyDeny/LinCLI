@@ -4,8 +4,16 @@
 #include "stateM.h"
 #include "cli_cmd_line.h"
 
+extern struct tState _cli_cmd_line_start;
+extern struct tState _cli_cmd_line_end;
+
 static bool is_valid_char(char c);
 
+struct cmd_line {
+	_u8 pos;
+	char buf[CMD_LINE_BUF_SIZE];
+	_u8 size;
+};
 struct cmd_line cmd_line = {
 	.pos = 0,
 	.size = 0,
@@ -18,12 +26,15 @@ struct origin_cmd origin_cmd = {
 
 struct tStateEngine cmd_line_mec;
 
-void cli_cmd_line_state_mec_init(void *arg)
+int cli_cmd_line_init(void)
 {
-	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
-		    &_cli_cmd_line_end);
+	int status = engine_init(&cmd_line_mec, "cmd_line_start",
+				 &_cli_cmd_line_start, &_cli_cmd_line_end);
+	if (status < 0) {
+		return status;
+	}
+	return 0;
 }
-_EXPORT_INIT_SYMBOL(cli_cmd_line, NULL, cli_cmd_line_state_mec_init);
 
 int cmd_line_start_task(void *pch)
 {

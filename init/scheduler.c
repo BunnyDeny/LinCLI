@@ -30,11 +30,9 @@ _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 
 void scheduler_get_char_entry(void *private)
 {
-	int status;
-	status = state_switch(&cmd_line_mec, "cmd_line_start");
+	int status = cli_cmd_line_init();
 	if (status < 0) {
-		pr_emerg("scheduler_get_char_entry切换cmd_line_start异常\n");
-		return;
+		pr_emerg("cli_cmd_line_init异常\n");
 	}
 	reset_cli_in_push_lock();
 }
@@ -72,8 +70,10 @@ _EXPORT_STATE_SYMBOL(scheduler_get_char, scheduler_get_char_entry,
 
 void scheduler_dispose_entry(void *arg)
 {
-	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
-		    &_dispose_end);
+	int status = dispose_init();
+	if (status < 0) {
+		pr_err("dispose_init异常\n");
+	}
 }
 int scheduler_dispose_task(void *arg)
 {
