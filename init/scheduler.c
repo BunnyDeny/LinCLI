@@ -30,8 +30,13 @@ _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 
 void scheduler_entry(void *private)
 {
-	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
-		    &_cli_cmd_line_end);
+	int status;
+	status = state_switch(&cmd_line_mec, "cmd_line_start");
+	if (status < 0) {
+		pr_emerg(
+			"scheduler_entry切换cmd_line_start发生异常, 请立即排查\n");
+		return;
+	}
 	reset_cli_in_push_lock();
 	pr_info("cli_in_push接口已解锁, 开始接受用户按键输入\n");
 }
