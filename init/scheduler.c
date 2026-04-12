@@ -33,12 +33,10 @@ void scheduler_get_char_entry(void *private)
 	int status;
 	status = state_switch(&cmd_line_mec, "cmd_line_start");
 	if (status < 0) {
-		pr_emerg(
-			"scheduler_get_char_entry切换cmd_line_start发生异常, 请立即排查\n");
+		pr_emerg("scheduler_get_char_entry切换cmd_line_start异常\n");
 		return;
 	}
 	reset_cli_in_push_lock();
-	pr_info("cli_in_push接口已解锁, 开始接受用户按键输入\n");
 }
 int scheduler_get_char_task(void *private)
 {
@@ -64,8 +62,13 @@ int scheduler_get_char_task(void *private)
 	}
 	return 0;
 }
+void scheduler_get_char_exit(void *arg)
+{
+	set_cli_in_push_lock();
+}
 _EXPORT_STATE_SYMBOL(scheduler_get_char, scheduler_get_char_entry,
-		     scheduler_get_char_task, NULL, ".scheduler");
+		     scheduler_get_char_task, scheduler_get_char_exit,
+		     ".scheduler");
 
 void scheduler_dispose_entry(void *arg)
 {

@@ -282,7 +282,6 @@ int enter_press(void *pch)
 	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
 	cmd_line.size = 0;
 	cmd_line.pos = 0;
-	set_cli_in_push_lock();
 	return cmd_line_enter_press;
 }
 _EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, NULL, ".cli_cmd_line");
