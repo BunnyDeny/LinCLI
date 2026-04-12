@@ -34,7 +34,6 @@ void scheduler_entry(void *private)
 	reset_cli_in_push_lock();
 	pr_info("cli_in_push接口已解锁, 开始接受用户按键输入\n");
 }
-
 int _scheduler_task(void *private)
 {
 	int status, size;
@@ -48,13 +47,38 @@ int _scheduler_task(void *private)
 		status = cli_cmd_line_task(ch);
 		if (status < 0) {
 			return status;
+		} else if (status == cmd_line_enter_press) {
+			status = state_switch(&scheduler_eng,
+					      "schedule_dispose");
+			if (status < 0) {
+				return status;
+			}
+			return 0;
 		}
 	}
 	return 0;
 }
-
 _EXPORT_STATE_SYMBOL(scheduler_state, scheduler_entry, _scheduler_task, NULL,
 		     ".scheduler");
+
+void dispose_entry(void *arg)
+{
+}
+int dispose_task(void *arg)
+{
+	int status;
+	pr_notice("调度器检测到回车动作\n");
+	status = state_switch(&scheduler_eng, "scheduler_state");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+void dispose_exit(void *arg)
+{
+}
+_EXPORT_STATE_SYMBOL(schedule_dispose, dispose_entry, dispose_task,
+		     dispose_exit, ".scheduler");
 
 int scheduler_init(void)
 {

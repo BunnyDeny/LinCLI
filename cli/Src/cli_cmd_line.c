@@ -274,16 +274,16 @@ void enter_entry(void *pch)
 }
 int enter_press(void *pch)
 {
-	int status;
+	//int status;
 	origin_cmd.size = cmd_line.size;
 	for (int i = 0; i < origin_cmd.size; i++) {
 		origin_cmd.buf[i] = cmd_line.buf[i];
 	}
-	status = state_switch(&cmd_line_mec, "dispose_start");
-	if (status < 0) {
-		return status;
-	}
-	return 0;
+	// status = state_switch(&cmd_line_mec, "dispose_start");
+	// if (status < 0) {
+	// 	return status;
+	// }
+	return cmd_line_enter_press;
 }
 void enter_exit(void *pch)
 {
@@ -341,6 +341,9 @@ int cli_cmd_line_task(char ch)
 		if (status < 0) {
 			pr_err("cli_cmd_line状态机异常\n");
 			return -1;
+		}
+		if (status == cmd_line_enter_press) {
+			return status;
 		}
 	}
 	return 0;
