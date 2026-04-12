@@ -279,21 +279,13 @@ int enter_press(void *pch)
 	for (int i = 0; i < origin_cmd.size; i++) {
 		origin_cmd.buf[i] = cmd_line.buf[i];
 	}
-	// status = state_switch(&cmd_line_mec, "dispose_start");
-	// if (status < 0) {
-	// 	return status;
-	// }
-	return cmd_line_enter_press;
-}
-void enter_exit(void *pch)
-{
 	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
 	cmd_line.size = 0;
 	cmd_line.pos = 0;
 	set_cli_in_push_lock();
+	return cmd_line_enter_press;
 }
-_EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, enter_exit,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, NULL, ".cli_cmd_line");
 
 int cmd_line_exit_handler(void *pch)
 {
