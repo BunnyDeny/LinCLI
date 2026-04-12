@@ -19,6 +19,7 @@ void pr_logo(void *arg)
 		"                                          __/ |                          \n");
 	cli_printk(
 		"                                         |___/                           \n");
+	pr_info("欢迎使用BunnyCLI\n");
 }
 
 _EXPORT_INIT_SYMBOL(logo, NULL, pr_logo);
