@@ -17,7 +17,7 @@ void start_entry(void *private)
 
 int start_task(void *private)
 {
-	int status = state_switch(&scheduler_eng, "scheduler_state");
+	int status = state_switch(&scheduler_eng, "scheduler_get_char");
 	if (status < 0) {
 		pr_crit("[scheduler]切换空闲任务异常\n");
 		return status;
@@ -28,19 +28,19 @@ int start_task(void *private)
 _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 		     ".scheduler");
 
-void scheduler_entry(void *private)
+void scheduler_get_char_entry(void *private)
 {
 	int status;
 	status = state_switch(&cmd_line_mec, "cmd_line_start");
 	if (status < 0) {
 		pr_emerg(
-			"scheduler_entry切换cmd_line_start发生异常, 请立即排查\n");
+			"scheduler_get_char_entry切换cmd_line_start发生异常, 请立即排查\n");
 		return;
 	}
 	reset_cli_in_push_lock();
 	pr_info("cli_in_push接口已解锁, 开始接受用户按键输入\n");
 }
-int _scheduler_task(void *private)
+int scheduler_get_char_task(void *private)
 {
 	int status, size;
 	size = cli_get_in_size();
@@ -64,8 +64,8 @@ int _scheduler_task(void *private)
 	}
 	return 0;
 }
-_EXPORT_STATE_SYMBOL(scheduler_state, scheduler_entry, _scheduler_task, NULL,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_get_char, scheduler_get_char_entry,
+		     scheduler_get_char_task, NULL, ".scheduler");
 
 void scheduler_dispose_entry(void *arg)
 {
@@ -79,7 +79,7 @@ int scheduler_dispose_task(void *arg)
 	if (status < 0) {
 		return status;
 	} else if (status == dispose_exit) {
-		status = state_switch(&scheduler_eng, "scheduler_state");
+		status = state_switch(&scheduler_eng, "scheduler_get_char");
 		if (status < 0) {
 			return status;
 		}
