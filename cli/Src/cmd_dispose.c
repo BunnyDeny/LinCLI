@@ -4,14 +4,38 @@
 #include "cli_io.h"
 #include "cli_cmd_line.h"
 
-int dispose_start(void *arg)
+struct tStateEngine dispose_mec;
+
+void dispose_start_entry(void *cmd)
+{
+	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
+		    &_dispose_end);
+}
+
+int dispose_start_task(void *cmd)
 {
 	int status;
-	pr_notice("准备解析命令: %s\n", origin_cmd.buf);
+	pr_notice("准备解析命令: %s\n", (char *)cmd);
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
 	}
 	return 0;
 }
-_EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(dispose_start, dispose_start_entry, dispose_start_task,
+		     NULL, ".dispose");
+
+int dispose_task(char *cmd)
+{
+	int status = 0;
+	while (1) {
+		status = stateEngineRun(&dispose_mec, cmd);
+		if (status < 0) {
+			pr_err("dispose状态机异常\n");
+			return -1;
+		} else if (status == dispose_exit) {
+			return status;
+		}
+	}
+	return 0; /*nerver*/
+}

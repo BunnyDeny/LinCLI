@@ -3,6 +3,7 @@
 #include "init_d.h"
 #include <string.h>
 #include "cli_cmd_line.h"
+#include "cmd_dispose.h"
 
 struct tStateEngine scheduler_eng;
 extern struct tState _scheduler_start;
@@ -61,24 +62,27 @@ int _scheduler_task(void *private)
 _EXPORT_STATE_SYMBOL(scheduler_state, scheduler_entry, _scheduler_task, NULL,
 		     ".scheduler");
 
-void dispose_entry(void *arg)
+void scheduler_dispose_entry(void *arg)
 {
+	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
+		    &_dispose_end);
 }
-int dispose_task(void *arg)
+int scheduler_dispose_task(void *arg)
 {
 	int status;
-	pr_notice("调度器检测到回车动作\n");
-	status = state_switch(&scheduler_eng, "scheduler_state");
+	status = dispose_task(origin_cmd.buf);
 	if (status < 0) {
 		return status;
+	} else if (status == dispose_exit) {
+		status = state_switch(&scheduler_eng, "scheduler_state");
+		if (status < 0) {
+			return status;
+		}
 	}
 	return 0;
 }
-void dispose_exit(void *arg)
-{
-}
-_EXPORT_STATE_SYMBOL(schedule_dispose, dispose_entry, dispose_task,
-		     dispose_exit, ".scheduler");
+_EXPORT_STATE_SYMBOL(schedule_dispose, scheduler_dispose_entry,
+		     scheduler_dispose_task, NULL, ".scheduler");
 
 int scheduler_init(void)
 {

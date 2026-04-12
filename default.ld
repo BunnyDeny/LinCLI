@@ -201,6 +201,11 @@ SECTIONS
       *(.cli_cmd_line)
       _cli_cmd_line_end = .;
   }
+  .dispose : {
+      _dispose_start = .;
+      *(.cli_cmd_line)
+      _dispose_end = .;
+  }
   __bss_start = .;
   .bss            :
   {
