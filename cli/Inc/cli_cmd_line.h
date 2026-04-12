@@ -18,6 +18,9 @@ struct cmd_line {
 
 extern struct origin_cmd origin_cmd;
 extern struct tStateEngine cmd_line_mec;
+extern struct tState _cli_cmd_line_start;
+extern struct tState _cli_cmd_line_end;
+
 int cli_cmd_line_task(char ch);
 
 #endif

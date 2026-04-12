@@ -4,10 +4,9 @@
 #include <string.h>
 #include "cli_cmd_line.h"
 
+struct tStateEngine scheduler_eng;
 extern struct tState _scheduler_start;
 extern struct tState _scheduler_end;
-
-struct tStateEngine scheduler_eng;
 
 void start_entry(void *private)
 {
@@ -30,6 +29,8 @@ _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 
 void scheduler_entry(void *private)
 {
+	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
+		    &_cli_cmd_line_end);
 	reset_cli_in_push_lock();
 	pr_info("cli_in_push接口已解锁, 开始接受用户按键输入\n");
 }

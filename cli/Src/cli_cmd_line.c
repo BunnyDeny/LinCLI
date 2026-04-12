@@ -18,9 +18,6 @@ struct origin_cmd origin_cmd = {
 
 struct tStateEngine cmd_line_mec;
 
-extern struct tState _cli_cmd_line_start;
-extern struct tState _cli_cmd_line_end;
-
 void cli_cmd_line_state_mec_init(void *arg)
 {
 	engine_init(&cmd_line_mec, "cmd_line_start", &_cli_cmd_line_start,
