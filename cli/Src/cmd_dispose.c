@@ -13,24 +13,12 @@ void dispose_init(void *arg)
 }
 _EXPORT_INIT_SYMBOL(dispose_init, NULL, dispose_init);
 
-void dispose_start_entry(void *cmd)
-{
-	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
-		    &_dispose_end);
-}
-
 int dispose_start_task(void *cmd)
 {
-	int status;
 	pr_notice("准备解析命令: %s\n", (char *)cmd);
-	status = state_switch(&cmd_line_mec, "exit_handler");
-	if (status < 0) {
-		return status;
-	}
-	return 0;
+	return dispose_exit;
 }
-_EXPORT_STATE_SYMBOL(dispose_start, dispose_start_entry, dispose_start_task,
-		     NULL, ".dispose");
+_EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start_task, NULL, ".dispose");
 
 int dispose_task(char *cmd)
 {
