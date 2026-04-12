@@ -203,7 +203,7 @@ SECTIONS
   }
   .dispose : {
       _dispose_start = .;
-      *(.cli_cmd_line)
+      *(.dispose)
       _dispose_end = .;
   }
   __bss_start = .;

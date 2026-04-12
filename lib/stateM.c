@@ -112,6 +112,7 @@ int stateEngineRun(struct tStateEngine *engine, void *private)
      * null. Therefore, the subsequent if check on from (after assignment) is
      * redundant.*/
 		STATEM_SWITCH(engine->from, engine->to);
+
 		engine->from = engine->to;
 		STATEM_ENTRY(engine->from);
 		if (engine->from->state_entry) {

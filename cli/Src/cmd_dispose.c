@@ -6,6 +6,13 @@
 
 struct tStateEngine dispose_mec;
 
+void dispose_init(void *arg)
+{
+	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
+		    &_dispose_end);
+}
+_EXPORT_INIT_SYMBOL(dispose_init, NULL, dispose_init);
+
 void dispose_start_entry(void *cmd)
 {
 	engine_init(&dispose_mec, "dispose_start", &_dispose_start,
