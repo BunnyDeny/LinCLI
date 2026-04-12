@@ -14,7 +14,6 @@ void start_entry(void *private)
 	pr_info("执行_EXPORT_INIT_SYMBOL导出的初始化程序\n");
 	CALL_INIT_D;
 }
-
 int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_get_char");
@@ -24,7 +23,6 @@ int start_task(void *private)
 	}
 	return 0;
 }
-
 _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 		     ".scheduler");
 
