@@ -37,6 +37,3 @@ int dispose_task(char *cmd)
 	}
 	return 0; /*nerver*/
 }
-
-EXPORT_OPTION_SYMBOL(echo_op, echo, -o, op_string, 1, NULL, NULL, 0, true,
-		     NULL);
