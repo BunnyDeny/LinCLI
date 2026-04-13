@@ -57,24 +57,39 @@ typedef struct cli_command {
 	int (*validator)(void *); // 自定义验证函数
 } cli_command_t;
 
-/* 全局命令注册表（简化版，实际用链接脚本） */
-#define CLI_MAX_COMMANDS 64
-extern cli_command_t *g_cli_commands[CLI_MAX_COMMANDS];
-extern int g_cli_command_count;
+/* ============================================================
+ * 链接脚本段收集符号声明
+ * ============================================================ */
+
+extern cli_command_t _cli_commands_start;
+extern cli_command_t _cli_commands_end;
+
+#define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd) \
+	for ((_cmd) = (_start); (_cmd) < (_end); (_cmd)++)
+
+static inline const cli_command_t *cli_command_find(const char *_name)
+{
+	cli_command_t *_cmd;
+	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, _cmd)
+	{
+		if (_cmd->name && strcmp(_cmd->name, _name) == 0)
+			return _cmd;
+	}
+	return NULL;
+}
 
 /* ============================================================
  * 核心解析函数声明
  * ============================================================ */
 
 int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct);
-int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv);
+int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv, void *arg_struct);
 void cli_print_help(const cli_command_t *cmd);
 
 /* ============================================================
  * 宏工具：计算偏移量
  * ============================================================ */
 
-// 获取字段偏移量的宏
 #define CLI_OFFSETOF(type, field) offsetof(type, field)
 
 // 安全地获取数组长度的偏移量（假设紧跟在数组指针后面的是_count字段）
@@ -82,83 +97,79 @@ void cli_print_help(const cli_command_t *cmd);
 	(offsetof(type, field) + sizeof(((type *)0)->field))
 
 /* ============================================================
- * OPTION宏的重载实现
- * 使用C11 _Generic或宏技巧实现可选参数
- * ============================================================ */
+ * OPTION 宏定义
+ * ============================================================
+ *
+ * 注意：原先使用 GET_MACRO 的变参重载存在两个缺陷：
+ * 1. 宏参数名与结构体成员名冲突，导致指定初始化器被意外替换
+ *    例如 .short_opt = short_opt 会被展开成 .'v' = 'v'
+ * 2. OPTION_6(required) 和 OPTION_7(max_args) 都接受 7 个实参，
+ *    C 预处理器无法通过参数数量区分二者。
+ * 因此改为显式命名宏，且参数名前加下划线避免与成员名冲突。
+ */
 
 // 基础OPTION宏（无可选参数）
-#define OPTION_5(short_opt, long_opt, type_enum, help, struct_type, field) \
-	{ .short_opt = short_opt,                                          \
-	  .long_opt = long_opt,                                            \
-	  .type = CLI_TYPE_##type_enum,                                    \
-	  .help = help,                                                    \
-	  .offset = CLI_OFFSETOF(struct_type, field),                      \
-	  .offset_count = 0,                                               \
-	  .max_args = 1,                                                   \
-	  .required = false,                                               \
-	  .depends = NULL,                                                 \
+#define OPTION(_sopt, _lopt, _type, _help, _stype, _field) \
+	{ .short_opt = _sopt,                                      \
+	  .long_opt = _lopt,                                       \
+	  .type = CLI_TYPE_##_type,                                \
+	  .help = _help,                                           \
+	  .offset = CLI_OFFSETOF(_stype, _field),                  \
+	  .offset_count = 0,                                       \
+	  .max_args = 1,                                           \
+	  .required = false,                                       \
+	  .depends = NULL,                                         \
 	  .conflicts = NULL }
 
 // 带.required的OPTION
-#define OPTION_6(short_opt, long_opt, type_enum, help, struct_type, field, \
-		 req)                                                      \
-	{ .short_opt = short_opt,                                          \
-	  .long_opt = long_opt,                                            \
-	  .type = CLI_TYPE_##type_enum,                                    \
-	  .help = help,                                                    \
-	  .offset = CLI_OFFSETOF(struct_type, field),                      \
-	  .offset_count = 0,                                               \
-	  .max_args = 1,                                                   \
-	  .required = req,                                                 \
-	  .depends = NULL,                                                 \
+#define OPTION_REQ(_sopt, _lopt, _type, _help, _stype, _field, _req) \
+	{ .short_opt = _sopt,                                      \
+	  .long_opt = _lopt,                                       \
+	  .type = CLI_TYPE_##_type,                                \
+	  .help = _help,                                           \
+	  .offset = CLI_OFFSETOF(_stype, _field),                  \
+	  .offset_count = 0,                                       \
+	  .max_args = 1,                                           \
+	  .required = _req,                                        \
+	  .depends = NULL,                                         \
 	  .conflicts = NULL }
 
 // 带.max_args的OPTION（用于数组类型）
-#define OPTION_7(short_opt, long_opt, type_enum, help, struct_type, field, \
-		 max)                                                      \
-	{ .short_opt = short_opt,                                          \
-	  .long_opt = long_opt,                                            \
-	  .type = CLI_TYPE_##type_enum,                                    \
-	  .help = help,                                                    \
-	  .offset = CLI_OFFSETOF(struct_type, field),                      \
-	  .offset_count = CLI_OFFSETOF(struct_type, field##_count),        \
-	  .max_args = max,                                                 \
-	  .required = false,                                               \
-	  .depends = NULL,                                                 \
+#define OPTION_ARRAY(_sopt, _lopt, _type, _help, _stype, _field, _max) \
+	{ .short_opt = _sopt,                                      \
+	  .long_opt = _lopt,                                       \
+	  .type = CLI_TYPE_##_type,                                \
+	  .help = _help,                                           \
+	  .offset = CLI_OFFSETOF(_stype, _field),                  \
+	  .offset_count = CLI_OFFSETOF(_stype, _field##_count),    \
+	  .max_args = _max,                                        \
+	  .required = false,                                       \
+	  .depends = NULL,                                         \
 	  .conflicts = NULL }
 
 // 带.max_args和.depends的OPTION
-#define OPTION_8(short_opt, long_opt, type_enum, help, struct_type, field, \
-		 max, dep)                                                 \
-	{ .short_opt = short_opt,                                          \
-	  .long_opt = long_opt,                                            \
-	  .type = CLI_TYPE_##type_enum,                                    \
-	  .help = help,                                                    \
-	  .offset = CLI_OFFSETOF(struct_type, field),                      \
-	  .offset_count = CLI_OFFSETOF(struct_type, field##_count),        \
-	  .max_args = max,                                                 \
-	  .required = false,                                               \
-	  .depends = dep,                                                  \
+#define OPTION_ARRAY_DEP(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep) \
+	{ .short_opt = _sopt,                                      \
+	  .long_opt = _lopt,                                       \
+	  .type = CLI_TYPE_##_type,                                \
+	  .help = _help,                                           \
+	  .offset = CLI_OFFSETOF(_stype, _field),                  \
+	  .offset_count = CLI_OFFSETOF(_stype, _field##_count),    \
+	  .max_args = _max,                                        \
+	  .required = false,                                       \
+	  .depends = _dep,                                         \
 	  .conflicts = NULL }
-
-// 参数选择宏
-#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, NAME, ...) NAME
-
-// 统一的OPTION宏
-#define OPTION(...)                                          \
-	GET_MACRO(__VA_ARGS__, OPTION_8, OPTION_7, OPTION_6, \
-		  OPTION_5)(__VA_ARGS__)
 
 /* ============================================================
  * 位置参数宏（非选项参数）
  * ============================================================ */
 
-#define POSITIONAL(index, name, type_enum, struct_type, field) \
+#define POSITIONAL(index, name, _type, _stype, _field) \
 	{ .short_opt = 0,                                      \
 	  .long_opt = name,                                    \
-	  .type = CLI_TYPE_##type_enum,                        \
+	  .type = CLI_TYPE_##_type,                            \
 	  .help = name " (positional)",                        \
-	  .offset = CLI_OFFSETOF(struct_type, field),          \
+	  .offset = CLI_OFFSETOF(_stype, _field),              \
 	  .offset_count = 0,                                   \
 	  .max_args = 1,                                       \
 	  .required = true,                                    \
@@ -166,42 +177,40 @@ void cli_print_help(const cli_command_t *cmd);
 	  .conflicts = NULL }
 
 /* ============================================================
- * CLI_COMMAND宏：注册一个命令
- * ============================================================ */
+ * CLI_COMMAND宏：注册一个命令（通过链接脚本段收集）
+ * ============================================================
+ *
+ * 参数名前加下划线，避免与 cli_command_t 成员名冲突导致
+ * 指定初始化器被意外替换。
+ */
 
-// 辅助宏：计算选项数量
-#define CLI_COUNT_OPTIONS(...) \
-	(sizeof((cli_option_t[]){ __VA_ARGS__ }) / sizeof(cli_option_t))
-
-// 主要的CLI_COMMAND宏
-#define CLI_COMMAND(name, cmd_str, parse_cb, arg_struct_ptr, ...)           \
-                                                                            \
-	/* 前向声明参数结构体类型 */                                        \
-	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                 \
-                                                                            \
-	/* 定义选项数组（放在静态区） */                                    \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };  \
-                                                                            \
-	/* 定义命令结构体 */                                                \
-	static cli_command_t _cli_cmd_def_##name = {                        \
-		.name = cmd_str,                                            \
-		.doc = "Command " cmd_str,                                  \
-		.arg_struct = NULL, /* 运行时填充 */                        \
-		.arg_struct_size = sizeof(_cli_struct_##name),              \
-		.options = _cli_options_##name,                             \
-		.option_count =                                             \
-			sizeof(_cli_options_##name) / sizeof(cli_option_t), \
-		.validator = (int (*)(void *))parse_cb,                     \
-	};                                                                  \
-                                                                            \
-	/* 构造函数：自动注册到全局表（GCC特性） */                         \
-	__attribute__((constructor)) static void _cli_register_##name(void) \
-	{                                                                   \
-		if (g_cli_command_count < CLI_MAX_COMMANDS) {               \
-			g_cli_commands[g_cli_command_count++] =             \
-				&_cli_cmd_def_##name;                       \
-		}                                                           \
+#define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts, _opts_cnt, _vld, _section) \
+	static cli_command_t _cli_cmd_def_##_obj __attribute__((            \
+		used, section(_section), aligned(sizeof(long)))) = {        \
+		.name = _cmd_str,                                           \
+		.doc = _doc_str,                                            \
+		.arg_struct = NULL,                                         \
+		.arg_struct_size = _size,                                   \
+		.options = _opts,                                           \
+		.option_count = _opts_cnt,                                  \
+		.validator = _vld,                                          \
 	}
+
+#define CLI_COMMAND(name, cmd_str, parse_cb, arg_struct_ptr, ...)      \
+	/* 前向声明参数结构体类型 */                                    \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name;              \
+	                                                                 \
+	/* 定义选项数组（放在静态区） */                                \
+	static const cli_option_t _cli_options_##name[] = {              \
+		__VA_ARGS__                                              \
+	};                                                               \
+	                                                                 \
+	/* 通过链接脚本段收集注册 */                                    \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                      \
+		name, cmd_str, "Command " cmd_str,                       \
+		sizeof(_cli_struct_##name), _cli_options_##name,           \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
+		(int (*)(void *))parse_cb, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
