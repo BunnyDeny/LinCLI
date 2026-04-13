@@ -35,12 +35,12 @@ struct option {
 	char *denp_option;
 } __attribute__((aligned(sizeof(long))));
 
-#define EXPORT_OPTION_SYMBOL(cmd, option, _type, _num, _bad_handler, _mem, \
-			     _size, _is_required, denp)                    \
-	static struct init_d init_d_##obj __attribute__((                  \
+#define EXPORT_OPTION_SYMBOL(obj, cmd, _option, _type, _num, _bad_handler, \
+			     _mem, _size, _is_required, denp)              \
+	static struct option option##obj __attribute__((                   \
 		used, section(".my_option"),                               \
 		aligned(sizeof(long)))) = { .cmd_name = #cmd,              \
-					    .option_name = #option,        \
+					    .option_name = #_option,       \
 					    .type = _type,                 \
 					    .param_num = _num,             \
 					    .bad_handler = _bad_handler,   \
