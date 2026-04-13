@@ -18,7 +18,7 @@ struct option {
 	char option_name[16]; //选项的名字-T,--help等
 	enum option_type
 		type; //选项的类型，用于表示选项的参数类型（空，字符串，字符串数组 int数组...）
-	int param_num; //选项类型对应的参数个数，填-1代表无需校验个数
+	int param_num; //选项类型对应的参数个数，填-1代表无需校验个数，填0代表无参数（如果有参数会校验失败）
 	void (*bad_handlers)(
 		int argc,
 		char **argv); //校验失败处理（可选，填入NULL则启用系统缺省处理）
