@@ -181,19 +181,11 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv, void *arg_st
    - 检查 `required` 选项是否缺失；
    - 检查 `depends` 依赖选项是否已提供。
 
-### 5.4 命令级解析入口 `cli_parse()`
-
-```c
-int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct);
-```
-
-先通过 `cli_command_find()` 查表，再调用 `cli_auto_parse()`。
-
-### 5.5 帮助打印 `cli_print_help()`
+### 5.4 帮助打印 `cli_print_help()`
 
 自动遍历命令的选项数组，输出命令名、描述、各选项的短/长名称、帮助文本、是否必需、依赖关系等信息。
 
-### 5.6 状态机入口 `dispose_start_task()`
+### 5.5 状态机入口 `dispose_start_task()`
 
 这是调度器状态机 `.dispose` 段的起点任务，完成以下闭环：
 

@@ -265,27 +265,6 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 }
 
 /**
- * @brief 根据命令名查找注册表，并自动解析该命令的选项。
- *
- * @param[in]  cmd_name    命令名字符串，对应 cli_command_t::name。
- * @param[in]  argc        参数个数。
- * @param[in]  argv        参数数组。
- * @param[out] arg_struct  用于接收解析结果的结构体指针。
- *
- * @return  0  解析并校验成功；
- *         -1  命令未找到或解析校验失败。
- */
-int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct)
-{
-	const cli_command_t *cmd = cli_command_find(cmd_name);
-	if (!cmd) {
-		pr_err("未知命令: %s\n", cmd_name);
-		return -1;
-	}
-	return cli_auto_parse(cmd, argc, argv, arg_struct);
-}
-
-/**
  * @brief 打印指定命令的帮助信息。
  *
  * @param[in] cmd  命令定义指针。若为 NULL，函数直接返回。

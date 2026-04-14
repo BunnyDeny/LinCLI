@@ -79,15 +79,6 @@ static inline const cli_command_t *cli_command_find(const char *_name)
 }
 
 /* ============================================================
- * 核心解析函数声明
- * ============================================================ */
-
-int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct);
-int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
-		   void *arg_struct);
-void cli_print_help(const cli_command_t *cmd);
-
-/* ============================================================
  * 宏工具：计算偏移量
  * ============================================================ */
 
@@ -199,18 +190,18 @@ void cli_print_help(const cli_command_t *cmd);
 		.validator = _vld,                                         \
 	}
 
-#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)              \
-	/* 前向声明参数结构体类型 */                                           \
-	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                    \
-                                                                               \
-	/* 定义选项数组（放在静态区） */                                       \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
-                                                                               \
-	/* 通过链接脚本段收集注册 */                                           \
-	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
-		name, cmd_str, doc_str, sizeof(_cli_struct_##name), \
-		_cli_options_##name,                                           \
-		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
+#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...) \
+	/* 前向声明参数结构体类型 */                                       \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                \
+                                                                           \
+	/* 定义选项数组（放在静态区） */                                   \
+	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ }; \
+                                                                           \
+	/* 通过链接脚本段收集注册 */                                       \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
+		name, cmd_str, doc_str, sizeof(_cli_struct_##name),        \
+		_cli_options_##name,                                       \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
 		(int (*)(void *))parse_cb, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
