@@ -217,7 +217,7 @@ struct hello_args {
     size_t numbers_count;
 };
 
-CLI_COMMAND(hello, "hello", hello_handler, &((struct hello_args){ 0 }),
+CLI_COMMAND(hello, "hello", "Print greeting message with optional name and number array", hello_handler, (struct hello_args *)0,
     OPTION('v', "verbose", BOOL, "Enable verbose", struct hello_args, verbose),
     OPTION('n', "name", STRING, "Your name", struct hello_args, name),
     OPTION_ARRAY('a', "array", INT_ARRAY, "Number array", struct hello_args, numbers, 8),
@@ -301,7 +301,7 @@ int my_cmd_handler(void *args)
 ### 步骤 3：用宏注册命令
 
 ```c
-CLI_COMMAND(my_cmd, "my_cmd", my_cmd_handler, &((struct my_args){ 0 }),
+CLI_COMMAND(my_cmd, "my_cmd", "My custom command description", my_cmd_handler, (struct my_args *)0,
     OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose),
     OPTION('o', "output", STRING, "Output file", struct my_args, output),
     OPTION_ARRAY('n', "numbers", INT_ARRAY, "Numbers", struct my_args, numbers, 10),

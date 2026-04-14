@@ -199,7 +199,7 @@ void cli_print_help(const cli_command_t *cmd);
 		.validator = _vld,                                         \
 	}
 
-#define CLI_COMMAND(name, cmd_str, parse_cb, arg_struct_ptr, ...)              \
+#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)              \
 	/* 前向声明参数结构体类型 */                                           \
 	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                    \
                                                                                \
@@ -208,7 +208,7 @@ void cli_print_help(const cli_command_t *cmd);
                                                                                \
 	/* 通过链接脚本段收集注册 */                                           \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
-		name, cmd_str, "Command " cmd_str, sizeof(_cli_struct_##name), \
+		name, cmd_str, doc_str, sizeof(_cli_struct_##name), \
 		_cli_options_##name,                                           \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
 		(int (*)(void *))parse_cb, ".cli_commands")
