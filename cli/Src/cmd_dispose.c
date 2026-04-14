@@ -91,8 +91,10 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 			    cur_opt->type != CLI_TYPE_CALLBACK &&
 			    cur_opt_argc == 0) {
 				pr_err("选项 -%c/--%s 缺少参数\n",
-				       cur_opt->short_opt ? cur_opt->short_opt : ' ',
-				       cur_opt->long_opt ? cur_opt->long_opt : "");
+				       cur_opt->short_opt ? cur_opt->short_opt :
+							    ' ',
+				       cur_opt->long_opt ? cur_opt->long_opt :
+							   "");
 				free(opt_seen);
 				return -1;
 			}
@@ -146,8 +148,10 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 		case CLI_TYPE_INT_ARRAY: {
 			if (cur_opt_idx >= (int)cur_opt->max_args) {
 				pr_err("选项 -%c/--%s 参数过多\n",
-				       cur_opt->short_opt ? cur_opt->short_opt : ' ',
-				       cur_opt->long_opt ? cur_opt->long_opt : "");
+				       cur_opt->short_opt ? cur_opt->short_opt :
+							    ' ',
+				       cur_opt->long_opt ? cur_opt->long_opt :
+							   "");
 				free(opt_seen);
 				return -1;
 			}
@@ -159,8 +163,8 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 			arr[cur_opt_idx++] = atoi(arg);
 			cur_opt_argc++;
 			if (cur_opt->offset_count > 0) {
-				size_t *cnt =
-					(size_t *)((char *)arg_struct + cur_opt->offset_count);
+				size_t *cnt = (size_t *)((char *)arg_struct +
+							 cur_opt->offset_count);
 				*cnt = (size_t)cur_opt_idx;
 			}
 			break;
@@ -188,10 +192,12 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (cmd->options[i].required && !opt_seen[i]) {
 			pr_err("缺少必需选项: -%c/--%s\n",
-			       cmd->options[i].short_opt ? cmd->options[i].short_opt :
-							       ' ',
-			       cmd->options[i].long_opt ? cmd->options[i].long_opt :
-							       "");
+			       cmd->options[i].short_opt ?
+				       cmd->options[i].short_opt :
+				       ' ',
+			       cmd->options[i].long_opt ?
+				       cmd->options[i].long_opt :
+				       "");
 			free(opt_seen);
 			return -1;
 		}
@@ -261,7 +267,8 @@ void cli_print_help(const cli_command_t *cmd)
 		if (opt->required)
 			snprintf(req_mark, sizeof(req_mark), " [必需]");
 		if (opt->depends)
-			snprintf(dep_mark, sizeof(dep_mark), " [依赖:%s]", opt->depends);
+			snprintf(dep_mark, sizeof(dep_mark), " [依赖:%s]",
+				 opt->depends);
 		pr_notice("  -%c, --%-16s %s%s%s\n",
 			  opt->short_opt ? opt->short_opt : ' ',
 			  opt->long_opt ? opt->long_opt : "",
@@ -272,6 +279,15 @@ void cli_print_help(const cli_command_t *cmd)
 /* ============================================================
  * 状态机入口
  * ============================================================ */
+
+static bool has_help_flag(int argc, char **argv)
+{
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+			return true;
+	}
+	return false;
+}
 
 int dispose_start_task(void *cmd)
 {
@@ -286,6 +302,11 @@ int dispose_start_task(void *cmd)
 	const cli_command_t *cmd_def = cli_command_find(argv[0]);
 	if (!cmd_def) {
 		pr_err("未知命令: %s\n", argv[0]);
+		return dispose_exit;
+	}
+
+	if (has_help_flag(argc, argv)) {
+		cli_print_help(cmd_def);
 		return dispose_exit;
 	}
 
@@ -360,8 +381,12 @@ static int hello_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(hello, "hello", "Print greeting message with optional name and number array", hello_handler, (struct hello_args *)0,
-	    OPTION('v', "verbose", BOOL, "Enable verbose", struct hello_args, verbose),
+CLI_COMMAND(hello, "hello",
+	    "Print greeting message with optional name and number array",
+	    hello_handler, (struct hello_args *)0,
+	    OPTION('v', "verbose", BOOL, "Enable verbose", struct hello_args,
+		   verbose),
 	    OPTION('n', "name", STRING, "Your name", struct hello_args, name),
-	    OPTION_ARRAY('a', "array", INT_ARRAY, "Number array", struct hello_args, numbers, 8),
+	    OPTION_ARRAY('a', "array", INT_ARRAY, "Number array",
+			 struct hello_args, numbers, 8),
 	    END_OPTIONS);
