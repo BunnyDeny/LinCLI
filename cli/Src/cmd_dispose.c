@@ -8,10 +8,17 @@ struct tStateEngine dispose_mec;
 extern struct tState _dispose_start;
 extern struct tState _dispose_end;
 
-/* ============================================================
- * 字符串切分
- * ============================================================ */
-
+/**
+ * @brief 将一行输入字符串按空白字符切分为 argc/argv 形式。
+ *
+ * @param[in,out] line    原始命令行字符串，函数会在分隔处插入 '\0' 进行破坏式切分。
+ * @param[out]    argv    切分后得到的字符串指针数组，argv[0] 为命令名本身。
+ * @param[in]     max_argv argv 数组的最大容量，防止越界。
+ *
+ * @return 切分后的参数个数 argc（包含 argv[0] 命令名）。
+ *
+ * @note 目前仅支持空格与制表符作为分隔符，不支持引号包裹的含空格参数。
+ */
 static int tokenize(char *line, char **argv, int max_argv)
 {
 	int argc = 0;
@@ -31,10 +38,16 @@ static int tokenize(char *line, char **argv, int max_argv)
 	return argc;
 }
 
-/* ============================================================
- * 选项查找
- * ============================================================ */
-
+/**
+ * @brief 根据用户输入的选项字符串查找对应的 cli_option_t 定义。
+ *
+ * @param[in] cmd  命令定义结构体，包含所有已注册选项的数组。
+ * @param[in] arg  用户输入的当前参数，形如 "-v" 或 "--verbose"。
+ *
+ * @return 匹配到的选项指针；若未找到或 arg 格式不合法，返回 NULL。
+ *
+ * @note 短选项仅支持单字符（如 "-v"），"-abc" 这种组合形式会被拒绝。
+ */
 static const cli_option_t *find_option(const cli_command_t *cmd,
 				       const char *arg)
 {
@@ -61,10 +74,25 @@ static const cli_option_t *find_option(const cli_command_t *cmd,
 	return NULL;
 }
 
-/* ============================================================
- * 核心解析：将命令行填充到 arg_struct
- * ============================================================ */
-
+/**
+ * @brief 自动解析给定命令的选项，并将解析结果填充到开发者提供的参数结构体中。
+ *
+ * @param[in]  cmd         命令定义，包含选项数组及校验规则。
+ * @param[in]  argc        参数个数（包含 argv[0] 命令名）。
+ * @param[in]  argv        参数字符串数组。
+ * @param[out] arg_struct  开发者定义的参数结构体指针，函数会按各选项的 offset
+ *                         将转换后的值写入对应内存位置。
+ *
+ * @return  0  解析成功；
+ *         -1  参数非法、选项未知、缺少参数、参数过多、必需项缺失或依赖未满足。
+ *
+ * @details 解析流程如下：
+ *   1. 清零 arg_struct；
+ *   2. 遍历 argv[1..argc-1]，识别选项标记（以 '-' 开头）；
+ *   3. 根据 cli_option_t::type 进行类型转换（BOOL、STRING、INT、DOUBLE、INT_ARRAY）；
+ *   4. 对于 INT_ARRAY，会按需 calloc 数组内存，并通过 offset_count 更新计数器；
+ *   5. 遍历结束后进行完整性校验：末尾缺参、required 缺失、depends 未满足。
+ */
 int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 		   void *arg_struct)
 {
@@ -81,11 +109,9 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 	int cur_opt_argc = 0;
 	int cur_opt_idx = 0;
 
-	/* argv[0] 为命令名，从 1 开始 */
 	for (int i = 1; i < argc; i++) {
 		const char *arg = argv[i];
 
-		/* 新选项 */
 		if (arg[0] == '-') {
 			if (cur_opt && cur_opt->type != CLI_TYPE_BOOL &&
 			    cur_opt->type != CLI_TYPE_CALLBACK &&
@@ -117,13 +143,11 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 				*(bool *)dst = true;
 				cur_opt = NULL;
 			} else if (cur_opt->type == CLI_TYPE_CALLBACK) {
-				/* CALLBACK 暂由 validator 自行处理 */
 				cur_opt = NULL;
 			}
 			continue;
 		}
 
-		/* 值 */
 		if (!cur_opt) {
 			pr_err("孤立参数: %s\n", arg);
 			free(opt_seen);
@@ -178,7 +202,6 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 		}
 	}
 
-	/* 检查末尾选项是否缺参 */
 	if (cur_opt && cur_opt->type != CLI_TYPE_BOOL &&
 	    cur_opt->type != CLI_TYPE_CALLBACK && cur_opt_argc == 0) {
 		pr_err("选项 -%c/--%s 缺少参数\n",
@@ -188,7 +211,6 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 		return -1;
 	}
 
-	/* 检查必需选项 */
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (cmd->options[i].required && !opt_seen[i]) {
 			pr_err("缺少必需选项: -%c/--%s\n",
@@ -203,7 +225,6 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 		}
 	}
 
-	/* 检查依赖 */
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (opt_seen[i] && cmd->options[i].depends) {
 			bool dep_found = false;
@@ -243,6 +264,17 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 	return 0;
 }
 
+/**
+ * @brief 根据命令名查找注册表，并自动解析该命令的选项。
+ *
+ * @param[in]  cmd_name    命令名字符串，对应 cli_command_t::name。
+ * @param[in]  argc        参数个数。
+ * @param[in]  argv        参数数组。
+ * @param[out] arg_struct  用于接收解析结果的结构体指针。
+ *
+ * @return  0  解析并校验成功；
+ *         -1  命令未找到或解析校验失败。
+ */
 int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct)
 {
 	const cli_command_t *cmd = cli_command_find(cmd_name);
@@ -253,6 +285,14 @@ int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct)
 	return cli_auto_parse(cmd, argc, argv, arg_struct);
 }
 
+/**
+ * @brief 打印指定命令的帮助信息。
+ *
+ * @param[in] cmd  命令定义指针。若为 NULL，函数直接返回。
+ *
+ * @note 输出内容包括命令名、doc 描述、所有选项的短/长名称、帮助文本、
+ *       是否必需以及依赖关系。格式通过 pr_notice 输出。
+ */
 void cli_print_help(const cli_command_t *cmd)
 {
 	if (!cmd)
@@ -276,10 +316,16 @@ void cli_print_help(const cli_command_t *cmd)
 	}
 }
 
-/* ============================================================
- * 状态机入口
- * ============================================================ */
-
+/**
+ * @brief 检查命令行参数中是否包含帮助请求标志。
+ *
+ * @param[in] argc  参数个数（包含 argv[0]）。
+ * @param[in] argv  参数数组。
+ *
+ * @return 若 argv 中存在 "-h" 或 "--help" 则返回 true，否则返回 false。
+ *
+ * @note 扫描范围从 argv[1] 开始，跳过命令名本身。
+ */
 static bool has_help_flag(int argc, char **argv)
 {
 	for (int i = 1; i < argc; i++) {
@@ -289,6 +335,22 @@ static bool has_help_flag(int argc, char **argv)
 	return false;
 }
 
+/**
+ * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
+ *
+ * @param[in] cmd  用户输入的原始命令行字符串（由调度器传入）。
+ *
+ * @return 固定返回 dispose_exit，表示本次命令处理完毕，状态机可切回等待输入。
+ *
+ * @details 执行流程：
+ *   1. tokenize 切分命令行；
+ *   2. 通过 cli_command_find 查找命令定义；
+ *   3. 若包含 -h/--help，直接打印帮助并返回；
+ *   4. 在栈上分配 arg_struct_size 大小的缓冲区；
+ *   5. 调用 cli_auto_parse 解析并校验选项；
+ *   6. 解析失败时打印帮助信息；
+ *   7. 解析成功后调用 cmd_def->validator（即开发者注册的 handler）。
+ */
 int dispose_start_task(void *cmd)
 {
 	char *argv[64];
@@ -328,6 +390,12 @@ int dispose_start_task(void *cmd)
 }
 _EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start_task, NULL, ".dispose");
 
+/**
+ * @brief 初始化 dispose 状态机引擎。
+ *
+ * @return  0  初始化成功；
+ *         <0  engine_init 返回的错误码。
+ */
 int dispose_init(void)
 {
 	int status = engine_init(&dispose_mec, "dispose_start", &_dispose_start,
@@ -338,6 +406,14 @@ int dispose_init(void)
 	return 0;
 }
 
+/**
+ * @brief 运行 dispose 状态机，直到当前状态任务返回 dispose_exit。
+ *
+ * @param[in] cmd  当前待处理的命令行字符串，会作为 private 参数传递给状态任务。
+ *
+ * @return  0  正常结束；
+ *         -1  状态机运行过程中出现异常（返回负值）。
+ */
 int dispose_task(char *cmd)
 {
 	int status = 0;
@@ -350,7 +426,7 @@ int dispose_task(char *cmd)
 			return status;
 		}
 	}
-	return 0; /* nerver */
+	return 0;
 }
 
 /* ============================================================
@@ -364,6 +440,16 @@ struct hello_args {
 	size_t numbers_count;
 };
 
+/**
+ * @brief hello 命令的业务处理函数。
+ *
+ * @param[in] _args  指向已填充好的 hello_args 结构体的指针。
+ *
+ * @return 固定返回 0。
+ *
+ * @note 该函数通过 CLI_COMMAND 宏注册为 validator，由 dispose_start_task
+ *       在解析成功后调用。
+ */
 static int hello_handler(void *_args)
 {
 	struct hello_args *args = _args;
