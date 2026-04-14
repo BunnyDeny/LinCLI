@@ -360,7 +360,7 @@ static int hello_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(hello, "hello", hello_handler, &((struct hello_args){ 0 }),
+CLI_COMMAND(hello, "hello", hello_handler, (struct hello_args *)0,
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct hello_args, verbose),
 	    OPTION('n', "name", STRING, "Your name", struct hello_args, name),
 	    OPTION_ARRAY('a', "array", INT_ARRAY, "Number array", struct hello_args, numbers, 8),
