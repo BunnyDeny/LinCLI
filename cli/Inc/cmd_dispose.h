@@ -50,11 +50,13 @@ typedef struct cli_option {
 typedef struct cli_command {
 	const char *name; // 命令名
 	const char *doc; // 命令说明
-	void *arg_struct; // 参数结构体指针
+	void *arg_struct; // 参数结构体指针（运行时填充）
 	size_t arg_struct_size; // 结构体大小
 	const cli_option_t *options; // 选项数组
 	size_t option_count; // 选项数量
 	int (*validator)(void *); // 自定义验证函数
+	void *arg_buf; // 命令参数解析缓冲区指针
+	size_t arg_buf_size; // 缓冲区大小
 } cli_command_t;
 
 /* ============================================================
@@ -178,7 +180,7 @@ static inline const cli_command_t *cli_command_find(const char *_name)
  */
 
 #define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts, \
-				   _opts_cnt, _vld, _section)              \
+				   _opts_cnt, _vld, _buf, _buf_size, _section) \
 	static cli_command_t _cli_cmd_def_##_obj __attribute__((           \
 		used, section(_section), aligned(sizeof(long)))) = {       \
 		.name = _cmd_str,                                          \
@@ -188,21 +190,51 @@ static inline const cli_command_t *cli_command_find(const char *_name)
 		.options = _opts,                                          \
 		.option_count = _opts_cnt,                                 \
 		.validator = _vld,                                         \
+		.arg_buf = _buf,                                           \
+		.arg_buf_size = _buf_size,                                 \
 	}
 
+#ifndef CLI_CMD_BUF_SIZE
+#define CLI_CMD_BUF_SIZE 512
+#endif
+
+/* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
+ * 由于 CLI 解析与执行在单一线程中串行完成，不会产生并发冲突。
+ * 若用户结构体超过此大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
+ */
+#ifndef CLI_CMD_BUF_SIZE
+#define CLI_CMD_BUF_SIZE 512
+#endif
+extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
+
 #define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...) \
-	/* 前向声明参数结构体类型 */                                       \
-	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                \
-                                                                           \
+	/* 前向声明参数结构体类型 */ \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name; \
+	                                                                   \
 	/* 定义选项数组（放在静态区） */                                   \
 	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ }; \
-                                                                           \
-	/* 通过链接脚本段收集注册 */                                       \
+	                                                                   \
+	/* 通过链接脚本段收集注册，使用全局共享缓冲区 */                   \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
 		name, cmd_str, doc_str, sizeof(_cli_struct_##name),        \
 		_cli_options_##name,                                       \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
-		(int (*)(void *))parse_cb, ".cli_commands")
+		(int (*)(void *))parse_cb, g_cli_cmd_buf,                  \
+		CLI_CMD_BUF_SIZE, ".cli_commands")
+
+#define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, buf, buf_size, ...) \
+	/* 前向声明参数结构体类型 */                                       \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                \
+	                                                                   \
+	/* 定义选项数组（放在静态区） */                                   \
+	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ }; \
+	                                                                   \
+	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */               \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
+		name, cmd_str, doc_str, sizeof(_cli_struct_##name),        \
+		_cli_options_##name,                                       \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
+		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 

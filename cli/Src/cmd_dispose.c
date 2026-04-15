@@ -8,6 +8,8 @@ struct tStateEngine dispose_mec;
 extern struct tState _dispose_start;
 extern struct tState _dispose_end;
 
+char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
+
 /**
  * @brief 将一行输入字符串按空白字符切分为 argc/argv 形式。
  *
@@ -326,10 +328,14 @@ static bool has_help_flag(int argc, char **argv)
  *   1. tokenize 切分命令行；
  *   2. 通过 cli_command_find 查找命令定义；
  *   3. 若包含 -h/--help，直接打印帮助并返回；
- *   4. 在栈上分配 arg_struct_size 大小的缓冲区；
- *   5. 调用 cli_auto_parse 解析并校验选项；
+ *   4. 检查命令的 arg_buf 是否足以容纳参数结构体；
+ *   5. 使用 cmd_def->arg_buf 调用 cli_auto_parse 解析并校验选项；
  *   6. 解析失败时打印帮助信息；
  *   7. 解析成功后调用 cmd_def->validator（即开发者注册的 handler）。
+ *
+ * @note 默认使用 CLI_COMMAND 注册的命令共享同一块全局缓冲区 g_cli_cmd_buf，
+ *       在串行执行前提下零额外内存开销。需要独立大缓冲区时，请用
+ *       CLI_COMMAND_WITH_BUF 宏自行指定内存。
  */
 int dispose_start_task(void *cmd)
 {
@@ -352,10 +358,17 @@ int dispose_start_task(void *cmd)
 		return dispose_exit;
 	}
 
-	char arg_buf[cmd_def->arg_struct_size];
-	memset(arg_buf, 0, sizeof(arg_buf));
+	if (!cmd_def->arg_buf ||
+	    cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
+		pr_err("命令 %s 的参数缓冲区不足 (%zu > %zu)\n",
+		       cmd_def->name, cmd_def->arg_struct_size,
+		       cmd_def->arg_buf ? cmd_def->arg_buf_size : 0);
+		return dispose_exit;
+	}
 
-	int status = cli_auto_parse(cmd_def, argc, argv, arg_buf);
+	memset(cmd_def->arg_buf, 0, cmd_def->arg_buf_size);
+
+	int status = cli_auto_parse(cmd_def, argc, argv, cmd_def->arg_buf);
 	if (status < 0) {
 		pr_err("命令解析失败: %s\n", argv[0]);
 		cli_print_help(cmd_def);
@@ -363,7 +376,7 @@ int dispose_start_task(void *cmd)
 	}
 
 	if (cmd_def->validator) {
-		cmd_def->validator(arg_buf);
+		cmd_def->validator(cmd_def->arg_buf);
 	}
 
 	return dispose_exit;
