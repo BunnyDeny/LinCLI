@@ -71,7 +71,7 @@ __attribute__((weak)) const char *pre_WARNING_gen(void)
 
 __attribute__((weak)) const char *pre_NOTICE_gen(void)
 {
-	return COLOR_BOLD COLOR_GREEN "[NOTICE] ";
+	return COLOR_BOLD COLOR_GREEN " ";
 }
 
 __attribute__((weak)) const char *pre_INFO_gen(void)
