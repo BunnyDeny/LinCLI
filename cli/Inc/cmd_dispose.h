@@ -103,22 +103,10 @@ void cli_print_help(const cli_command_t *cmd);
  * OPTION 宏定义（统一入口）
  * ============================================================
  *
- * 为了彻底消除预处理器歧义，所有变体通过参数数量唯一确定：
+ * 统一注册一个命令选项。该宏根据传入的参数数量自动分派到对应的
+ * OPTION_x 实现（x = 6~9），用户无需手动选择底层宏名。
  *
- *   6 参数：基础类型（BOOL / STRING / INT / DOUBLE / CALLBACK）
- *           格式：OPTION(short, long, TYPE, help, struct, field)
- *
- *   7 参数：基础类型 + required
- *           格式：OPTION(short, long, TYPE, help, struct, field, required)
- *
- *   8 参数：数组类型（INT_ARRAY）+ max_args + depends
- *           格式：OPTION(short, long, INT_ARRAY, help, struct, field,
- *                       max_args, depends)
- *           若不需要依赖，请将 depends 填为 NULL。
- *
- *   9 参数：数组类型 + max_args + depends + required
- *           格式：OPTION(short, long, INT_ARRAY, help, struct, field,
- *                       max_args, depends, required)
+ * 使用方式：数一下你需要的参数个数，直接按对应格式填写即可。
  */
 
 #define _GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, NAME, ...) NAME
@@ -127,7 +115,21 @@ void cli_print_help(const cli_command_t *cmd);
 	_GET_MACRO(__VA_ARGS__, OPTION_9, OPTION_8, OPTION_7, \
 		   OPTION_6)(__VA_ARGS__)
 
-/* 基础类型：6 参数 */
+/**
+ * @brief 基础类型选项，无额外属性（6 个参数）。
+ *
+ * 适用类型：BOOL / STRING / INT / DOUBLE / CALLBACK
+ *
+ * @param _sopt    短选项字符，例如 'v'
+ * @param _lopt    长选项字符串，例如 "verbose"
+ * @param _type    选项类型标识，例如 BOOL、STRING、INT
+ * @param _help    帮助说明文本
+ * @param _stype   用户定义参数结构体类型，例如 struct my_args
+ * @param _field   该选项对应结构体中的字段名
+ *
+ * 使用示例：
+ *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose)
+ */
 #define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field)     \
 	{ .short_opt = _sopt,                                    \
 	  .long_opt = _lopt,                                     \
@@ -140,7 +142,22 @@ void cli_print_help(const cli_command_t *cmd);
 	  .depends = NULL,                                       \
 	  .conflicts = NULL }
 
-/* 基础类型：7 参数 (+ required) */
+/**
+ * @brief 基础类型选项，带 required 开关（7 个参数）。
+ *
+ * 适用类型：BOOL / STRING / INT / DOUBLE / CALLBACK
+ *
+ * @param _sopt    短选项字符
+ * @param _lopt    长选项字符串
+ * @param _type    选项类型标识
+ * @param _help    帮助说明文本
+ * @param _stype   用户定义参数结构体类型
+ * @param _field   该选项对应结构体中的字段名
+ * @param _req     是否为必需选项，填 true 或 false
+ *
+ * 使用示例：
+ *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, true)
+ */
 #define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _req) \
 	{ .short_opt = _sopt,                                      \
 	  .long_opt = _lopt,                                       \
@@ -153,7 +170,25 @@ void cli_print_help(const cli_command_t *cmd);
 	  .depends = NULL,                                         \
 	  .conflicts = NULL }
 
-/* 数组类型：8 参数 (+ max_args + depends) */
+/**
+ * @brief 数组类型选项，带最大参数个数和依赖项（8 个参数）。
+ *
+ * 适用类型：INT_ARRAY
+ *
+ * @param _sopt    短选项字符
+ * @param _lopt    长选项字符串
+ * @param _type    选项类型标识，此处固定为 INT_ARRAY
+ * @param _help    帮助说明文本
+ * @param _stype   用户定义参数结构体类型
+ * @param _field   该选项对应结构体中的字段名（数组指针）
+ * @param _max     该数组选项允许接收的最大参数个数
+ * @param _dep     依赖的另一个选项名字符串（例如 "verbose"），
+ *                 若无需依赖项，请显式填 NULL。
+ *
+ * 使用示例：
+ *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, NULL)
+ *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose")
+ */
 #define OPTION_8(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep) \
 	{ .short_opt = _sopt,                                            \
 	  .long_opt = _lopt,                                             \
@@ -166,7 +201,24 @@ void cli_print_help(const cli_command_t *cmd);
 	  .depends = _dep,                                               \
 	  .conflicts = NULL }
 
-/* 数组类型：9 参数 (+ max_args + depends + required) */
+/**
+ * @brief 数组类型选项，带最大参数个数、依赖项和 required 开关（9 个参数）。
+ *
+ * 适用类型：INT_ARRAY
+ *
+ * @param _sopt    短选项字符
+ * @param _lopt    长选项字符串
+ * @param _type    选项类型标识，此处固定为 INT_ARRAY
+ * @param _help    帮助说明文本
+ * @param _stype   用户定义参数结构体类型
+ * @param _field   该选项对应结构体中的字段名（数组指针）
+ * @param _max     该数组选项允许接收的最大参数个数
+ * @param _dep     依赖的另一个选项名字符串，若无需依赖项请填 NULL
+ * @param _req     是否为必需选项，填 true 或 false
+ *
+ * 使用示例：
+ *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", true)
+ */
 #define OPTION_9(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _req) \
 	{ .short_opt = _sopt,                                                  \
 	  .long_opt = _lopt,                                                   \
