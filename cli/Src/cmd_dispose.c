@@ -144,8 +144,6 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 			if (cur_opt->type == CLI_TYPE_BOOL) {
 				*(bool *)dst = true;
 				cur_opt = NULL;
-			} else if (cur_opt->type == CLI_TYPE_CALLBACK) {
-				cur_opt = NULL;
 			}
 			continue;
 		}
@@ -160,6 +158,7 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 
 		switch (cur_opt->type) {
 		case CLI_TYPE_STRING:
+		case CLI_TYPE_CALLBACK:
 			*(const char **)dst = arg;
 			cur_opt = NULL;
 			break;
@@ -204,8 +203,7 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 		}
 	}
 
-	if (cur_opt && cur_opt->type != CLI_TYPE_BOOL &&
-	    cur_opt->type != CLI_TYPE_CALLBACK && cur_opt_argc == 0) {
+	if (cur_opt && cur_opt->type != CLI_TYPE_BOOL && cur_opt_argc == 0) {
 		pr_err("选项 -%c/--%s 缺少参数\n",
 		       cur_opt->short_opt ? cur_opt->short_opt : ' ',
 		       cur_opt->long_opt ? cur_opt->long_opt : "");
