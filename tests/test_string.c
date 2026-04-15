@@ -2,9 +2,18 @@
  * @file test_string.c
  * @brief CLI 框架 STRING 类型选项测试用例。
  *
- * 注册命令 ts，用于验证字符串选项 (-m / --msg) 的解析：
- *   - 用户输入的字符串值会被直接保存为 char* 指针
- *   - 对应结构体字段指向 argv 中切分后的字符串
+ * 注册命令：ts
+ * 命令描述：Test STRING option
+ *
+ * 选项列表：
+ *   -m, --msg    STRING    Message text
+ *
+ * 使用示例：
+ *   ts -m hello
+ *
+ * 预期输出（颜色前缀已省略）：
+ *   STRING test executed!
+ *     msg = hello
  */
 
 #include "cmd_dispose.h"

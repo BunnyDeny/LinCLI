@@ -2,9 +2,18 @@
  * @file test_bool.c
  * @brief CLI 框架 BOOL 类型选项测试用例。
  *
- * 注册命令 tb，用于验证无参数开关选项 (-v / --verbose) 的解析：
- *   - 选项存在时，对应结构体字段被置为 true
- *   - 选项不存在时，字段保持 false（框架会在解析前清零结构体）
+ * 注册命令：tb
+ * 命令描述：Test BOOL option
+ *
+ * 选项列表：
+ *   -v, --verbose    BOOL    Enable verbose
+ *
+ * 使用示例：
+ *   tb -v
+ *
+ * 预期输出（颜色前缀已省略）：
+ *   BOOL test executed!
+ *     verbose = true
  */
 
 #include "cmd_dispose.h"

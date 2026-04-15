@@ -2,9 +2,18 @@
  * @file test_int.c
  * @brief CLI 框架 INT 类型选项测试用例。
  *
- * 注册命令 ti，用于验证整数选项 (-n / --num) 的解析：
- *   - 用户输入的字符串值通过 atoi() 转换为 int
- *   - 结果写入结构体对应字段
+ * 注册命令：ti
+ * 命令描述：Test INT option
+ *
+ * 选项列表：
+ *   -n, --num    INT    Integer value
+ *
+ * 使用示例：
+ *   ti -n 42
+ *
+ * 预期输出（颜色前缀已省略）：
+ *   INT test executed!
+ *     num = 42
  */
 
 #include "cmd_dispose.h"
