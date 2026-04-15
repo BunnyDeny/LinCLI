@@ -1,3 +1,13 @@
+/**
+ * @file test_int_array.c
+ * @brief CLI 框架 INT_ARRAY 类型选项测试用例。
+ *
+ * 注册命令 ta，用于验证整数数组选项 (-n / --nums) 的解析：
+ *   - 连续读取多个整数值，直到遇到下一个选项或命令结束
+ *   - 框架会自动分配数组内存，并通过 field##_count 更新元素个数
+ *   - 本用例同时演示 depends 功能：数组选项依赖 verbose 选项
+ */
+
 #include "cmd_dispose.h"
 #include "cli_io.h"
 

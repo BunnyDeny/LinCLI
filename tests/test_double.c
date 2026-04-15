@@ -1,3 +1,12 @@
+/**
+ * @file test_double.c
+ * @brief CLI 框架 DOUBLE 类型选项测试用例。
+ *
+ * 注册命令 td，用于验证浮点选项 (-f / --factor) 的解析：
+ *   - 用户输入的字符串值通过 atof() 转换为 double
+ *   - 结果写入结构体对应字段
+ */
+
 #include "cmd_dispose.h"
 #include "cli_io.h"
 

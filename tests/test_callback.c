@@ -1,3 +1,13 @@
+/**
+ * @file test_callback.c
+ * @brief CLI 框架 CALLBACK 类型选项测试用例。
+ *
+ * 注册命令 tc，用于验证 CALLBACK 类型选项 (-c / --cfg) 的解析：
+ *   - CALLBACK 在解析阶段与 STRING 行为一致：接收一个字符串参数
+ *   - 区别仅在于语义层面，表明该值将由 validator/handler 自行解释处理
+ *   - 适用于框架未内置但用户需要自定义解析逻辑的场景
+ */
+
 #include "cmd_dispose.h"
 #include "cli_io.h"
 

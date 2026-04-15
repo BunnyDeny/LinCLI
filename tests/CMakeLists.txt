@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/cli/Inc
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/lib
 )
 set(SUBDIRS .)
 get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)

@@ -103,94 +103,105 @@ void cli_print_help(const cli_command_t *cmd);
  * OPTION 宏定义（统一入口）
  * ============================================================
  *
- * 通过参数数量 + 类型拼接实现无歧义重载：
- *   6 参数：基础类型（BOOL/STRING/INT/DOUBLE/CALLBACK）
- *   7 参数：基础类型 + required，或数组类型（INT_ARRAY）+ max_args
- *   8 参数：数组类型 + max_args + depends
- *   9 参数：数组类型 + max_args + depends + required
+ * 为了彻底消除预处理器歧义，所有变体通过参数数量唯一确定：
  *
- * 第 7 个参数的歧义通过 _OPTION_7_##type 拼接自动消解。
+ *   6 参数：基础类型（BOOL / STRING / INT / DOUBLE / CALLBACK）
+ *           格式：OPTION(short, long, TYPE, help, struct, field)
+ *
+ *   7 参数：基础类型 + required
+ *           格式：OPTION(short, long, TYPE, help, struct, field, required)
+ *
+ *   8 参数：数组类型（INT_ARRAY）+ max_args + depends
+ *           格式：OPTION(short, long, INT_ARRAY, help, struct, field,
+ *                       max_args, depends)
+ *           若不需要依赖，请将 depends 填为 NULL。
+ *
+ *   9 参数：数组类型 + max_args + depends + required
+ *           格式：OPTION(short, long, INT_ARRAY, help, struct, field,
+ *                       max_args, depends, required)
  */
 
 #define _GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, NAME, ...) NAME
 
-#define OPTION(...)                                           \
-	_GET_MACRO(__VA_ARGS__, OPTION_9, OPTION_8, OPTION_7, \
-		   OPTION_6)(__VA_ARGS__)
+#define OPTION(...)                                                      \
+	_GET_MACRO(__VA_ARGS__, OPTION_9, OPTION_8, OPTION_7, OPTION_6)(__VA_ARGS__)
 
-#define _OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max, _req, \
-		     _dep)                                                   \
-	{ .short_opt = _sopt,                                                \
-	  .long_opt = _lopt,                                                 \
-	  .type = CLI_TYPE_##_type,                                          \
-	  .help = _help,                                                     \
-	  .offset = CLI_OFFSETOF(_stype, _field),                            \
-	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),             \
-	  .max_args = _max,                                                  \
-	  .required = _req,                                                  \
-	  .depends = _dep,                                                   \
+/* 基础类型：6 参数 */
+#define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field)             \
+	{ .short_opt = _sopt,                                              \
+	  .long_opt = _lopt,                                               \
+	  .type = CLI_TYPE_##_type,                                        \
+	  .help = _help,                                                   \
+	  .offset = CLI_OFFSETOF(_stype, _field),                          \
+	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),           \
+	  .max_args = 1,                                                   \
+	  .required = false,                                               \
+	  .depends = NULL,                                                 \
 	  .conflicts = NULL }
 
+/* 基础类型：7 参数 (+ required) */
+#define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _req)       \
+	{ .short_opt = _sopt,                                              \
+	  .long_opt = _lopt,                                               \
+	  .type = CLI_TYPE_##_type,                                        \
+	  .help = _help,                                                   \
+	  .offset = CLI_OFFSETOF(_stype, _field),                          \
+	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),           \
+	  .max_args = 1,                                                   \
+	  .required = _req,                                                \
+	  .depends = NULL,                                                 \
+	  .conflicts = NULL }
+
+/* 数组类型：8 参数 (+ max_args + depends) */
+#define OPTION_8(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep) \
+	{ .short_opt = _sopt,                                              \
+	  .long_opt = _lopt,                                               \
+	  .type = CLI_TYPE_##_type,                                        \
+	  .help = _help,                                                   \
+	  .offset = CLI_OFFSETOF(_stype, _field),                          \
+	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),           \
+	  .max_args = _max,                                                \
+	  .required = false,                                               \
+	  .depends = _dep,                                                 \
+	  .conflicts = NULL }
+
+/* 数组类型：9 参数 (+ max_args + depends + required) */
+#define OPTION_9(_sopt, _lopt, _type, _help, _stype, _field, _max,      \
+		 _dep, _req)                                                   \
+	{ .short_opt = _sopt,                                              \
+	  .long_opt = _lopt,                                               \
+	  .type = CLI_TYPE_##_type,                                        \
+	  .help = _help,                                                   \
+	  .offset = CLI_OFFSETOF(_stype, _field),                          \
+	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),           \
+	  .max_args = _max,                                                \
+	  .required = _req,                                                \
+	  .depends = _dep,                                                 \
+	  .conflicts = NULL }
+
+/* 各类型的 offset_count 计算 */
 #define _OPTION_COUNT_BOOL(_stype, _field) 0
 #define _OPTION_COUNT_STRING(_stype, _field) 0
 #define _OPTION_COUNT_INT(_stype, _field) 0
 #define _OPTION_COUNT_DOUBLE(_stype, _field) 0
 #define _OPTION_COUNT_CALLBACK(_stype, _field) 0
-#define _OPTION_COUNT_INT_ARRAY(_stype, _field) \
+#define _OPTION_COUNT_INT_ARRAY(_stype, _field)                          \
 	CLI_OFFSETOF(_stype, _field##_count)
-
-/* 6 参数：基础类型，无额外属性 */
-#define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field) \
-	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, 1, false, NULL)
-
-/* 7 参数：根据类型自动分发 */
-#define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _extra) \
-	_OPTION_7_##_type(_sopt, _lopt, _type, _help, _stype, _field, _extra)
-
-#define _OPTION_7_BOOL(_sopt, _lopt, _type, _help, _stype, _field, _req) \
-	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, 1, _req, NULL)
-#define _OPTION_7_STRING(...) _OPTION_7_BOOL(__VA_ARGS__)
-#define _OPTION_7_INT(...) _OPTION_7_BOOL(__VA_ARGS__)
-#define _OPTION_7_DOUBLE(...) _OPTION_7_BOOL(__VA_ARGS__)
-#define _OPTION_7_CALLBACK(...) _OPTION_7_BOOL(__VA_ARGS__)
-#define _OPTION_7_INT_ARRAY(_sopt, _lopt, _type, _help, _stype, _field, _max) \
-	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max, false, \
-		     NULL)
-
-/* 8 参数：数组类型 + depends */
-#define OPTION_8(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep)    \
-	_OPTION_8_##_type(_sopt, _lopt, _type, _help, _stype, _field, _max, \
-			  _dep)
-
-#define _OPTION_8_INT_ARRAY(_sopt, _lopt, _type, _help, _stype, _field, _max, \
-			    _dep)                                             \
-	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max, false, \
-		     _dep)
-
-/* 9 参数：数组类型 + depends + required */
-#define OPTION_9(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _req) \
-	_OPTION_9_##_type(_sopt, _lopt, _type, _help, _stype, _field, _max,    \
-			  _dep, _req)
-
-#define _OPTION_9_INT_ARRAY(_sopt, _lopt, _type, _help, _stype, _field, _max, \
-			    _dep, _req)                                       \
-	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max, _req,  \
-		     _dep)
 
 /* ============================================================
  * 位置参数宏（非选项参数）
  * ============================================================ */
 
 #define POSITIONAL(index, name, _type, _stype, _field) \
-	{ .short_opt = 0,                              \
-	  .long_opt = name,                            \
-	  .type = CLI_TYPE_##_type,                    \
-	  .help = name " (positional)",                \
-	  .offset = CLI_OFFSETOF(_stype, _field),      \
-	  .offset_count = 0,                           \
-	  .max_args = 1,                               \
-	  .required = true,                            \
-	  .depends = NULL,                             \
+	{ .short_opt = 0,                                      \
+	  .long_opt = name,                                    \
+	  .type = CLI_TYPE_##_type,                            \
+	  .help = name " (positional)",                        \
+	  .offset = CLI_OFFSETOF(_stype, _field),              \
+	  .offset_count = 0,                                   \
+	  .max_args = 1,                                       \
+	  .required = true,                                    \
+	  .depends = NULL,                                     \
 	  .conflicts = NULL }
 
 /* ============================================================
@@ -206,19 +217,19 @@ void cli_print_help(const cli_command_t *cmd);
  * 导致运行时缓冲区分配错误。
  */
 
-#define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts,     \
+#define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts, \
 				   _opts_cnt, _vld, _buf, _buf_size, _section) \
-	static cli_command_t _cli_cmd_def_##_obj __attribute__((               \
-		used, section(_section), aligned(sizeof(long)))) = {           \
-		.name = _cmd_str,                                              \
-		.doc = _doc_str,                                               \
-		.arg_struct = NULL,                                            \
-		.arg_struct_size = _size,                                      \
-		.options = _opts,                                              \
-		.option_count = _opts_cnt,                                     \
-		.validator = _vld,                                             \
-		.arg_buf = _buf,                                               \
-		.arg_buf_size = _buf_size,                                     \
+	static cli_command_t _cli_cmd_def_##_obj __attribute__((           \
+		used, section(_section), aligned(sizeof(long)))) = {       \
+		.name = _cmd_str,                                          \
+		.doc = _doc_str,                                           \
+		.arg_struct = NULL,                                        \
+		.arg_struct_size = _size,                                  \
+		.options = _opts,                                          \
+		.option_count = _opts_cnt,                                 \
+		.validator = _vld,                                         \
+		.arg_buf = _buf,                                           \
+		.arg_buf_size = _buf_size,                                 \
 	}
 
 /* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
@@ -230,34 +241,33 @@ void cli_print_help(const cli_command_t *cmd);
 #endif
 extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 
-#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)  \
-	/* 前向声明参数结构体类型 */                                        \
-	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                 \
-                                                                            \
-	/* 定义选项数组（放在静态区） */                                    \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };  \
-                                                                            \
-	/* 通过链接脚本段收集注册，使用全局共享缓冲区 */                    \
-	_EXPORT_CLI_COMMAND_SYMBOL(                                         \
-		name, cmd_str, doc_str, sizeof(_cli_struct_##name),         \
-		_cli_options_##name,                                        \
-		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),       \
-		(int (*)(void *))parse_cb, g_cli_cmd_buf, CLI_CMD_BUF_SIZE, \
-		".cli_commands")
+#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...) \
+	/* 前向声明参数结构体类型 */ \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name; \
+	                                                                   \
+	/* 定义选项数组（放在静态区） */                                   \
+	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ }; \
+	                                                                   \
+	/* 通过链接脚本段收集注册，使用全局共享缓冲区 */                   \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
+		name, cmd_str, doc_str, sizeof(_cli_struct_##name),        \
+		_cli_options_##name,                                       \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
+		(int (*)(void *))parse_cb, g_cli_cmd_buf,                  \
+		CLI_CMD_BUF_SIZE, ".cli_commands")
 
-#define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \
-			     buf, buf_size, ...)                               \
-	/* 前向声明参数结构体类型 */                                           \
-	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                    \
-                                                                               \
-	/* 定义选项数组（放在静态区） */                                       \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
-                                                                               \
-	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */                     \
-	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
-		name, cmd_str, doc_str, sizeof(_cli_struct_##name),            \
-		_cli_options_##name,                                           \
-		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
+#define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, buf, buf_size, ...) \
+	/* 前向声明参数结构体类型 */                                       \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                \
+	                                                                   \
+	/* 定义选项数组（放在静态区） */                                   \
+	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ }; \
+	                                                                   \
+	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */               \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
+		name, cmd_str, doc_str, sizeof(_cli_struct_##name),        \
+		_cli_options_##name,                                       \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
 		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */

@@ -465,5 +465,5 @@ CLI_COMMAND(hello, "hello",
 		   verbose),
 	    OPTION('n', "name", STRING, "Your name", struct hello_args, name),
 	    OPTION('a', "array", INT_ARRAY, "Number array", struct hello_args,
-		   numbers, 8),
+		   numbers, 8, NULL),
 	    END_OPTIONS);
