@@ -369,7 +369,6 @@ int dispose_start_task(void *cmd)
 	cli_printk("\r\n");
 
 	if (argc < 1) {
-		cli_printk("\r\n");
 		return dispose_exit;
 	}
 

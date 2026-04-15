@@ -127,6 +127,11 @@ int unvalid_char_task(void *pch)
 		if (status < 0) {
 			return status;
 		}
+	} else if (ch == (char)12) {
+		status = state_switch(&cmd_line_mec, "clear");
+		if (status < 0) {
+			return status;
+		}
 	} else {
 		status = state_switch(&cmd_line_mec, "exit_handler");
 		if (status < 0) {
@@ -278,6 +283,23 @@ label_exit2:
 }
 _EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
 		     ".cli_cmd_line");
+
+int clear_handler(void *arg)
+{
+	int status;
+	status = cli_out_push((_u8 *)"\x1b[H\x1b[2J", sizeof("\x1b[H\x1b[2J"));
+	if (status < 0) {
+		return -1;
+	}
+	void cli_prompt_print(void);
+	cli_prompt_print();
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(clear, NULL, clear_handler, NULL, ".cli_cmd_line");
 
 void enter_entry(void *pch)
 {
