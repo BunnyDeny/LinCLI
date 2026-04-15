@@ -308,7 +308,8 @@ void cli_print_help(const cli_command_t *cmd)
 static bool has_help_flag(int argc, char **argv)
 {
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+		if (strcmp(argv[i], "-h") == 0 ||
+		    strcmp(argv[i], "--help") == 0)
 			return true;
 	}
 	return false;
@@ -336,7 +337,7 @@ int dispose_start_task(void *cmd)
 	int argc = tokenize((char *)cmd, argv, 64);
 
 	if (argc < 1) {
-		pr_warn("空命令\n");
+		cli_printk("\r\n");
 		return dispose_exit;
 	}
 
