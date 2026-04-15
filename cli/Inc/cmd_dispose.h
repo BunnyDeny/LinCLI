@@ -81,6 +81,15 @@ static inline const cli_command_t *cli_command_find(const char *_name)
 }
 
 /* ============================================================
+ * 核心解析函数声明
+ * ============================================================ */
+
+int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct);
+int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
+		   void *arg_struct);
+void cli_print_help(const cli_command_t *cmd);
+
+/* ============================================================
  * 宏工具：计算偏移量
  * ============================================================ */
 
@@ -91,84 +100,100 @@ static inline const cli_command_t *cli_command_find(const char *_name)
 	(offsetof(type, field) + sizeof(((type *)0)->field))
 
 /* ============================================================
- * OPTION 宏定义
+ * OPTION 宏定义（统一入口）
  * ============================================================
  *
- * 注意：原先使用 GET_MACRO 的变参重载存在两个缺陷：
- * 1. 宏参数名与结构体成员名冲突，导致指定初始化器被意外替换
- *    例如 .short_opt = short_opt 会被展开成 .'v' = 'v'
- * 2. OPTION_6(required) 和 OPTION_7(max_args) 都接受 7 个实参，
- *    C 预处理器无法通过参数数量区分二者。
- * 因此改为显式命名宏，且参数名前加下划线避免与成员名冲突。
+ * 通过参数数量 + 类型拼接实现无歧义重载：
+ *   6 参数：基础类型（BOOL/STRING/INT/DOUBLE/CALLBACK）
+ *   7 参数：基础类型 + required，或数组类型（INT_ARRAY）+ max_args
+ *   8 参数：数组类型 + max_args + depends
+ *   9 参数：数组类型 + max_args + depends + required
+ *
+ * 第 7 个参数的歧义通过 _OPTION_7_##type 拼接自动消解。
  */
 
-// 基础OPTION宏（无可选参数）
-#define OPTION(_sopt, _lopt, _type, _help, _stype, _field) \
-	{ .short_opt = _sopt,                              \
-	  .long_opt = _lopt,                               \
-	  .type = CLI_TYPE_##_type,                        \
-	  .help = _help,                                   \
-	  .offset = CLI_OFFSETOF(_stype, _field),          \
-	  .offset_count = 0,                               \
-	  .max_args = 1,                                   \
-	  .required = false,                               \
-	  .depends = NULL,                                 \
-	  .conflicts = NULL }
+#define _GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, NAME, ...) NAME
 
-// 带.required的OPTION
-#define OPTION_REQ(_sopt, _lopt, _type, _help, _stype, _field, _req) \
-	{ .short_opt = _sopt,                                        \
-	  .long_opt = _lopt,                                         \
-	  .type = CLI_TYPE_##_type,                                  \
-	  .help = _help,                                             \
-	  .offset = CLI_OFFSETOF(_stype, _field),                    \
-	  .offset_count = 0,                                         \
-	  .max_args = 1,                                             \
-	  .required = _req,                                          \
-	  .depends = NULL,                                           \
-	  .conflicts = NULL }
+#define OPTION(...)                                                      \
+	_GET_MACRO(__VA_ARGS__, OPTION_9, OPTION_8, OPTION_7, OPTION_6)(__VA_ARGS__)
 
-// 带.max_args的OPTION（用于数组类型）
-#define OPTION_ARRAY(_sopt, _lopt, _type, _help, _stype, _field, _max) \
-	{ .short_opt = _sopt,                                          \
-	  .long_opt = _lopt,                                           \
-	  .type = CLI_TYPE_##_type,                                    \
-	  .help = _help,                                               \
-	  .offset = CLI_OFFSETOF(_stype, _field),                      \
-	  .offset_count = CLI_OFFSETOF(_stype, _field##_count),        \
-	  .max_args = _max,                                            \
-	  .required = false,                                           \
-	  .depends = NULL,                                             \
-	  .conflicts = NULL }
-
-// 带.max_args和.depends的OPTION
-#define OPTION_ARRAY_DEP(_sopt, _lopt, _type, _help, _stype, _field, _max, \
-			 _dep)                                             \
+#define _OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max,    \
+		     _req, _dep)                                             \
 	{ .short_opt = _sopt,                                              \
 	  .long_opt = _lopt,                                               \
 	  .type = CLI_TYPE_##_type,                                        \
 	  .help = _help,                                                   \
 	  .offset = CLI_OFFSETOF(_stype, _field),                          \
-	  .offset_count = CLI_OFFSETOF(_stype, _field##_count),            \
+	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),           \
 	  .max_args = _max,                                                \
-	  .required = false,                                               \
+	  .required = _req,                                                \
 	  .depends = _dep,                                                 \
 	  .conflicts = NULL }
+
+#define _OPTION_COUNT_BOOL(_stype, _field) 0
+#define _OPTION_COUNT_STRING(_stype, _field) 0
+#define _OPTION_COUNT_INT(_stype, _field) 0
+#define _OPTION_COUNT_DOUBLE(_stype, _field) 0
+#define _OPTION_COUNT_CALLBACK(_stype, _field) 0
+#define _OPTION_COUNT_INT_ARRAY(_stype, _field)                          \
+	CLI_OFFSETOF(_stype, _field##_count)
+
+/* 6 参数：基础类型，无额外属性 */
+#define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field)             \
+	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, 1, false,  \
+		     NULL)
+
+/* 7 参数：根据类型自动分发 */
+#define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _extra)     \
+	_OPTION_7_##_type(_sopt, _lopt, _type, _help, _stype, _field, _extra)
+
+#define _OPTION_7_BOOL(_sopt, _lopt, _type, _help, _stype, _field, _req) \
+	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, 1, _req,   \
+		     NULL)
+#define _OPTION_7_STRING(...) _OPTION_7_BOOL(__VA_ARGS__)
+#define _OPTION_7_INT(...) _OPTION_7_BOOL(__VA_ARGS__)
+#define _OPTION_7_DOUBLE(...) _OPTION_7_BOOL(__VA_ARGS__)
+#define _OPTION_7_CALLBACK(...) _OPTION_7_BOOL(__VA_ARGS__)
+#define _OPTION_7_INT_ARRAY(_sopt, _lopt, _type, _help, _stype, _field,  \
+			    _max)                                                  \
+	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max,      \
+		     false, NULL)
+
+/* 8 参数：数组类型 + depends */
+#define OPTION_8(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep) \
+	_OPTION_8_##_type(_sopt, _lopt, _type, _help, _stype, _field, _max, \
+			  _dep)
+
+#define _OPTION_8_INT_ARRAY(_sopt, _lopt, _type, _help, _stype, _field,  \
+			    _max, _dep)                                            \
+	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max,      \
+		     false, _dep)
+
+/* 9 参数：数组类型 + depends + required */
+#define OPTION_9(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep,  \
+		 _req)                                                         \
+	_OPTION_9_##_type(_sopt, _lopt, _type, _help, _stype, _field, _max, \
+			  _dep, _req)
+
+#define _OPTION_9_INT_ARRAY(_sopt, _lopt, _type, _help, _stype, _field,  \
+			    _max, _dep, _req)                                          \
+	_OPTION_BASE(_sopt, _lopt, _type, _help, _stype, _field, _max,      \
+		     _req, _dep)
 
 /* ============================================================
  * 位置参数宏（非选项参数）
  * ============================================================ */
 
 #define POSITIONAL(index, name, _type, _stype, _field) \
-	{ .short_opt = 0,                              \
-	  .long_opt = name,                            \
-	  .type = CLI_TYPE_##_type,                    \
-	  .help = name " (positional)",                \
-	  .offset = CLI_OFFSETOF(_stype, _field),      \
-	  .offset_count = 0,                           \
-	  .max_args = 1,                               \
-	  .required = true,                            \
-	  .depends = NULL,                             \
+	{ .short_opt = 0,                                      \
+	  .long_opt = name,                                    \
+	  .type = CLI_TYPE_##_type,                            \
+	  .help = name " (positional)",                        \
+	  .offset = CLI_OFFSETOF(_stype, _field),              \
+	  .offset_count = 0,                                   \
+	  .max_args = 1,                                       \
+	  .required = true,                                    \
+	  .depends = NULL,                                     \
 	  .conflicts = NULL }
 
 /* ============================================================
@@ -177,6 +202,11 @@ static inline const cli_command_t *cli_command_find(const char *_name)
  *
  * 参数名前加下划线，避免与 cli_command_t 成员名冲突导致
  * 指定初始化器被意外替换。
+ *
+ * 警告：arg_struct_ptr 必须传入类型明确的结构体指针表达式，
+ * 例如 (struct xxx *)0 或 &((struct xxx){0})，否则 typeof 无法
+ * 正确推导类型。严禁传入 NULL，否则 sizeof 会退化为 1，
+ * 导致运行时缓冲区分配错误。
  */
 
 #define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts, \
@@ -193,10 +223,6 @@ static inline const cli_command_t *cli_command_find(const char *_name)
 		.arg_buf = _buf,                                           \
 		.arg_buf_size = _buf_size,                                 \
 	}
-
-#ifndef CLI_CMD_BUF_SIZE
-#define CLI_CMD_BUF_SIZE 512
-#endif
 
 /* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
  * 由于 CLI 解析与执行在单一线程中串行完成，不会产生并发冲突。
