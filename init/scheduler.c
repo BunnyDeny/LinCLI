@@ -9,6 +9,14 @@ struct tStateEngine scheduler_eng;
 extern struct tState _scheduler_start;
 extern struct tState _scheduler_end;
 
+__attribute__((weak)) void cli_prompt_print(void)
+{
+	cli_printk(COLOR_BOLD COLOR_GREEN
+		   "lin" COLOR_NONE COLOR_BOLD
+		   "@" COLOR_NONE COLOR_BOLD COLOR_CYAN
+		   "linCli" COLOR_NONE COLOR_BOLD COLOR_YELLOW "> " COLOR_NONE);
+}
+
 void start_entry(void *private)
 {
 	pr_info("执行_EXPORT_INIT_SYMBOL导出的初始化程序\n");
@@ -32,6 +40,7 @@ void scheduler_get_char_entry(void *private)
 	if (status < 0) {
 		pr_emerg("cli_cmd_line_init异常\n");
 	}
+	cli_prompt_print();
 	reset_cli_in_push_lock();
 }
 int scheduler_get_char_task(void *private)
