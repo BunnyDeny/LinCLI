@@ -26,12 +26,11 @@ struct int_args {
 static int int_handler(void *_args)
 {
 	struct int_args *args = _args;
-	pr_notice("INT test executed!\n");
-	pr_notice("  num = %d\n", args->num);
+	cli_printk("INT test executed!\n");
+	cli_printk("  num = %d\n", args->num);
 	return 0;
 }
 
-CLI_COMMAND(ti, "ti", "Test INT option", int_handler,
-	    (struct int_args *)0,
+CLI_COMMAND(ti, "ti", "Test INT option", int_handler, (struct int_args *)0,
 	    OPTION('n', "num", INT, "Integer value", struct int_args, num),
 	    END_OPTIONS);

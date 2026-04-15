@@ -26,9 +26,9 @@ struct string_args {
 static int string_handler(void *_args)
 {
 	struct string_args *args = _args;
-	pr_notice("STRING test executed!\n");
+	cli_printk("STRING test executed!\n");
 	if (args->msg)
-		pr_notice("  msg = %s\n", args->msg);
+		cli_printk("  msg = %s\n", args->msg);
 	return 0;
 }
 

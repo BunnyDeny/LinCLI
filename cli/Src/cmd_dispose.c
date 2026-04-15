@@ -291,15 +291,15 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
  * @param[in] cmd  命令定义指针。若为 NULL，函数直接返回。
  *
  * @note 输出内容包括命令名、doc 描述、所有选项的短/长名称、帮助文本、
- *       是否必需以及依赖关系。格式通过 pr_notice 输出。
+ *       是否必需以及依赖关系。格式通过 cli_printk 输出。
  */
 void cli_print_help(const cli_command_t *cmd)
 {
 	if (!cmd)
 		return;
-	pr_notice("命令: %s\n", cmd->name);
-	pr_notice("描述: %s\n", cmd->doc);
-	pr_notice("选项:\n");
+	cli_printk("命令: %s\n", cmd->name);
+	cli_printk("描述: %s\n", cmd->doc);
+	cli_printk("选项:\n");
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		char req_mark[16] = "";
@@ -314,10 +314,10 @@ void cli_print_help(const cli_command_t *cmd)
 				snprintf(dep_mark, sizeof(dep_mark),
 					 " [依赖:%s]", opt->depends);
 		}
-		pr_notice("  -%c, --%-16s %s%s%s\n",
-			  opt->short_opt ? opt->short_opt : ' ',
-			  opt->long_opt ? opt->long_opt : "",
-			  opt->help ? opt->help : "", req_mark, dep_mark);
+		cli_printk("  -%c, --%-16s %s%s%s\n",
+			   opt->short_opt ? opt->short_opt : ' ',
+			   opt->long_opt ? opt->long_opt : "",
+			   opt->help ? opt->help : "", req_mark, dep_mark);
 	}
 }
 
@@ -471,13 +471,13 @@ struct hello_args {
 static int hello_handler(void *_args)
 {
 	struct hello_args *args = _args;
-	pr_notice("Hello command executed!\n");
+	cli_printk("Hello command executed!\n");
 	if (args->verbose)
-		pr_notice("  verbose = true\n");
+		cli_printk("  verbose = true\n");
 	if (args->name)
-		pr_notice("  name    = %s\n", args->name);
+		cli_printk("  name    = %s\n", args->name);
 	if (args->numbers && args->numbers_count > 0) {
-		pr_notice("  numbers = ");
+		cli_printk("  numbers = ");
 		for (size_t i = 0; i < args->numbers_count; i++)
 			cli_printk(KERN_NOTICE "%d ", args->numbers[i]);
 		cli_printk(KERN_NOTICE "\n");

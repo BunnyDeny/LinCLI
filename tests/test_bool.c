@@ -26,13 +26,13 @@ struct bool_args {
 static int bool_handler(void *_args)
 {
 	struct bool_args *args = _args;
-	pr_notice("BOOL test executed!\n");
+	cli_printk("BOOL test executed!\n");
 	if (args->verbose)
-		pr_notice("  verbose = true\n");
+		cli_printk("  verbose = true\n");
 	return 0;
 }
 
-CLI_COMMAND(tb, "tb", "Test BOOL option", bool_handler,
-	    (struct bool_args *)0, OPTION('v', "verbose", BOOL, "Enable verbose",
-					  struct bool_args, verbose),
+CLI_COMMAND(tb, "tb", "Test BOOL option", bool_handler, (struct bool_args *)0,
+	    OPTION('v', "verbose", BOOL, "Enable verbose", struct bool_args,
+		   verbose),
 	    END_OPTIONS);

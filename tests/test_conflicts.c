@@ -27,11 +27,11 @@ struct conflicts_args {
 static int conflicts_handler(void *_args)
 {
 	struct conflicts_args *args = _args;
-	pr_notice("CONFLICTS test executed!\n");
+	cli_printk("CONFLICTS test executed!\n");
 	if (args->verbose)
-		pr_notice("  verbose = true\n");
+		cli_printk("  verbose = true\n");
 	if (args->nums && args->nums_count > 0) {
-		pr_notice("  nums = ");
+		cli_printk("  nums = ");
 		for (size_t i = 0; i < args->nums_count; i++)
 			cli_printk(KERN_NOTICE "%d ", args->nums[i]);
 		cli_printk(KERN_NOTICE "\n");
@@ -39,10 +39,10 @@ static int conflicts_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts", conflicts_handler,
-	    (struct conflicts_args *)0,
-	    OPTION('v', "verbose", BOOL, "Enable verbose", struct conflicts_args,
-		   verbose),
-	    OPTION('n', "nums", INT_ARRAY, "Number list", struct conflicts_args, nums,
-		   8, "!verbose"),
+CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
+	    conflicts_handler, (struct conflicts_args *)0,
+	    OPTION('v', "verbose", BOOL, "Enable verbose",
+		   struct conflicts_args, verbose),
+	    OPTION('n', "nums", INT_ARRAY, "Number list", struct conflicts_args,
+		   nums, 8, "!verbose"),
 	    END_OPTIONS);
