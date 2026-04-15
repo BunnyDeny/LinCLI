@@ -227,35 +227,53 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (opt_seen[i] && cmd->options[i].depends) {
-			bool dep_found = false;
+			const char *dep_str = cmd->options[i].depends;
+			bool is_conflict = (dep_str[0] == '!');
+			const char *target_name = is_conflict ? (dep_str + 1) : dep_str;
+			bool target_found = false;
+
 			for (size_t j = 0; j < cmd->option_count; j++) {
 				if (!opt_seen[j])
 					continue;
 				if (cmd->options[j].long_opt &&
-				    strcmp(cmd->options[j].long_opt,
-					   cmd->options[i].depends) == 0) {
-					dep_found = true;
+				    strcmp(cmd->options[j].long_opt, target_name) == 0) {
+					target_found = true;
 					break;
 				}
 				if (cmd->options[j].short_opt &&
-				    cmd->options[i].depends[0] ==
-					    cmd->options[j].short_opt &&
-				    cmd->options[i].depends[1] == '\0') {
-					dep_found = true;
+				    target_name[0] == cmd->options[j].short_opt &&
+				    target_name[1] == '\0') {
+					target_found = true;
 					break;
 				}
 			}
-			if (!dep_found) {
-				pr_err("选项 -%c/--%s 依赖 %s 但未提供\n",
-				       cmd->options[i].short_opt ?
-					       cmd->options[i].short_opt :
-					       ' ',
-				       cmd->options[i].long_opt ?
-					       cmd->options[i].long_opt :
-					       "",
-				       cmd->options[i].depends);
-				free(opt_seen);
-				return -1;
+
+			if (is_conflict) {
+				if (target_found) {
+					pr_err("选项 -%c/--%s 与 %s 互斥，不能同时使用\n",
+					       cmd->options[i].short_opt ?
+						       cmd->options[i].short_opt :
+						       ' ',
+					       cmd->options[i].long_opt ?
+						       cmd->options[i].long_opt :
+						       "",
+					       target_name);
+					free(opt_seen);
+					return -1;
+				}
+			} else {
+				if (!target_found) {
+					pr_err("选项 -%c/--%s 依赖 %s 但未提供\n",
+					       cmd->options[i].short_opt ?
+						       cmd->options[i].short_opt :
+						       ' ',
+					       cmd->options[i].long_opt ?
+						       cmd->options[i].long_opt :
+						       "",
+					       target_name);
+					free(opt_seen);
+					return -1;
+				}
 			}
 		}
 	}
@@ -285,9 +303,14 @@ void cli_print_help(const cli_command_t *cmd)
 		char dep_mark[32] = "";
 		if (opt->required)
 			snprintf(req_mark, sizeof(req_mark), " [必需]");
-		if (opt->depends)
-			snprintf(dep_mark, sizeof(dep_mark), " [依赖:%s]",
-				 opt->depends);
+		if (opt->depends) {
+			if (opt->depends[0] == '!')
+				snprintf(dep_mark, sizeof(dep_mark), " [互斥:%s]",
+					 opt->depends + 1);
+			else
+				snprintf(dep_mark, sizeof(dep_mark), " [依赖:%s]",
+					 opt->depends);
+		}
 		pr_notice("  -%c, --%-16s %s%s%s\n",
 			  opt->short_opt ? opt->short_opt : ' ',
 			  opt->long_opt ? opt->long_opt : "",
