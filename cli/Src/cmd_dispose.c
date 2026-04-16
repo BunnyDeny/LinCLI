@@ -10,6 +10,17 @@ extern struct tState _dispose_end;
 
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 
+static inline const cli_command_t *cli_command_find(const char *_name)
+{
+	cli_command_t *_cmd;
+	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, _cmd)
+	{
+		if (_cmd->name && strcmp(_cmd->name, _name) == 0)
+			return _cmd;
+	}
+	return NULL;
+}
+
 /**
  * @brief 将一行输入字符串按空白字符切分为 argc/argv 形式。
  *

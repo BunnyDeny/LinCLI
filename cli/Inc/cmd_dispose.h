@@ -34,7 +34,7 @@ typedef struct cli_option {
 	size_t max_args; // 最大参数个数（数组类型用）
 	bool required; // 是否必需
 	const char *depends; // 依赖的选项（字符串形式）。
-	                     // 若以 '!' 开头，则表示与后续选项名互斥。
+	// 若以 '!' 开头，则表示与后续选项名互斥。
 } cli_option_t;
 
 typedef struct cli_command {
@@ -58,26 +58,6 @@ extern cli_command_t _cli_commands_end;
 
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd) \
 	for ((_cmd) = (_start); (_cmd) < (_end); (_cmd)++)
-
-static inline const cli_command_t *cli_command_find(const char *_name)
-{
-	cli_command_t *_cmd;
-	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, _cmd)
-	{
-		if (_cmd->name && strcmp(_cmd->name, _name) == 0)
-			return _cmd;
-	}
-	return NULL;
-}
-
-/* ============================================================
- * 核心解析函数声明
- * ============================================================ */
-
-int cli_parse(const char *cmd_name, int argc, char **argv, void *arg_struct);
-int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
-		   void *arg_struct);
-void cli_print_help(const cli_command_t *cmd);
 
 /* ============================================================
  * 宏工具：计算偏移量
@@ -120,17 +100,18 @@ void cli_print_help(const cli_command_t *cmd);
  * 使用示例：
  *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose)
  */
-#define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field)     \
-	{ .short_opt = _sopt,                                    \
-	  .long_opt = _lopt,                                     \
-	  .type = CLI_TYPE_##_type,                              \
-	  .help = _help,                                         \
-	  .offset = CLI_OFFSETOF(_stype, _field),                \
-	  .offset_count = _OPTION_COUNT_##_type(_stype, _field), \
-	  .max_args = 1,                                         \
-	  .required = false,                                     \
-	  .depends = NULL,                                       \
-	  }
+#define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field)           \
+	{                                                              \
+		.short_opt = _sopt,                                    \
+		.long_opt = _lopt,                                     \
+		.type = CLI_TYPE_##_type,                              \
+		.help = _help,                                         \
+		.offset = CLI_OFFSETOF(_stype, _field),                \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field), \
+		.max_args = 1,                                         \
+		.required = false,                                     \
+		.depends = NULL,                                       \
+	}
 
 /**
  * @brief 基础类型选项，带 required 开关（7 个参数）。
@@ -148,17 +129,18 @@ void cli_print_help(const cli_command_t *cmd);
  * 使用示例：
  *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, true)
  */
-#define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _req) \
-	{ .short_opt = _sopt,                                      \
-	  .long_opt = _lopt,                                       \
-	  .type = CLI_TYPE_##_type,                                \
-	  .help = _help,                                           \
-	  .offset = CLI_OFFSETOF(_stype, _field),                  \
-	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),   \
-	  .max_args = 1,                                           \
-	  .required = _req,                                        \
-	  .depends = NULL,                                         \
-	  }
+#define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _req)     \
+	{                                                              \
+		.short_opt = _sopt,                                    \
+		.long_opt = _lopt,                                     \
+		.type = CLI_TYPE_##_type,                              \
+		.help = _help,                                         \
+		.offset = CLI_OFFSETOF(_stype, _field),                \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field), \
+		.max_args = 1,                                         \
+		.required = _req,                                      \
+		.depends = NULL,                                       \
+	}
 
 /**
  * @brief 数组类型选项，带最大参数个数和依赖项（8 个参数）。
@@ -180,16 +162,17 @@ void cli_print_help(const cli_command_t *cmd);
  *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose")
  */
 #define OPTION_8(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep) \
-	{ .short_opt = _sopt,                                            \
-	  .long_opt = _lopt,                                             \
-	  .type = CLI_TYPE_##_type,                                      \
-	  .help = _help,                                                 \
-	  .offset = CLI_OFFSETOF(_stype, _field),                        \
-	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),         \
-	  .max_args = _max,                                              \
-	  .required = false,                                             \
-	  .depends = _dep,                                               \
-	  }
+	{                                                                \
+		.short_opt = _sopt,                                      \
+		.long_opt = _lopt,                                       \
+		.type = CLI_TYPE_##_type,                                \
+		.help = _help,                                           \
+		.offset = CLI_OFFSETOF(_stype, _field),                  \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field),   \
+		.max_args = _max,                                        \
+		.required = false,                                       \
+		.depends = _dep,                                         \
+	}
 
 /**
  * @brief 数组类型选项，带最大参数个数、依赖项和 required 开关（9 个参数）。
@@ -210,16 +193,17 @@ void cli_print_help(const cli_command_t *cmd);
  *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", true)
  */
 #define OPTION_9(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _req) \
-	{ .short_opt = _sopt,                                                  \
-	  .long_opt = _lopt,                                                   \
-	  .type = CLI_TYPE_##_type,                                            \
-	  .help = _help,                                                       \
-	  .offset = CLI_OFFSETOF(_stype, _field),                              \
-	  .offset_count = _OPTION_COUNT_##_type(_stype, _field),               \
-	  .max_args = _max,                                                    \
-	  .required = _req,                                                    \
-	  .depends = _dep,                                                     \
-	  }
+	{                                                                      \
+		.short_opt = _sopt,                                            \
+		.long_opt = _lopt,                                             \
+		.type = CLI_TYPE_##_type,                                      \
+		.help = _help,                                                 \
+		.offset = CLI_OFFSETOF(_stype, _field),                        \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field),         \
+		.max_args = _max,                                              \
+		.required = _req,                                              \
+		.depends = _dep,                                               \
+	}
 
 /* 各类型的 offset_count 计算 */
 #define _OPTION_COUNT_BOOL(_stype, _field) 0
@@ -234,17 +218,18 @@ void cli_print_help(const cli_command_t *cmd);
  * 位置参数宏（非选项参数）
  * ============================================================ */
 
-#define POSITIONAL(index, name, _type, _stype, _field) \
-	{ .short_opt = 0,                              \
-	  .long_opt = name,                            \
-	  .type = CLI_TYPE_##_type,                    \
-	  .help = name " (positional)",                \
-	  .offset = CLI_OFFSETOF(_stype, _field),      \
-	  .offset_count = 0,                           \
-	  .max_args = 1,                               \
-	  .required = true,                            \
-	  .depends = NULL,                             \
-	  }
+#define POSITIONAL(index, name, _type, _stype, _field)  \
+	{                                               \
+		.short_opt = 0,                         \
+		.long_opt = name,                       \
+		.type = CLI_TYPE_##_type,               \
+		.help = name " (positional)",           \
+		.offset = CLI_OFFSETOF(_stype, _field), \
+		.offset_count = 0,                      \
+		.max_args = 1,                          \
+		.required = true,                       \
+		.depends = NULL,                        \
+	}
 
 /* ============================================================
  * CLI_COMMAND宏：注册一个命令（通过链接脚本段收集）
