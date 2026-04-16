@@ -288,13 +288,22 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 	return 0;
 }
 
-static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
-			  void *arg_struct)
+static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 {
-	if (!cmd || !argv || argc < 1 || !arg_struct)
+	if (!cmd || !argv || argc < 1)
+		return -1;
+
+	void *arg_struct = cmd->arg_buf;
+	if (!arg_struct)
 		return -1;
 
 	memset(arg_struct, 0, cmd->arg_struct_size);
+
+	char *scratch = (char *)arg_struct + cmd->arg_struct_size;
+	size_t scratch_size = cmd->arg_buf_size > cmd->arg_struct_size ?
+				      (cmd->arg_buf_size - cmd->arg_struct_size) :
+				      0;
+	size_t scratch_used = 0;
 
 	bool *opt_seen = calloc(cmd->option_count, sizeof(bool));
 	if (!opt_seen)
@@ -310,7 +319,40 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 				return -1;
 			}
 		} else {
-			if (parse_option_value(argv[i], arg_struct, &state) <
+			const char *val_arg = argv[i];
+			if (state.cur_opt &&
+			    (state.cur_opt->type == CLI_TYPE_STRING ||
+			     state.cur_opt->type == CLI_TYPE_CALLBACK)) {
+				int end = i;
+				size_t total = strlen(argv[i]);
+				while (end + 1 < argc &&
+				       argv[end + 1][0] != '-') {
+					end++;
+					total += 1 + strlen(argv[end]);
+				}
+				if (end > i) {
+					if (total + 1 >
+					    scratch_size - scratch_used) {
+						pr_err("字符串参数过长\n");
+						free(opt_seen);
+						return -1;
+					}
+					char *dest = scratch + scratch_used;
+					size_t pos = 0;
+					for (int j = i; j <= end; j++) {
+						if (j > i)
+							dest[pos++] = ' ';
+						size_t len = strlen(argv[j]);
+						memcpy(dest + pos, argv[j], len);
+						pos += len;
+					}
+					dest[pos] = '\0';
+					scratch_used += total + 1;
+					val_arg = dest;
+					i = end;
+				}
+			}
+			if (parse_option_value(val_arg, arg_struct, &state) <
 			    0) {
 				free(opt_seen);
 				return -1;
@@ -406,7 +448,7 @@ static int dispose_start_task(void *cmd)
 
 	memset(cmd_def->arg_buf, 0, cmd_def->arg_buf_size);
 
-	int status = cli_auto_parse(cmd_def, argc, argv, cmd_def->arg_buf);
+	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
 		pr_err("命令解析失败: %s\n", argv[0]);
 		cli_print_help(cmd_def);
