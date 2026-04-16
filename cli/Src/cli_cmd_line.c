@@ -30,8 +30,6 @@ struct tStateEngine cmd_line_mec;
  * 命令历史记录
  * ============================================================ */
 
-#define HISTORY_MAX 16
-
 struct history {
 	char buf[HISTORY_MAX][CMD_LINE_BUF_SIZE];
 	_u8 count;
@@ -48,8 +46,7 @@ static void history_save(const char *cmd, int size)
 	if (size <= 0)
 		return;
 
-	if (history.count > 0 &&
-	    (int)strlen(history.buf[0]) == size &&
+	if (history.count > 0 && (int)strlen(history.buf[0]) == size &&
 	    memcmp(history.buf[0], cmd, size) == 0) {
 		history.index = 0;
 		return;
