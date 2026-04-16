@@ -33,8 +33,8 @@ typedef struct cli_option {
 	size_t offset_count; // 数组长度的偏移量（仅用于数组类型）
 	size_t max_args; // 最大参数个数（数组类型用）
 	bool required; // 是否必需
-	const char *depends; // 依赖的选项（字符串形式）
-	const char *conflicts; // 互斥的选项
+	const char *depends; // 依赖的选项（字符串形式）。
+	                     // 若以 '!' 开头，则表示与后续选项名互斥。
 } cli_option_t;
 
 typedef struct cli_command {
@@ -130,7 +130,7 @@ void cli_print_help(const cli_command_t *cmd);
 	  .max_args = 1,                                         \
 	  .required = false,                                     \
 	  .depends = NULL,                                       \
-	  .conflicts = NULL }
+	  }
 
 /**
  * @brief 基础类型选项，带 required 开关（7 个参数）。
@@ -158,7 +158,7 @@ void cli_print_help(const cli_command_t *cmd);
 	  .max_args = 1,                                           \
 	  .required = _req,                                        \
 	  .depends = NULL,                                         \
-	  .conflicts = NULL }
+	  }
 
 /**
  * @brief 数组类型选项，带最大参数个数和依赖项（8 个参数）。
@@ -189,7 +189,7 @@ void cli_print_help(const cli_command_t *cmd);
 	  .max_args = _max,                                              \
 	  .required = false,                                             \
 	  .depends = _dep,                                               \
-	  .conflicts = NULL }
+	  }
 
 /**
  * @brief 数组类型选项，带最大参数个数、依赖项和 required 开关（9 个参数）。
@@ -219,7 +219,7 @@ void cli_print_help(const cli_command_t *cmd);
 	  .max_args = _max,                                                    \
 	  .required = _req,                                                    \
 	  .depends = _dep,                                                     \
-	  .conflicts = NULL }
+	  }
 
 /* 各类型的 offset_count 计算 */
 #define _OPTION_COUNT_BOOL(_stype, _field) 0
@@ -244,7 +244,7 @@ void cli_print_help(const cli_command_t *cmd);
 	  .max_args = 1,                               \
 	  .required = true,                            \
 	  .depends = NULL,                             \
-	  .conflicts = NULL }
+	  }
 
 /* ============================================================
  * CLI_COMMAND宏：注册一个命令（通过链接脚本段收集）
