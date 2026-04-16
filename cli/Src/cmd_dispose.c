@@ -106,8 +106,8 @@ static const cli_option_t *find_option(const cli_command_t *cmd,
  *   4. 对于 INT_ARRAY，会按需 calloc 数组内存，并通过 offset_count 更新计数器；
  *   5. 遍历结束后进行完整性校验：末尾缺参、required 缺失、depends 未满足。
  */
-int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
-		   void *arg_struct)
+static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
+				   void *arg_struct)
 {
 	if (!cmd || !argv || argc < 1 || !arg_struct)
 		return -1;
@@ -304,7 +304,7 @@ int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
  * @note 输出内容包括命令名、doc 描述、所有选项的短/长名称、帮助文本、
  *       是否必需以及依赖关系。格式通过 cli_printk 输出。
  */
-void cli_print_help(const cli_command_t *cmd)
+static void cli_print_help(const cli_command_t *cmd)
 {
 	if (!cmd)
 		return;
@@ -372,7 +372,7 @@ static bool has_help_flag(int argc, char **argv)
  *       在串行执行前提下零额外内存开销。需要独立大缓冲区时，请用
  *       CLI_COMMAND_WITH_BUF 宏自行指定内存。
  */
-int dispose_start_task(void *cmd)
+static int dispose_start_task(void *cmd)
 {
 	char *argv[64];
 	int argc = tokenize((char *)cmd, argv, 64);
