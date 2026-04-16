@@ -83,6 +83,8 @@ struct parse_state {
 	const cli_option_t *cur_opt;
 	int cur_opt_argc;
 	int cur_opt_idx;
+	char *scratch_pool;
+	size_t scratch_remain;
 };
 
 static int check_prev_opt_missing_arg(struct parse_state *state)
@@ -146,7 +148,16 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 	void *dst = (char *)arg_struct + opt->offset;
 	int *arr = *(int **)dst;
 	if (!arr) {
-		arr = calloc(opt->max_args, sizeof(int));
+		size_t need = opt->max_args * sizeof(int);
+		if (need > state->scratch_remain) {
+			pr_err("选项 -%c/--%s 缓冲区不足\n",
+			       opt->short_opt ? opt->short_opt : ' ',
+			       opt->long_opt ? opt->long_opt : "");
+			return -1;
+		}
+		arr = (int *)state->scratch_pool;
+		state->scratch_pool += need;
+		state->scratch_remain -= need;
 		*(int **)dst = arr;
 	}
 	arr[state->cur_opt_idx++] = atoi(arg);
@@ -303,19 +314,26 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	size_t scratch_size = cmd->arg_buf_size > cmd->arg_struct_size ?
 				      (cmd->arg_buf_size - cmd->arg_struct_size) :
 				      0;
-	size_t scratch_used = 0;
 
-	bool *opt_seen = calloc(cmd->option_count, sizeof(bool));
-	if (!opt_seen)
+	size_t opt_seen_need = cmd->option_count * sizeof(bool);
+	if (scratch_size < opt_seen_need) {
+		pr_err("命令 %s 的参数缓冲区不足以容纳解析状态\n",
+		       cmd->name);
 		return -1;
+	}
+	bool *opt_seen = (bool *)scratch;
+	memset(opt_seen, 0, opt_seen_need);
+	scratch += opt_seen_need;
+	scratch_size -= opt_seen_need;
 
 	struct parse_state state = { 0 };
+	state.scratch_pool = scratch;
+	state.scratch_remain = scratch_size;
 
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (parse_option_switch(cmd, argv[i], arg_struct,
 						opt_seen, &state) < 0) {
-				free(opt_seen);
 				return -1;
 			}
 		} else {
@@ -331,13 +349,11 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 					total += 1 + strlen(argv[end]);
 				}
 				if (end > i) {
-					if (total + 1 >
-					    scratch_size - scratch_used) {
+					if (total + 1 > state.scratch_remain) {
 						pr_err("字符串参数过长\n");
-						free(opt_seen);
 						return -1;
 					}
-					char *dest = scratch + scratch_used;
+					char *dest = state.scratch_pool;
 					size_t pos = 0;
 					for (int j = i; j <= end; j++) {
 						if (j > i)
@@ -347,14 +363,14 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 						pos += len;
 					}
 					dest[pos] = '\0';
-					scratch_used += total + 1;
+					state.scratch_pool += total + 1;
+					state.scratch_remain -= total + 1;
 					val_arg = dest;
 					i = end;
 				}
 			}
 			if (parse_option_value(val_arg, arg_struct, &state) <
 			    0) {
-				free(opt_seen);
 				return -1;
 			}
 		}
@@ -363,11 +379,9 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	if (validate_end_state(&state) < 0 ||
 	    validate_required(cmd, opt_seen) < 0 ||
 	    validate_depends_and_conflicts(cmd, opt_seen) < 0) {
-		free(opt_seen);
 		return -1;
 	}
 
-	free(opt_seen);
 	return 0;
 }
 
