@@ -297,6 +297,8 @@ void cli_putc(char ch)
 
 ### 第 1 步：定义参数结构体
 
+这个结构体是**命令选项与程序数据的桥梁**。框架在解析用户输入时，会自动把每个选项的值填充到结构体对应的字段中；随后在处理函数 `log_handler` 里，你就能直接通过该结构体访问用户输入的内容。
+
 ```c
 #include "cmd_dispose.h"
 #include "cli_io.h"
@@ -306,11 +308,17 @@ struct log_args {
     int level;           /* INT */
     bool verbose;        /* BOOL */
     int *tags;           /* INT_ARRAY */
-    size_t tags_count;
+    size_t tags_count;   /* INT_ARRAY 的长度（必须紧跟数组指针字段） */
 };
 ```
 
 ### 第 2 步：实现 handler
+
+这是命令的**响应函数**（也叫 handler）。当用户在终端输入 `log` 并带上对应的选项、按下回车后，只要命令解析成功，框架就会调用这个函数。参数 `_args` 指向的就是上一步定义的 `log_args` 结构体，里面已经填好了用户输入的值。
+
+在这个函数里，你可以：
+- 读取结构体字段，执行常规的业务逻辑；
+- 进行阻塞操作、创建线程、启动状态机（LinCLI 自带的 `stateM` 模块）等更复杂的响应方式。
 
 ```c
 static int log_handler(void *_args)
