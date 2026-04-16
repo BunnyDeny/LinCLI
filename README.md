@@ -286,6 +286,24 @@ void cli_putc(char ch)
 
 完成以上四步后，框架即可在单片机上运行。
 
+### 5. 选择串口终端工具
+
+移植完成后，你需要通过串口终端工具连接单片机，与 LinCLI 进行交互。以下是不同平台下的常用工具推荐：
+
+- **Linux**
+  - **`picocom`**：轻量、稳定，推荐首选。安装命令：`sudo apt install picocom`
+  - 其他替代：`minicom`、`screen`、`tio` 等
+
+- **Windows**
+  - **`PuTTY`**：经典免费串口终端工具，简单易用
+  - **`MobaXterm`**：功能丰富，集成串口、SSH、FTP 等多种协议
+  - 由于 Keil MDK 等单片机开发工具链多在 Windows 环境下使用，上述工具非常适合搭配开发
+
+- **跨平台（推荐）**
+  - **VS Code 插件 `Serial Terminal`**：直接在 VS Code 中打开串口，支持 Windows / Linux / macOS，界面简洁，无需额外安装独立软件
+
+无论使用哪种工具，只需配置好正确的串口号和波特率，连接后即可看到 LinCLI 的命令提示符，开始输入命令。
+
 ---
 
 ## 基本使用：如何添加自己的命令
