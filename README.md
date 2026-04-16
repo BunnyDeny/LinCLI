@@ -114,6 +114,46 @@ cli/
 
 通过 GCC 的 `__attribute__((section(...), used))`，每个命令或状态在定义时自动被放入对应段，链接阶段由链接脚本收集成连续数组。框架运行时使用段起始/结束符号（如 `_cli_commands_start` / `_cli_commands_end`）遍历，**无需手动维护注册表**。
 
+### `CLI_COMMAND` 宏 —— 一行代码注册一个命令
+
+LinCLI 的核心理念是：**命令注册应当像定义变量一样简单**。你不需要在 `main()` 里写任何初始化代码，也不需要调用注册函数，只要在 C 文件里用 `CLI_COMMAND` 宏写一次，链接器就会自动把它收集到系统的命令表中。
+
+下面以 `tests/test_conflicts.c` 为例，这是一个包含**互斥选项**、**整数数组**和**依赖关系**的相对复杂的命令：
+
+```c
+#include "cmd_dispose.h"
+
+struct conflicts_args {
+    bool verbose;
+    int *nums;
+    size_t nums_count;
+};
+
+static int conflicts_handler(void *_args)
+{
+    struct conflicts_args *args = _args;
+    // ... 业务逻辑 ...
+    return 0;
+}
+
+CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
+            conflicts_handler, (struct conflicts_args *)0,
+            OPTION('v', "verbose", BOOL, "Enable verbose",
+                   struct conflicts_args, verbose),
+            OPTION('n', "nums", INT_ARRAY, "Number list",
+                   struct conflicts_args, nums, 8, "!verbose"),
+            END_OPTIONS);
+```
+
+就这么多。**不需要 `register_command("tcf", ...)`，不需要在头文件里 extern 声明，不需要链接时手动加表**。`CLI_COMMAND` 宏会自动：
+
+1. 推导参数结构体类型；
+2. 定义选项数组；
+3. 生成命令描述结构体并放入 `.cli_commands` 段；
+4. 运行时由框架自动遍历该段完成收集。
+
+即使是 `CLI_COMMAND_WITH_BUF`（自定义独立缓冲区），也只需把宏名换掉、加上缓冲区参数即可，注册流程完全一致。开发者只需专注于**设计结构体**和**写 handler**，剩下的全部交给编译器与链接脚本。
+
 ### 双线程/双角色模型（PC 模拟）
 
 | 角色 | 文件 | 职责 |
