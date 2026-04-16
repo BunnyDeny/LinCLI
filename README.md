@@ -450,6 +450,26 @@ lin@linCli>
 
 所有测试用例位于 `tests/` 目录，编译时会被自动收集并链接进 `a.out`。下表列出每个命令的含义、可用选项以及实际终端操作日志。
 
+### 内置帮助信息 `-h` / `--help`
+
+LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `doc_str` 以及每个选项的 `help`、`required`、`depends` 等元数据，拼接成帮助文本并打印。
+
+以 `tests/test_log.c` 中注册的 `log` 命令为例：
+
+```text
+lin@linCli> log --help
+命令: log
+描述: Configure logger
+选项:
+  -f, --file             Log file path [必需]
+  -l, --level            Log level [必需]
+  -v, --verbose          Enable verbose
+  -t, --tags             Tag list [互斥:verbose]
+lin@linCli>
+```
+
+可以看到，所有选项的描述、是否必需、与谁互斥，都是框架自动生成的。这进一步减少了开发者的重复劳动：你只需要在注册时写一次帮助文本，系统会自动把它呈现给用户。
+
 ### 1. `tb` — BOOL 类型选项测试
 
 **命令描述**：测试 BOOL 开关选项。  
