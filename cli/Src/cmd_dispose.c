@@ -311,14 +311,14 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	memset(arg_struct, 0, cmd->arg_struct_size);
 
 	char *scratch = (char *)arg_struct + cmd->arg_struct_size;
-	size_t scratch_size = cmd->arg_buf_size > cmd->arg_struct_size ?
-				      (cmd->arg_buf_size - cmd->arg_struct_size) :
-				      0;
+	size_t scratch_size =
+		cmd->arg_buf_size > cmd->arg_struct_size ?
+			(cmd->arg_buf_size - cmd->arg_struct_size) :
+			0;
 
 	size_t opt_seen_need = cmd->option_count * sizeof(bool);
 	if (scratch_size < opt_seen_need) {
-		pr_err("命令 %s 的参数缓冲区不足以容纳解析状态\n",
-		       cmd->name);
+		pr_err("命令 %s 的参数缓冲区不足以容纳解析状态\n", cmd->name);
 		return -1;
 	}
 	bool *opt_seen = (bool *)scratch;
@@ -359,7 +359,8 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 						if (j > i)
 							dest[pos++] = ' ';
 						size_t len = strlen(argv[j]);
-						memcpy(dest + pos, argv[j], len);
+						memcpy(dest + pos, argv[j],
+						       len);
 						pos += len;
 					}
 					dest[pos] = '\0';
@@ -472,7 +473,8 @@ static int dispose_start_task(void *cmd)
 	if (cmd_def->validator) {
 		int ret = cmd_def->validator(cmd_def->arg_buf);
 		if (ret < 0) {
-			pr_err("命令 %s 执行失败，返回值: %d\n", cmd_def->name, ret);
+			pr_err("命令 %s 执行失败，返回值: %d\n", cmd_def->name,
+			       ret);
 			return dispose_exit;
 		}
 	}
@@ -522,33 +524,3 @@ struct hello_args {
 	int *numbers;
 	size_t numbers_count;
 };
-
-/**
- * @brief hello 命令的业务处理函数。
- */
-static int hello_handler(void *_args)
-{
-	struct hello_args *args = _args;
-	cli_printk("Hello command executed!\n");
-	if (args->verbose)
-		cli_printk("  verbose = true\n");
-	if (args->name)
-		cli_printk("  name    = %s\n", args->name);
-	if (args->numbers && args->numbers_count > 0) {
-		cli_printk("  numbers = ");
-		for (size_t i = 0; i < args->numbers_count; i++)
-			cli_printk(KERN_NOTICE "%d ", args->numbers[i]);
-		cli_printk(KERN_NOTICE "\n");
-	}
-	return 0;
-}
-
-CLI_COMMAND(hello, "hello",
-	    "Print greeting message with optional name and number array",
-	    hello_handler, (struct hello_args *)0,
-	    OPTION('v', "verbose", BOOL, "Enable verbose", struct hello_args,
-		   verbose),
-	    OPTION('n', "name", STRING, "Your name", struct hello_args, name),
-	    OPTION('a', "array", INT_ARRAY, "Number array", struct hello_args,
-		   numbers, 8, NULL),
-	    END_OPTIONS);
