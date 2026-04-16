@@ -26,6 +26,77 @@ struct origin_cmd origin_cmd = {
 
 struct tStateEngine cmd_line_mec;
 
+/* ============================================================
+ * 命令历史记录
+ * ============================================================ */
+
+#define HISTORY_MAX 16
+
+struct history {
+	char buf[HISTORY_MAX][CMD_LINE_BUF_SIZE];
+	_u8 count;
+	_u8 index; /* 0: 当前编辑行；1: 最新历史；2: 第二条；以此类推 */
+};
+
+static struct history history = {
+	.count = 0,
+	.index = 0,
+};
+
+static void history_save(const char *cmd, int size)
+{
+	if (size <= 0)
+		return;
+
+	if (history.count > 0 &&
+	    (int)strlen(history.buf[0]) == size &&
+	    memcmp(history.buf[0], cmd, size) == 0) {
+		history.index = 0;
+		return;
+	}
+
+	for (int i = HISTORY_MAX - 1; i > 0; i--) {
+		memcpy(history.buf[i], history.buf[i - 1], CMD_LINE_BUF_SIZE);
+	}
+	memset(history.buf[0], 0, CMD_LINE_BUF_SIZE);
+	memcpy(history.buf[0], cmd, size);
+
+	if (history.count < HISTORY_MAX)
+		history.count++;
+	history.index = 0;
+}
+
+static void cmd_line_replace(const char *new_buf, int new_size)
+{
+	int status;
+
+	status = cli_out_push((_u8 *)"\r\033[K", 4);
+	if (status < 0)
+		return;
+	if (cli_out_sync())
+		return;
+
+	void cli_prompt_print(void);
+	cli_prompt_print();
+
+	if (new_size > 0) {
+		status = cli_out_push((_u8 *)new_buf, new_size);
+		if (status < 0)
+			return;
+		if (cli_out_sync())
+			return;
+	}
+
+	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
+	memcpy(cmd_line.buf, new_buf, new_size);
+	cmd_line.size = new_size;
+	cmd_line.pos = new_size;
+}
+
+/* ============================================================
+ * 状态机函数
+ * ============================================================ */
+
 int cli_cmd_line_init(void)
 {
 	int status = engine_init(&cmd_line_mec, "cmd_line_start",
@@ -171,6 +242,18 @@ int ESC_handler(void *pch)
 			return -1;
 		}
 		cmd_line.pos++;
+	} else if (esc_params[1] == 'A') {
+		status = state_switch(&cmd_line_mec, "history_up");
+		if (status < 0) {
+			return status;
+		}
+		return 0;
+	} else if (esc_params[1] == 'B') {
+		status = state_switch(&cmd_line_mec, "history_down");
+		if (status < 0) {
+			return status;
+		}
+		return 0;
 	} else if (esc_params[1] == '3') {
 		status = cli_in_pop((_u8 *)&ch, 1);
 		if (status < 0) {
@@ -191,6 +274,42 @@ int ESC_handler(void *pch)
 	return 0;
 }
 _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
+
+int history_up_task(void *pch)
+{
+	int status;
+	if (history.index < history.count) {
+		history.index++;
+		cmd_line_replace(history.buf[history.index - 1],
+				 strlen(history.buf[history.index - 1]));
+	}
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(history_up, NULL, history_up_task, NULL, ".cli_cmd_line");
+
+int history_down_task(void *pch)
+{
+	int status;
+	if (history.index > 1) {
+		history.index--;
+		cmd_line_replace(history.buf[history.index - 1],
+				 strlen(history.buf[history.index - 1]));
+	} else if (history.index == 1) {
+		history.index = 0;
+		cmd_line_replace("", 0);
+	}
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0) {
+		return status;
+	}
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(history_down, NULL, history_down_task, NULL,
+		     ".cli_cmd_line");
 
 int delete(void *pch)
 {
@@ -311,6 +430,9 @@ int enter_press(void *pch)
 	origin_cmd.size = cmd_line.size;
 	for (int i = 0; i < origin_cmd.size; i++) {
 		origin_cmd.buf[i] = cmd_line.buf[i];
+	}
+	if (cmd_line.size > 0) {
+		history_save(cmd_line.buf, cmd_line.size);
 	}
 	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
 	cmd_line.size = 0;
