@@ -92,7 +92,8 @@ static int check_prev_opt_missing_arg(struct parse_state *state)
 		pr_err("选项 -%c/--%s 缺少参数\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
-		       state->cur_opt->long_opt ? state->cur_opt->long_opt : "");
+		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
+						  "");
 		return -1;
 	}
 	return 0;
@@ -112,6 +113,14 @@ static int parse_option_switch(const cli_command_t *cmd, const char *arg,
 	}
 
 	size_t idx = (size_t)(state->cur_opt - cmd->options);
+	if (opt_seen[idx]) {
+		pr_err("重复选项: -%c/--%s\n",
+		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
+						   ' ',
+		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
+						  "");
+		return -1;
+	}
 	opt_seen[idx] = true;
 	state->cur_opt_argc = 0;
 	state->cur_opt_idx = 0;
@@ -144,7 +153,8 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 	state->cur_opt_argc++;
 
 	if (opt->offset_count > 0) {
-		size_t *cnt = (size_t *)((char *)arg_struct + opt->offset_count);
+		size_t *cnt =
+			(size_t *)((char *)arg_struct + opt->offset_count);
 		*cnt = (size_t)state->cur_opt_idx;
 	}
 	return 0;
@@ -180,8 +190,10 @@ static int parse_option_value(const char *arg, void *arg_struct,
 		break;
 	default:
 		pr_err("选项 -%c/--%s 类型未实现\n",
-		       state->cur_opt->short_opt ? state->cur_opt->short_opt : ' ',
-		       state->cur_opt->long_opt ? state->cur_opt->long_opt : "");
+		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
+						   ' ',
+		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
+						  "");
 		return -1;
 	}
 	return 0;
@@ -192,8 +204,10 @@ static int validate_end_state(struct parse_state *state)
 	if (state->cur_opt && state->cur_opt->type != CLI_TYPE_BOOL &&
 	    state->cur_opt_argc == 0) {
 		pr_err("选项 -%c/--%s 缺少参数\n",
-		       state->cur_opt->short_opt ? state->cur_opt->short_opt : ' ',
-		       state->cur_opt->long_opt ? state->cur_opt->long_opt : "");
+		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
+						   ' ',
+		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
+						  "");
 		return -1;
 	}
 	return 0;
@@ -290,13 +304,14 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv,
 
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			if (parse_option_switch(cmd, argv[i], arg_struct, opt_seen,
-						&state) < 0) {
+			if (parse_option_switch(cmd, argv[i], arg_struct,
+						opt_seen, &state) < 0) {
 				free(opt_seen);
 				return -1;
 			}
 		} else {
-			if (parse_option_value(argv[i], arg_struct, &state) < 0) {
+			if (parse_option_value(argv[i], arg_struct, &state) <
+			    0) {
 				free(opt_seen);
 				return -1;
 			}
@@ -351,7 +366,8 @@ static void cli_print_help(const cli_command_t *cmd)
 static bool has_help_flag(int argc, char **argv)
 {
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+		if (strcmp(argv[i], "-h") == 0 ||
+		    strcmp(argv[i], "--help") == 0)
 			return true;
 	}
 	return false;
@@ -364,9 +380,8 @@ static int dispose_start_task(void *cmd)
 {
 	char *argv[64];
 	int argc = tokenize((char *)cmd, argv, 64);
-
+	cli_printk("\r\n");
 	if (argc < 1) {
-		cli_printk("\r\n");
 		return dispose_exit;
 	}
 
@@ -383,8 +398,8 @@ static int dispose_start_task(void *cmd)
 
 	if (!cmd_def->arg_buf ||
 	    cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
-		pr_err("命令 %s 的参数缓冲区不足 (%zu > %zu)\n",
-		       cmd_def->name, cmd_def->arg_struct_size,
+		pr_err("命令 %s 的参数缓冲区不足 (%zu > %zu)\n", cmd_def->name,
+		       cmd_def->arg_struct_size,
 		       cmd_def->arg_buf ? cmd_def->arg_buf_size : 0);
 		return dispose_exit;
 	}
