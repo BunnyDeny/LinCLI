@@ -456,7 +456,11 @@ static int dispose_start_task(void *cmd)
 	}
 
 	if (cmd_def->validator) {
-		cmd_def->validator(cmd_def->arg_buf);
+		int ret = cmd_def->validator(cmd_def->arg_buf);
+		if (ret < 0) {
+			pr_err("命令 %s 执行失败，返回值: %d\n", cmd_def->name, ret);
+			return dispose_exit;
+		}
 	}
 
 	return dispose_exit;
