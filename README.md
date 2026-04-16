@@ -283,6 +283,155 @@ void cli_putc(char ch)
 
 ---
 
+## 基本使用：如何添加自己的命令
+
+### 总原则
+
+你只需要做两件事：
+
+1. **创建一个 `.c` 文件**，在里面用 `CLI_COMMAND` 宏定义你的命令和选项；
+2. **确保你的 `.c` 文件被编译进最终可执行文件**。具体如何配置 CMake（`add_executable`、`add_library`、`target_sources` 等）由你决定，只要链接阶段能把你的对象文件包含进来即可。
+
+下面以一个名为 `log` 的命令为例（源文件位于 `tests/test_log.c`），从 0 开始展示完整流程。
+
+### 第 1 步：定义参数结构体
+
+```c
+#include "cmd_dispose.h"
+#include "cli_io.h"
+
+struct log_args {
+    char *file;          /* STRING */
+    int level;           /* INT */
+    bool verbose;        /* BOOL */
+    int *tags;           /* INT_ARRAY */
+    size_t tags_count;
+};
+```
+
+### 第 2 步：实现 handler
+
+```c
+static int log_handler(void *_args)
+{
+    struct log_args *args = _args;
+    cli_printk("LOG command executed!\n");
+    if (args->file)
+        cli_printk("  file  = %s\n", args->file);
+    cli_printk("  level = %d\n", args->level);
+    if (args->verbose)
+        cli_printk("  verbose = true\n");
+    if (args->tags && args->tags_count > 0) {
+        cli_printk("  tags  = ");
+        for (size_t i = 0; i < args->tags_count; i++)
+            cli_printk("%d ", args->tags[i]);
+        cli_printk("\n");
+    }
+    return 0;
+}
+```
+
+### 第 3 步：用 `CLI_COMMAND` 注册命令
+
+```c
+CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
+    OPTION('f', "file", STRING, "Log file path", struct log_args, file, true),
+    OPTION('l', "level", INT, "Log level", struct log_args, level, true),
+    OPTION('v', "verbose", BOOL, "Enable verbose", struct log_args, verbose),
+    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose"),
+    END_OPTIONS);
+```
+
+### 宏参数详解
+
+#### `CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)`
+
+| 参数 | 含义 |
+|------|------|
+| `name` | **C 标识符名**。宏会用它生成内部静态符号（如 `_cli_cmd_def_log`、`_cli_options_log`），不会暴露给用户。 |
+| `cmd_str` | **命令字符串**。用户在终端里实际输入的名字，如 `"log"`。 |
+| `doc_str` | **帮助文本**。执行 `log --help` 时显示的第一行描述。 |
+| `parse_cb` | **处理函数**。类型必须是 `int (*)(void *)`，框架会把填充好的参数结构体指针传给它。 |
+| `arg_struct_ptr` | **类型推导指针**。通常写 `(struct log_args *)0`，宏内部用 `typeof(*arg_struct_ptr)` 推导结构体类型和大小。**不能写 `NULL`**。 |
+| `...` | **选项列表**。由若干 `OPTION(...)` 组成，最后以 `END_OPTIONS` 结尾。 |
+
+#### `OPTION` 的重载特性
+
+`OPTION` 是一个**统一入口宏**，它会根据你传入的参数个数**自动重载**到对应的底层实现。你不需要记忆 `OPTION_6`、`OPTION_7` 等名字，直接数清楚你要传几个参数，按格式写即可：
+
+| 参数个数 | 底层宏 | 适用场景 |
+|----------|--------|----------|
+| 6 | `OPTION_6` | 基础类型：`BOOL` / `STRING` / `INT` / `DOUBLE` / `CALLBACK` |
+| 7 | `OPTION_7` | 基础类型 + `required`（是否必需） |
+| 8 | `OPTION_8` | `INT_ARRAY` + `max_args`（最大元素个数）+ `depends`（依赖或互斥） |
+| 9 | `OPTION_9` | `INT_ARRAY` + `max_args` + `depends` + `required` |
+
+#### `OPTION` 各参数含义（以最多 9 个参数的 `OPTION_9` 为例）
+
+```c
+OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose", true)
+```
+
+| 位置 | 参数 | 说明 |
+|------|------|------|
+| 1 | `'t'` | **短选项字符**。终端可输入 `-t`。 |
+| 2 | `"tags"` | **长选项名字符串**。终端可输入 `--tags`。 |
+| 3 | `INT_ARRAY` | **选项类型**。框架内置类型，不需要加引号。可选：`BOOL`、`STRING`、`INT`、`DOUBLE`、`CALLBACK`、`INT_ARRAY`。 |
+| 4 | `"Tag list"` | **帮助文本**。`log --help` 时显示在该选项后面。 |
+| 5 | `struct log_args` | **参数结构体类型**。必须与 `CLI_COMMAND` 第 5 个参数推导出的类型一致。 |
+| 6 | `tags` | **结构体字段名**。解析成功后，结果会写入 `args->tags`。对于 `INT_ARRAY`，该字段必须是指针类型（`int *`），且**紧跟其后的字段必须是 `_count`**（如 `tags_count`），用于存放数组长度。 |
+| 7 | `8` | **最大参数个数**（仅 `INT_ARRAY` 有效）。表示该数组选项最多接收 8 个整数。 |
+| 8 | `"!verbose"` | **依赖/互斥字符串**。<br>• 普通字符串（如 `"verbose"`）→ **依赖**：表示该选项只有在 `-v`/`--verbose` 也出现时才合法。<br>• 以 `!` 开头的字符串（如 `"!verbose"`）→ **互斥**：表示该选项与 `-v`/`--verbose` **不能同时出现**。 |
+| 9 | `true` | **是否必需**（`required`）。`true` 表示用户必须提供该选项，否则报错。 |
+
+对于参数较少的重载，后面的参数依次省略即可。例如上面的 `OPTION('f', "file", STRING, "Log file path", struct log_args, file, true)` 是 **7 参数**形式，最后一个 `true` 表示 `required`；而 `OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose")` 是 **8 参数**形式，`required` 缺省为 `false`。
+
+### 第 4 步：编译并运行
+
+把这个 `.c` 文件加入你的构建系统后重新编译。无需修改 `main()`，也无需手动注册，链接器会自动把它放入 `.cli_commands` 段。运行程序后即可在终端输入：
+
+```text
+lin@linCli> log -f /tmp/app.log -l 3 -t 1 2 3
+LOG command executed!
+  file  = /tmp/app.log
+  level = 3
+  tags  = 1 2 3
+lin@linCli>
+```
+
+如果缺少必需选项：
+
+```text
+lin@linCli> log -f /tmp/app.log
+[ERR] 缺少必需选项: -l/--level
+[ERR] 命令解析失败: log
+...
+lin@linCli>
+```
+
+如果触发互斥：
+
+```text
+lin@linCli> log -f /tmp/app.log -l 3 -v -t 1 2 3
+[ERR] 选项 -t/--tags 与 verbose 互斥，不能同时使用
+[ERR] 命令解析失败: log
+...
+lin@linCli>
+```
+
+也可以只带 `-v` 不带 `-t`：
+
+```text
+lin@linCli> log -f /tmp/app.log -l 3 -v
+LOG command executed!
+  file  = /tmp/app.log
+  level = 3
+  verbose = true
+lin@linCli>
+```
+
+---
+
 ## 测试用例与终端操作示例
 
 所有测试用例位于 `tests/` 目录，编译时会被自动收集并链接进 `a.out`。下表列出每个命令的含义、可用选项以及实际终端操作日志。
