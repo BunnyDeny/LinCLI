@@ -3,6 +3,7 @@
 #include "init_d.h"
 #include "stateM.h"
 #include "cli_cmd_line.h"
+#include "cmd_dispose.h"
 
 extern struct tState _cli_cmd_line_start;
 extern struct tState _cli_cmd_line_end;
@@ -88,6 +89,244 @@ static void cmd_line_replace(const char *new_buf, int new_size)
 	memcpy(cmd_line.buf, new_buf, new_size);
 	cmd_line.size = new_size;
 	cmd_line.pos = new_size;
+}
+
+static int get_last_token_start(const char *buf, int size)
+{
+	if (size == 0)
+		return 0;
+	if (buf[size - 1] == ' ')
+		return size;
+	int i = size - 1;
+	while (i >= 0 && buf[i] != ' ')
+		i--;
+	return i + 1;
+}
+
+static void cmd_line_redraw(void)
+{
+	int status;
+	status = cli_out_push((_u8 *)"\r\033[K", 4);
+	if (status < 0)
+		return;
+	if (cli_out_sync())
+		return;
+	void cli_prompt_print(void);
+	cli_prompt_print();
+	if (cmd_line.size > 0) {
+		status = cli_out_push((_u8 *)cmd_line.buf, cmd_line.size);
+		if (status < 0)
+			return;
+		if (cli_out_sync())
+			return;
+	}
+	int back = cmd_line.size - cmd_line.pos;
+	while (back-- > 0) {
+		status = cli_out_push((_u8 *)"\033[D", 4);
+		if (status < 0)
+			return;
+		if (cli_out_sync())
+			return;
+	}
+}
+
+static const cli_command_t *find_cmd_by_name(const char *name)
+{
+	cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+	{
+		if (cmd->name && strcmp(cmd->name, name) == 0)
+			return cmd;
+	}
+	return NULL;
+}
+
+static void complete_command_name(const char *prefix, int prefix_len)
+{
+	const cli_command_t *match = NULL;
+	int match_cnt = 0;
+	cli_command_t *cmd;
+
+	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+	{
+		if (!cmd->name)
+			continue;
+		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
+			match_cnt++;
+			if (match_cnt == 1)
+				match = cmd;
+		}
+	}
+
+	if (match_cnt == 1) {
+		int new_size = strlen(match->name);
+		cmd_line_replace(match->name, new_size);
+		if (cmd_line.size < CMD_LINE_BUF_SIZE - 1) {
+			cmd_line.buf[cmd_line.size] = ' ';
+			cmd_line.size++;
+			cmd_line.pos++;
+			cli_out_push((_u8 *)" ", 1);
+			cli_out_sync();
+		}
+	} else if (match_cnt > 1) {
+		cli_out_push((_u8 *)"\a\n", 2);
+		_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+		{
+			if (!cmd->name)
+				continue;
+			if (strncmp(cmd->name, prefix, prefix_len) == 0) {
+				cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
+				cli_out_push((_u8 *)"  ", 2);
+			}
+		}
+		cli_out_push((_u8 *)"\n", 1);
+		cli_out_sync();
+		cmd_line_redraw();
+	} else {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+	}
+}
+
+static void complete_option(const cli_command_t *cmd, const char *prefix,
+			    int prefix_len)
+{
+	if (prefix_len == 0) {
+		cli_out_push((_u8 *)"\a\n", 2);
+		for (size_t i = 0; i < cmd->option_count; i++) {
+			const cli_option_t *opt = &cmd->options[i];
+			if (opt->short_opt) {
+				char buf[4];
+				buf[0] = '-';
+				buf[1] = opt->short_opt;
+				buf[2] = ' ';
+				buf[3] = '\0';
+				cli_out_push((_u8 *)buf, 3);
+			}
+			if (opt->long_opt) {
+				cli_out_push((_u8 *)"--", 2);
+				cli_out_push((_u8 *)opt->long_opt,
+					     strlen(opt->long_opt));
+				cli_out_push((_u8 *)"  ", 2);
+			}
+		}
+		cli_out_push((_u8 *)"\n", 1);
+		cli_out_sync();
+		cmd_line_redraw();
+		return;
+	}
+
+	if (prefix_len == 1 && prefix[0] == '-') {
+		cli_out_push((_u8 *)"\a\n", 2);
+		for (size_t i = 0; i < cmd->option_count; i++) {
+			const cli_option_t *opt = &cmd->options[i];
+			if (opt->short_opt) {
+				char buf[4];
+				buf[0] = '-';
+				buf[1] = opt->short_opt;
+				buf[2] = ' ';
+				buf[3] = '\0';
+				cli_out_push((_u8 *)buf, 3);
+			}
+		}
+		cli_out_push((_u8 *)"\n", 1);
+		cli_out_sync();
+		cmd_line_redraw();
+		return;
+	}
+
+	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] == '-') {
+		cli_out_push((_u8 *)"\a\n", 2);
+		for (size_t i = 0; i < cmd->option_count; i++) {
+			const cli_option_t *opt = &cmd->options[i];
+			if (opt->long_opt) {
+				cli_out_push((_u8 *)"--", 2);
+				cli_out_push((_u8 *)opt->long_opt,
+					     strlen(opt->long_opt));
+				cli_out_push((_u8 *)"  ", 2);
+			}
+		}
+		cli_out_push((_u8 *)"\n", 1);
+		cli_out_sync();
+		cmd_line_redraw();
+		return;
+	}
+
+	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] != '-') {
+		char c = prefix[1];
+		for (size_t i = 0; i < cmd->option_count; i++) {
+			if (cmd->options[i].short_opt == c) {
+				if (cmd_line.size < CMD_LINE_BUF_SIZE - 1) {
+					cmd_line.buf[cmd_line.size] = ' ';
+					cmd_line.size++;
+					cmd_line.pos++;
+					cli_out_push((_u8 *)" ", 1);
+					cli_out_sync();
+				}
+				return;
+			}
+		}
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+		return;
+	}
+
+	if (prefix_len >= 3 && prefix[0] == '-' && prefix[1] == '-') {
+		const char *name_prefix = prefix + 2;
+		int name_prefix_len = prefix_len - 2;
+		const cli_option_t *match = NULL;
+		int match_cnt = 0;
+		for (size_t i = 0; i < cmd->option_count; i++) {
+			const cli_option_t *opt = &cmd->options[i];
+			if (opt->long_opt &&
+			    strncmp(opt->long_opt, name_prefix,
+				    name_prefix_len) == 0) {
+				match_cnt++;
+				if (match_cnt == 1)
+					match = opt;
+			}
+		}
+		if (match_cnt == 1) {
+			char new_buf[CMD_LINE_BUF_SIZE];
+			int tok_start =
+				get_last_token_start(cmd_line.buf, cmd_line.size);
+			memcpy(new_buf, cmd_line.buf, tok_start);
+			new_buf[tok_start] = '-';
+			new_buf[tok_start + 1] = '-';
+			int long_len = strlen(match->long_opt);
+			memcpy(new_buf + tok_start + 2, match->long_opt,
+			       long_len);
+			int new_size = tok_start + 2 + long_len;
+			if (new_size < CMD_LINE_BUF_SIZE - 1) {
+				new_buf[new_size] = ' ';
+				new_size++;
+			}
+			cmd_line_replace(new_buf, new_size);
+		} else if (match_cnt > 1) {
+			cli_out_push((_u8 *)"\a\n", 2);
+			for (size_t i = 0; i < cmd->option_count; i++) {
+				const cli_option_t *opt = &cmd->options[i];
+				if (opt->long_opt &&
+				    strncmp(opt->long_opt, name_prefix,
+					    name_prefix_len) == 0) {
+					cli_out_push((_u8 *)"--", 2);
+					cli_out_push((_u8 *)opt->long_opt,
+						     strlen(opt->long_opt));
+					cli_out_push((_u8 *)"  ", 2);
+				}
+			}
+			cli_out_push((_u8 *)"\n", 1);
+			cli_out_sync();
+			cmd_line_redraw();
+		} else {
+			cli_out_push((_u8 *)"\a", 1);
+			cli_out_sync();
+		}
+		return;
+	}
+
+	cli_out_push((_u8 *)"\a", 1);
+	cli_out_sync();
 }
 
 /* ============================================================
@@ -192,6 +431,11 @@ int unvalid_char_task(void *pch)
 		}
 	} else if (ch == '\n') {
 		status = state_switch(&cmd_line_mec, "enter");
+		if (status < 0) {
+			return status;
+		}
+	} else if (ch == '\t') {
+		status = state_switch(&cmd_line_mec, "tab_complete");
 		if (status < 0) {
 			return status;
 		}
@@ -306,6 +550,47 @@ int history_down_task(void *pch)
 	return 0;
 }
 _EXPORT_STATE_SYMBOL(history_down, NULL, history_down_task, NULL,
+		     ".cli_cmd_line");
+
+int tab_complete_task(void *pch)
+{
+	int status;
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	int prefix_len = cmd_line.size - tok_start;
+	const char *prefix = &cmd_line.buf[tok_start];
+
+	int cmd_start = 0;
+	while (cmd_start < cmd_line.size && cmd_line.buf[cmd_start] == ' ')
+		cmd_start++;
+	int first_word_end = cmd_start;
+	while (first_word_end < cmd_line.size &&
+	       cmd_line.buf[first_word_end] != ' ')
+		first_word_end++;
+
+	if (cmd_line.size == 0 ||
+	    (tok_start >= cmd_start && tok_start < first_word_end)) {
+		complete_command_name(prefix, prefix_len);
+	} else {
+		char cmd_name[CMD_LINE_BUF_SIZE];
+		memcpy(cmd_name, cmd_line.buf + cmd_start,
+		       first_word_end - cmd_start);
+		cmd_name[first_word_end - cmd_start] = '\0';
+
+		const cli_command_t *cmd = find_cmd_by_name(cmd_name);
+		if (!cmd) {
+			cli_out_push((_u8 *)"\a", 1);
+			cli_out_sync();
+		} else {
+			complete_option(cmd, prefix, prefix_len);
+		}
+	}
+
+	status = state_switch(&cmd_line_mec, "exit_handler");
+	if (status < 0)
+		return status;
+	return 0;
+}
+_EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 		     ".cli_cmd_line");
 
 int delete(void *pch)
