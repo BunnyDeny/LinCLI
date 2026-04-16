@@ -69,11 +69,6 @@ int main()
 	t.c_lflag &= ~(ICANON | ECHO); // 禁用规范模式，回显
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
 
-	printf("LinCLI  Copyright (C) 2026  bunnydeny\n");
-	printf("This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.\n");
-	printf("This is free software, and you are welcome to redistribute it\n");
-	printf("under certain conditions; type `show c' for details.\n\n");
-
 	if (pthread_create(&cli_in_thread, NULL, cli_in_entry, NULL)) {
 		fprintf(stderr, "创建线程 cli_in_thread 失败\n");
 		return 1;
