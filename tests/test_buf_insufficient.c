@@ -57,7 +57,7 @@ struct big1_args {
 static int big1_handler(void *_args)
 {
 	(void)_args;
-	cli_printk("big1 should never be executed!\n");
+	cli_printk("big1 should never be executed!\r\n");
 	return 0;
 }
 
@@ -79,12 +79,12 @@ static char big2_buf[1];
 static int big2_handler(void *_args)
 {
 	(void)_args;
-	cli_printk("big2 should never be executed!\n");
+	cli_printk("big2 should never be executed!\r\n");
 	return 0;
 }
 
-CLI_COMMAND_WITH_BUF(big2, "big2",
-		     "Test insufficient private buffer", big2_handler,
-		     (struct big2_args *)0, big2_buf, sizeof(big2_buf),
+CLI_COMMAND_WITH_BUF(big2, "big2", "Test insufficient private buffer",
+		     big2_handler, (struct big2_args *)0, big2_buf,
+		     sizeof(big2_buf),
 		     OPTION('x', "x", BOOL, "X", struct big2_args, padding),
 		     END_OPTIONS);

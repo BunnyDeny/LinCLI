@@ -186,31 +186,9 @@ SECTIONS
   PROVIDE (edata = .);
   . = ALIGN(ALIGNOF(NEXT_SECTION));
   /* State section definition for state machine */
-  .scheduler : {
-      _scheduler_start = .;
-      *(.scheduler)
-      _scheduler_end = .;
-  }
-  .my_init_d : {
-      _init_d_start = .;
-      *(.my_init_d)
-      _init_d_end = .;
-  }
-  .cli_cmd_line : {
-      _cli_cmd_line_start = .;
-      *(.cli_cmd_line)
-      _cli_cmd_line_end = .;
-  }
-  .dispose : {
-      _dispose_start = .;
-      *(.dispose)
-      _dispose_end = .;
-  }
-  .cli_commands : {
-      _cli_commands_start = .;
-      *(.cli_commands)
-      _cli_commands_end = .;
-  }
+
+  INCLUDE cli.ld
+  
   __bss_start = .;
   .bss            :
   {

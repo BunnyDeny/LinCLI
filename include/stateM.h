@@ -48,21 +48,21 @@
 
 #define STATEM_FORMAT_LOG(fmt, ...)
 
-#define STATEM_SWITCH(from, to)                                      \
-	{                                                            \
-		if (from && to)                                      \
-			STATEM_FORMAT_LOG("switch frome %s to %s\n", \
-					  (from)->name, (to)->name); \
-	}
-#define STATEM_EXIT(state)                                             \
+#define STATEM_SWITCH(from, to)                                        \
 	{                                                              \
-		if (state)                                             \
-			STATEM_FORMAT_LOG("exit %s\n", (state)->name); \
+		if (from && to)                                        \
+			STATEM_FORMAT_LOG("switch frome %s to %s\r\n", \
+					  (from)->name, (to)->name);   \
 	}
-#define STATEM_ENTRY(state)                                             \
-	{                                                               \
-		if (state)                                              \
-			STATEM_FORMAT_LOG("entry %s\n", (state)->name); \
+#define STATEM_EXIT(state)                                               \
+	{                                                                \
+		if (state)                                               \
+			STATEM_FORMAT_LOG("exit %s\r\n", (state)->name); \
+	}
+#define STATEM_ENTRY(state)                                               \
+	{                                                                 \
+		if (state)                                                \
+			STATEM_FORMAT_LOG("entry %s\r\n", (state)->name); \
 	}
 
 struct tState {
@@ -104,21 +104,19 @@ struct tState {
  *
  * @note For detailed usage, refer to init/scheduler.c and cli_project.ld in this project
  */
-#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
-	static struct tState state_##obj = {                         \
-		.name = #obj,                                        \
-		.node = { 0 },                                       \
-		.state_entry = entry,                                \
-		.state_task = task,                                  \
-		.state_exit = exit,                                  \
-	}; \
-	static struct tState * const _state_ptr_##obj \
-		__attribute__((used, section(_section))) = \
-		&state_##obj
-#define _FOR_EACH_STATE(_start, _end, _state) \
-	for (struct tState * const *_pp = (_start); \
-	     _pp < (struct tState * const *)(_end); \
-	     _pp++) \
+#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section) \
+	static struct tState state_##obj = {                   \
+		.name = #obj,                                  \
+		.node = { 0 },                                 \
+		.state_entry = entry,                          \
+		.state_task = task,                            \
+		.state_exit = exit,                            \
+	};                                                     \
+	static struct tState *const _state_ptr_##obj           \
+		__attribute__((used, section(_section))) = &state_##obj
+#define _FOR_EACH_STATE(_start, _end, _state)             \
+	for (struct tState *const *_pp = (_start);        \
+	     _pp < (struct tState *const *)(_end); _pp++) \
 		if (((_state) = *_pp))
 
 struct tStateEngine {
@@ -128,8 +126,7 @@ struct tStateEngine {
 };
 
 int engine_init(struct tStateEngine *engine, char *startup_state,
-		struct tState * const *sec_start,
-		struct tState * const *sec_end);
+		struct tState *const *sec_start, struct tState *const *sec_end);
 int state_switch(struct tStateEngine *engine, char *name);
 int stateEngineRun(struct tStateEngine *engine, void *private);
 

@@ -41,9 +41,9 @@ struct required_args {
 static int required_handler(void *_args)
 {
 	struct required_args *args = _args;
-	cli_printk("REQUIRED test executed!\n");
+	cli_printk("REQUIRED test executed!\r\n");
 	if (args->file)
-		cli_printk("  file = %s\n", args->file);
+		cli_printk("  file = %s\r\n", args->file);
 	return 0;
 }
 

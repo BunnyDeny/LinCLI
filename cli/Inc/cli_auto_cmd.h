@@ -24,7 +24,7 @@
  *   };
  *   const int cli_auto_cmds_count = sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0]);
  */
-__attribute__((weak)) extern const char * const cli_auto_cmds[];
+__attribute__((weak)) extern const char *const cli_auto_cmds[];
 __attribute__((weak)) extern const int cli_auto_cmds_count;
 
 #endif

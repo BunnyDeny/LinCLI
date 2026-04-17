@@ -53,17 +53,17 @@ struct log_args {
 static int log_handler(void *_args)
 {
 	struct log_args *args = _args;
-	cli_printk("LOG command executed!\n");
+	cli_printk("LOG command executed!\r\n");
 	if (args->file)
-		cli_printk("  file  = %s\n", args->file);
-	cli_printk("  level = %d\n", args->level);
+		cli_printk("  file  = %s\r\n", args->file);
+	cli_printk("  level = %d\r\n", args->level);
 	if (args->verbose)
-		cli_printk("  verbose = true\n");
+		cli_printk("  verbose = true\r\n");
 	if (args->tags && args->tags_count > 0) {
 		cli_printk("  tags  = ");
 		for (size_t i = 0; i < args->tags_count; i++)
 			cli_printk(KERN_NOTICE "%d ", args->tags[i]);
-		cli_printk(KERN_NOTICE "\n");
+		cli_printk(KERN_NOTICE "\r\n");
 	}
 	return 0;
 }
@@ -71,7 +71,8 @@ static int log_handler(void *_args)
 CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
 	    OPTION('f', "file", STRING, "Log file path", struct log_args, file,
 		   true),
-	    OPTION('l', "level", INT, "Log level", struct log_args, level, true),
+	    OPTION('l', "level", INT, "Log level", struct log_args, level,
+		   true),
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct log_args,
 		   verbose),
 	    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8,

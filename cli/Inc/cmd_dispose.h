@@ -71,13 +71,12 @@ typedef struct cli_command {
  * 链接脚本段收集符号声明
  * ============================================================ */
 
-extern const cli_command_t * const _cli_commands_start[];
-extern const cli_command_t * const _cli_commands_end[];
+extern const cli_command_t *const _cli_commands_start[];
+extern const cli_command_t *const _cli_commands_end[];
 
-#define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd) \
-	for (const cli_command_t * const *_pp = (_start); \
-	     _pp < (const cli_command_t * const *)(_end); \
-	     _pp++) \
+#define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd)               \
+	for (const cli_command_t *const *_pp = (_start);        \
+	     _pp < (const cli_command_t *const *)(_end); _pp++) \
 		if (((_cmd) = *_pp))
 
 /* ============================================================
@@ -246,7 +245,7 @@ extern const cli_command_t * const _cli_commands_end[];
 
 #define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts,     \
 				   _opts_cnt, _vld, _buf, _buf_size, _section) \
-	static const cli_command_t _cli_cmd_def_##_obj = {                   \
+	static const cli_command_t _cli_cmd_def_##_obj = {                     \
 		.name = _cmd_str,                                              \
 		.doc = _doc_str,                                               \
 		.arg_struct = NULL,                                            \
@@ -256,10 +255,10 @@ extern const cli_command_t * const _cli_commands_end[];
 		.validator = _vld,                                             \
 		.arg_buf = _buf,                                               \
 		.arg_buf_size = _buf_size,                                     \
-	}; \
-	static const cli_command_t * const _cli_cmd_ptr_##_obj \
-		__attribute__((used, section(_section))) = \
-		&_cli_cmd_def_##_obj
+	};                                                                     \
+	static const cli_command_t *const _cli_cmd_ptr_##_obj                  \
+		__attribute__((used, section(_section))) =                     \
+			&_cli_cmd_def_##_obj
 
 /* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
  * 由于 CLI 解析与执行在单一线程中串行完成，不会产生并发冲突。

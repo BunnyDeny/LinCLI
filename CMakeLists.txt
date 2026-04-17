@@ -6,6 +6,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 set(OUTPUT_NAME "a.out")
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/default.ld")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cli.ld ${CMAKE_BINARY_DIR}/cli.ld COPYONLY)
 set(SUBMODULES lib cli init tests)
 
 foreach(submod ${SUBMODULES})

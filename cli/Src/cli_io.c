@@ -199,18 +199,18 @@ int cli_printk(const char *fmt, ...)
 
 void cli_printk_test(void)
 {
-	cli_printk("########################################\n");
-	pr_emerg("这是EMERG级别 - 最严重的紧急情况\n");
-	pr_alert("这是ALERT级别 - 需要立即处理\n");
-	pr_crit("这是CRIT级别 - 严重故障\n");
-	pr_err("这是ERR级别 - 错误\n");
-	pr_warn("这是WARNING级别 - 警告\n");
-	pr_notice("这是NOTICE级别 - 正常但重要\n");
-	pr_info("这是INFO级别 - 一般信息\n");
-	pr_debug("这是DEBUG级别 - 调试信息\n");
-	cli_printk("这是DEFAULT级别 - 无前缀\n");
-	pr_cont("这是CONT级别 - 继续输出\n");
-	cli_printk("########################################\n");
+	cli_printk("########################################\r\n");
+	pr_emerg("这是EMERG级别 - 最严重的紧急情况\r\n");
+	pr_alert("这是ALERT级别 - 需要立即处理\r\n");
+	pr_crit("这是CRIT级别 - 严重故障\r\n");
+	pr_err("这是ERR级别 - 错误\r\n");
+	pr_warn("这是WARNING级别 - 警告\r\n");
+	pr_notice("这是NOTICE级别 - 正常但重要\r\n");
+	pr_info("这是INFO级别 - 一般信息\r\n");
+	pr_debug("这是DEBUG级别 - 调试信息\r\n");
+	cli_printk("这是DEFAULT级别 - 无前缀\r\n");
+	pr_cont("这是CONT级别 - 继续输出\r\n");
+	cli_printk("########################################\r\n");
 }
 
 int cli_in_clear(void)

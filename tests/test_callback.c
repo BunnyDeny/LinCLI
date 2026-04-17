@@ -44,8 +44,8 @@ struct cb_args {
 static int callback_handler(void *_args)
 {
 	struct cb_args *args = _args;
-	cli_printk("CALLBACK test executed!\n");
-	cli_printk("  custom callback triggered with: %s\n",
+	cli_printk("CALLBACK test executed!\r\n");
+	cli_printk("  custom callback triggered with: %s\r\n",
 		   args->raw ? args->raw : "(null)");
 	return 0;
 }

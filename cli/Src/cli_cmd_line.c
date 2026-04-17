@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "cli_cmd_line.h"
 #include "cli_io.h"
-#include <string.h>
+#include "cmd_dispose.h"
 #include "init_d.h"
 #include "stateM.h"
-#include "cli_cmd_line.h"
-#include "cmd_dispose.h"
+#include <string.h>
 
-extern struct tState * const _cli_cmd_line_start[];
-extern struct tState * const _cli_cmd_line_end[];
+extern struct tState *const _cli_cmd_line_start[];
+extern struct tState *const _cli_cmd_line_end[];
 
 static bool is_valid_char(char c);
 
@@ -215,7 +215,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		if (lcp_len > prefix_len) {
 			cmd_line_replace(lcp, lcp_len);
 		} else {
-			cli_out_push((_u8 *)"\a\n", 2);
+			cli_out_push((_u8 *)"\a\r\n", 3);
 			_FOR_EACH_CLI_COMMAND(_cli_commands_start,
 					      _cli_commands_end, cmd)
 			{
@@ -228,7 +228,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 					cli_out_push((_u8 *)"  ", 2);
 				}
 			}
-			cli_out_push((_u8 *)"\n", 1);
+			cli_out_push((_u8 *)"\r\n", 2);
 			cli_out_sync();
 			cmd_line_redraw();
 		}
@@ -240,7 +240,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 
 static void list_all_options(const cli_command_t *cmd)
 {
-	cli_out_push((_u8 *)"\a\n", 2);
+	cli_out_push((_u8 *)"\a\r\n", 3);
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->short_opt) {
@@ -254,7 +254,7 @@ static void list_all_options(const cli_command_t *cmd)
 			cli_out_push((_u8 *)"  ", 2);
 		}
 	}
-	cli_out_push((_u8 *)"\n", 1);
+	cli_out_push((_u8 *)"\r\n", 2);
 	cli_out_sync();
 	cmd_line_redraw();
 }
@@ -286,7 +286,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 					const char *name_prefix,
 					int name_prefix_len)
 {
-	cli_out_push((_u8 *)"\a\n", 2);
+	cli_out_push((_u8 *)"\a\r\n", 3);
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
@@ -297,7 +297,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 			cli_out_push((_u8 *)"  ", 2);
 		}
 	}
-	cli_out_push((_u8 *)"\n", 1);
+	cli_out_push((_u8 *)"\r\n", 2);
 	cli_out_sync();
 	cmd_line_redraw();
 }
@@ -354,15 +354,13 @@ static bool is_last_full_token_the_only_option(const cli_command_t *cmd)
 
 	if (opt->long_opt) {
 		int llen = (int)strlen(opt->long_opt);
-		if (len == llen + 2 &&
-		    cmd_line.buf[start] == '-' &&
+		if (len == llen + 2 && cmd_line.buf[start] == '-' &&
 		    cmd_line.buf[start + 1] == '-' &&
 		    strncmp(&cmd_line.buf[start + 2], opt->long_opt, llen) == 0)
 			return true;
 	}
 	if (opt->short_opt) {
-		if (len == 2 &&
-		    cmd_line.buf[start] == '-' &&
+		if (len == 2 && cmd_line.buf[start] == '-' &&
 		    cmd_line.buf[start + 1] == opt->short_opt)
 			return true;
 	}
@@ -426,7 +424,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 				cli_out_sync();
 			} else if (opt->long_opt) {
 				replace_long_option(opt->long_opt,
-					    (int)strlen(opt->long_opt));
+						    (int)strlen(opt->long_opt));
 			} else if (opt->short_opt) {
 				replace_short_option(opt->short_opt);
 			} else {
@@ -446,7 +444,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 			const cli_option_t *opt = &cmd->options[0];
 			if (opt->long_opt) {
 				replace_long_option(opt->long_opt,
-					    (int)strlen(opt->long_opt));
+						    (int)strlen(opt->long_opt));
 			} else if (opt->short_opt) {
 				replace_short_option(opt->short_opt);
 			} else {
@@ -513,7 +511,7 @@ int valid_char_task(void *pch)
 	int status;
 	char ch = *((char *)pch);
 	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
-		pr_warn("超出单个命令最长限制\n");
+		pr_warn("超出单个命令最长限制\r\n");
 		goto label_cmd_line_exit;
 	}
 	if (cmd_line.pos == cmd_line.size) {
@@ -573,6 +571,9 @@ int invalid_char_task(void *pch)
 		next_state = "backspace_handler";
 		break;
 	case '\n':
+		next_state = "enter";
+		break;
+	case '\r':
 		next_state = "enter";
 		break;
 	case '\t':
@@ -847,7 +848,7 @@ void enter_entry(void *pch)
 }
 int enter_press(void *pch)
 {
-	//int status;
+	// int status;
 	origin_cmd.size = cmd_line.size;
 	for (int i = 0; i < origin_cmd.size; i++) {
 		origin_cmd.buf[i] = cmd_line.buf[i];
@@ -906,7 +907,7 @@ int cli_cmd_line_task(char ch)
 	while (status != cmd_line_exit) {
 		status = stateEngineRun(&cmd_line_mec, &ch);
 		if (status < 0) {
-			pr_err("cli_cmd_line状态机异常\n");
+			pr_err("cli_cmd_line状态机异常\r\n");
 			return -1;
 		}
 		if (status == cmd_line_enter_press) {

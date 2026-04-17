@@ -26,8 +26,8 @@
 #include <limits.h>
 
 struct tStateEngine dispose_mec;
-extern struct tState * const _dispose_start[];
-extern struct tState * const _dispose_end[];
+extern struct tState *const _dispose_start[];
+extern struct tState *const _dispose_end[];
 
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 int g_last_cmd_ret = 0;
@@ -121,7 +121,7 @@ static int check_prev_opt_missing_arg(struct parse_state *state)
 {
 	if (state->cur_opt && state->cur_opt->type != CLI_TYPE_BOOL &&
 	    state->cur_opt_argc == 0) {
-		pr_err("选项 -%c/--%s 缺少参数\n",
+		pr_err("选项 -%c/--%s 缺少参数\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
@@ -140,13 +140,13 @@ static int parse_option_switch(const cli_command_t *cmd, const char *arg,
 
 	state->cur_opt = find_option(cmd, arg);
 	if (!state->cur_opt) {
-		pr_err("未知选项: %s\n", arg);
+		pr_err("未知选项: %s\r\n", arg);
 		return -1;
 	}
 
 	size_t idx = (size_t)(state->cur_opt - cmd->options);
 	if (opt_seen[idx]) {
-		pr_err("重复选项: -%c/--%s\n",
+		pr_err("重复选项: -%c/--%s\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
@@ -171,11 +171,11 @@ static int cli_parse_int(const char *arg, int *out)
 	errno = 0;
 	long val = strtol(arg, &endptr, 10);
 	if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
-		pr_err("'%s' 超出整数范围\n", arg);
+		pr_err("'%s' 超出整数范围\r\n", arg);
 		return -1;
 	}
 	if (endptr == arg || *endptr != '\0') {
-		pr_err("'%s' 不是有效的整数\n", arg);
+		pr_err("'%s' 不是有效的整数\r\n", arg);
 		return -1;
 	}
 	*out = (int)val;
@@ -188,11 +188,11 @@ static int cli_parse_double(const char *arg, double *out)
 	errno = 0;
 	double val = strtod(arg, &endptr);
 	if (errno == ERANGE) {
-		pr_err("'%s' 超出浮点数范围\n", arg);
+		pr_err("'%s' 超出浮点数范围\r\n", arg);
 		return -1;
 	}
 	if (endptr == arg || *endptr != '\0') {
-		pr_err("'%s' 不是有效的浮点数\n", arg);
+		pr_err("'%s' 不是有效的浮点数\r\n", arg);
 		return -1;
 	}
 	*out = val;
@@ -203,7 +203,7 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 			   void *arg_struct, struct parse_state *state)
 {
 	if (state->cur_opt_idx >= (int)opt->max_args) {
-		pr_err("选项 -%c/--%s 参数过多\n",
+		pr_err("选项 -%c/--%s 参数过多\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "");
 		return -1;
@@ -214,11 +214,12 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 	if (!arr) {
 		size_t need = opt->max_args * sizeof(int);
 		if (need > state->scratch_remain) {
-			long shortfall = (long)need - (long)state->scratch_remain;
-			pr_err("选项 -%c/--%s 缓冲区不足，缺少 %ld 字节（需 %zu B 连续空间）\n",
+			long shortfall =
+				(long)need - (long)state->scratch_remain;
+			pr_err("选项 -%c/--%s 缓冲区不足，缺少 %ld 字节（需 %zu B 连续空间）\r\n",
 			       opt->short_opt ? opt->short_opt : ' ',
-			       opt->long_opt ? opt->long_opt : "",
-			       shortfall, need);
+			       opt->long_opt ? opt->long_opt : "", shortfall,
+			       need);
 			return -1;
 		}
 		arr = (int *)state->scratch_pool;
@@ -244,7 +245,7 @@ static int parse_option_value(const char *arg, void *arg_struct,
 			      struct parse_state *state)
 {
 	if (!state->cur_opt) {
-		pr_err("孤立参数: %s\n", arg);
+		pr_err("孤立参数: %s\r\n", arg);
 		return -1;
 	}
 
@@ -277,7 +278,7 @@ static int parse_option_value(const char *arg, void *arg_struct,
 			return -1;
 		break;
 	default:
-		pr_err("选项 -%c/--%s 类型未实现\n",
+		pr_err("选项 -%c/--%s 类型未实现\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
@@ -291,7 +292,7 @@ static int validate_end_state(struct parse_state *state)
 {
 	if (state->cur_opt && state->cur_opt->type != CLI_TYPE_BOOL &&
 	    state->cur_opt_argc == 0) {
-		pr_err("选项 -%c/--%s 缺少参数\n",
+		pr_err("选项 -%c/--%s 缺少参数\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
@@ -305,7 +306,7 @@ static int validate_required(const cli_command_t *cmd, const bool *opt_seen)
 {
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (cmd->options[i].required && !opt_seen[i]) {
-			pr_err("缺少必需选项: -%c/--%s\n",
+			pr_err("缺少必需选项: -%c/--%s\r\n",
 			       cmd->options[i].short_opt ?
 				       cmd->options[i].short_opt :
 				       ' ',
@@ -349,7 +350,7 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 
 		if (is_conflict) {
 			if (target_found) {
-				pr_err("选项 -%c/--%s 与 %s 互斥，不能同时使用\n",
+				pr_err("选项 -%c/--%s 与 %s 互斥，不能同时使用\r\n",
 				       cmd->options[i].short_opt ?
 					       cmd->options[i].short_opt :
 					       ' ',
@@ -361,7 +362,7 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 			}
 		} else {
 			if (!target_found) {
-				pr_err("选项 -%c/--%s 依赖 %s 但未提供\n",
+				pr_err("选项 -%c/--%s 依赖 %s 但未提供\r\n",
 				       cmd->options[i].short_opt ?
 					       cmd->options[i].short_opt :
 					       ' ',
@@ -388,13 +389,14 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	memset(arg_struct, 0, cmd->arg_struct_size);
 
 	char *scratch = (char *)arg_struct + cmd->arg_struct_size;
-	long scratch_avail = (long)cmd->arg_buf_size - (long)cmd->arg_struct_size;
+	long scratch_avail =
+		(long)cmd->arg_buf_size - (long)cmd->arg_struct_size;
 	size_t scratch_size = scratch_avail > 0 ? (size_t)scratch_avail : 0;
 
 	size_t opt_seen_need = cmd->option_count * sizeof(bool);
 	if (scratch_avail < (long)opt_seen_need) {
-		pr_err("命令 %s 缓冲区不足，缺少 %ld 字节\n",
-		       cmd->name, (long)opt_seen_need - scratch_avail);
+		pr_err("命令 %s 缓冲区不足，缺少 %ld 字节\r\n", cmd->name,
+		       (long)opt_seen_need - scratch_avail);
 		return -1;
 	}
 	bool *opt_seen = (bool *)scratch;
@@ -427,8 +429,11 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 				}
 				if (end > i) {
 					if (total + 1 > state.scratch_remain) {
-						long shortfall = (long)(total + 1) - (long)state.scratch_remain;
-						pr_err("字符串参数过长，缺少 %ld 字节（需 %zu B）\n",
+						long shortfall =
+							(long)(total + 1) -
+							(long)state
+								.scratch_remain;
+						pr_err("字符串参数过长，缺少 %ld 字节（需 %zu B）\r\n",
 						       shortfall, total + 1);
 						return -1;
 					}
@@ -472,9 +477,9 @@ static void cli_print_help(const cli_command_t *cmd)
 {
 	if (!cmd)
 		return;
-	cli_printk("命令: %s\n", cmd->name);
-	cli_printk("描述: %s\n", cmd->doc);
-	cli_printk("选项:\n");
+	cli_printk("命令: %s\r\n", cmd->name);
+	cli_printk("描述: %s\r\n", cmd->doc);
+	cli_printk("选项:\r\n");
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		cli_help_req_mark[0] = '\0';
@@ -492,7 +497,7 @@ static void cli_print_help(const cli_command_t *cmd)
 					 CLI_HELP_DEP_MARK_SIZE, " [依赖:%s]",
 					 opt->depends);
 		}
-		cli_printk("  -%c, --%-16s %s%s%s\n",
+		cli_printk("  -%c, --%-16s %s%s%s\r\n",
 			   opt->short_opt ? opt->short_opt : ' ',
 			   opt->long_opt ? opt->long_opt : "",
 			   opt->help ? opt->help : "", cli_help_req_mark,
@@ -528,7 +533,7 @@ static int dispose_start_task(void *cmd)
 
 	const cli_command_t *cmd_def = cli_command_find(argv[0]);
 	if (!cmd_def) {
-		pr_err("未知命令: %s\n", argv[0]);
+		pr_err("未知命令: %s\r\n", argv[0]);
 		g_last_cmd_ret = -1;
 		return dispose_exit;
 	}
@@ -540,12 +545,12 @@ static int dispose_start_task(void *cmd)
 	}
 
 	if (!cmd_def->arg_buf) {
-		pr_err("命令 %s 未分配参数缓冲区\n", cmd_def->name);
+		pr_err("命令 %s 未分配参数缓冲区\r\n", cmd_def->name);
 		g_last_cmd_ret = -1;
 		return dispose_exit;
 	}
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
-		pr_err("命令 %s 结构体占 %zu 字节，超过缓冲区 %zu 字节\n",
+		pr_err("命令 %s 结构体占 %zu 字节，超过缓冲区 %zu 字节\r\n",
 		       cmd_def->name, cmd_def->arg_struct_size,
 		       cmd_def->arg_buf_size);
 		g_last_cmd_ret = -1;
@@ -556,7 +561,7 @@ static int dispose_start_task(void *cmd)
 
 	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
-		pr_err("命令解析失败: %s\n", argv[0]);
+		pr_err("命令解析失败: %s\r\n", argv[0]);
 		cli_print_help(cmd_def);
 		g_last_cmd_ret = -1;
 		return dispose_exit;
@@ -566,8 +571,8 @@ static int dispose_start_task(void *cmd)
 		int ret = cmd_def->validator(cmd_def->arg_buf);
 		g_last_cmd_ret = ret;
 		if (ret < 0) {
-			pr_err("命令 %s 执行失败，返回值: %d\n", cmd_def->name,
-			       ret);
+			pr_err("命令 %s 执行失败，返回值: %d\r\n",
+			       cmd_def->name, ret);
 			return dispose_exit;
 		}
 	} else {
@@ -631,7 +636,7 @@ static int run_dispose_once(char *cmd)
 {
 	int status = dispose_init();
 	if (status < 0) {
-		pr_err("dispose_init异常\n");
+		pr_err("dispose_init异常\r\n");
 		return -1;
 	}
 
@@ -639,7 +644,7 @@ static int run_dispose_once(char *cmd)
 	while (1) {
 		status = stateEngineRun(&dispose_mec, cmd);
 		if (status < 0) {
-			pr_err("dispose状态机异常\n");
+			pr_err("dispose状态机异常\r\n");
 			return -1;
 		} else if (status == dispose_exit) {
 			return 0;
@@ -669,7 +674,7 @@ int dispose_task(char *cmd)
 
 	for (int i = 0; i < cnt; i++) {
 		if (!cmds[i] || cmds[i][0] == '\0') {
-			pr_err("空命令\n");
+			pr_err("空命令\r\n");
 			return dispose_exit;
 		}
 

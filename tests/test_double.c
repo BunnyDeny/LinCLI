@@ -44,8 +44,8 @@ struct double_args {
 static int double_handler(void *_args)
 {
 	struct double_args *args = _args;
-	cli_printk("DOUBLE test executed!\n");
-	cli_printk("  factor = %f\n", args->factor);
+	cli_printk("DOUBLE test executed!\r\n");
+	cli_printk("  factor = %f\r\n", args->factor);
 	return 0;
 }
 

@@ -25,8 +25,8 @@
 #include "cli_auto_cmd.h"
 
 struct tStateEngine scheduler_eng;
-extern struct tState * const _scheduler_start[];
-extern struct tState * const _scheduler_end[];
+extern struct tState *const _scheduler_start[];
+extern struct tState *const _scheduler_end[];
 
 __attribute__((weak)) void cli_prompt_print(void)
 {
@@ -38,14 +38,14 @@ __attribute__((weak)) void cli_prompt_print(void)
 
 void start_entry(void *private)
 {
-	pr_info("执行_EXPORT_INIT_SYMBOL导出的初始化程序\n");
+	pr_info("执行_EXPORT_INIT_SYMBOL导出的初始化程序\r\n");
 	CALL_INIT_D;
 }
 int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_auto_run");
 	if (status < 0) {
-		pr_crit("[scheduler]切换自动运行任务异常\n");
+		pr_crit("[scheduler]切换自动运行任务异常\r\n");
 		return status;
 	}
 	return 0;
@@ -57,7 +57,7 @@ void scheduler_get_char_entry(void *private)
 {
 	int status = cli_cmd_line_init();
 	if (status < 0) {
-		pr_emerg("cli_cmd_line_init异常\n");
+		pr_emerg("cli_cmd_line_init异常\r\n");
 	}
 	cli_printk("\r\n");
 	cli_prompt_print();
@@ -131,7 +131,7 @@ int scheduler_auto_run_task(void *private)
 		}
 
 		if (g_last_cmd_ret < 0) {
-			pr_err("自动命令执行失败，停止后续执行\n");
+			pr_err("自动命令执行失败，停止后续执行\r\n");
 			int s = state_switch(&scheduler_eng,
 					     "scheduler_get_char");
 			return s < 0 ? s : 0;
@@ -172,10 +172,10 @@ int scheduler_init(void)
 	status = engine_init(&scheduler_eng, "scheduler_start",
 			     _scheduler_start, _scheduler_end);
 	if (status < 0) {
-		pr_emerg("调度器初始化异常，请检查调度器状态机\n");
+		pr_emerg("调度器初始化异常，请检查调度器状态机\r\n");
 		return status;
 	}
-	pr_info("[scheduler]调度器初始化成功\n");
+	pr_info("[scheduler]调度器初始化成功\r\n");
 	return 0;
 }
 

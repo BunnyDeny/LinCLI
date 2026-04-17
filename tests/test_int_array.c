@@ -48,14 +48,14 @@ struct array_args {
 static int array_handler(void *_args)
 {
 	struct array_args *args = _args;
-	cli_printk("INT_ARRAY test executed!\n");
+	cli_printk("INT_ARRAY test executed!\r\n");
 	if (args->verbose)
-		cli_printk("  verbose = true\n");
+		cli_printk("  verbose = true\r\n");
 	if (args->nums && args->nums_count > 0) {
 		cli_printk("  nums = ");
 		for (size_t i = 0; i < args->nums_count; i++)
 			cli_printk(KERN_NOTICE "%d ", args->nums[i]);
-		cli_printk(KERN_NOTICE "\n");
+		cli_printk(KERN_NOTICE "\r\n");
 	}
 	return 0;
 }

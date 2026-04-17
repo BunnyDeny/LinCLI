@@ -44,8 +44,8 @@ struct int_args {
 static int int_handler(void *_args)
 {
 	struct int_args *args = _args;
-	cli_printk("INT test executed!\n");
-	cli_printk("  num = %d\n", args->num);
+	cli_printk("INT test executed!\r\n");
+	cli_printk("  num = %d\r\n", args->num);
 	return 0;
 }
 

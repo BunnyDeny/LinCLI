@@ -25,29 +25,27 @@ struct init_d {
 	void (*_init_entry)(void *);
 };
 
-#define _EXPORT_INIT_SYMBOL(obj, private, init_entry)                    \
-	static struct init_d init_d_##obj = {                            \
-		.name = #obj,                                            \
-		._private = private,                                     \
-		._init_entry = init_entry,                               \
-	}; \
-	static struct init_d * const _init_d_ptr_##obj \
-		__attribute__((used, section(".my_init_d"))) = \
-		&init_d_##obj
+#define _EXPORT_INIT_SYMBOL(obj, private, init_entry) \
+	static struct init_d init_d_##obj = {         \
+		.name = #obj,                         \
+		._private = private,                  \
+		._init_entry = init_entry,            \
+	};                                            \
+	static struct init_d *const _init_d_ptr_##obj \
+		__attribute__((used, section(".my_init_d"))) = &init_d_##obj
 
-extern struct init_d * const _init_d_start[];
-extern struct init_d * const _init_d_end[];
+extern struct init_d *const _init_d_start[];
+extern struct init_d *const _init_d_end[];
 
-#define _FOR_EACH_INIT_D(_start, _end, _init_d) \
-	for (struct init_d * const *_pp = (_start); \
-	     _pp < (struct init_d * const *)(_end); \
-	     _pp++) \
+#define _FOR_EACH_INIT_D(_start, _end, _init_d)           \
+	for (struct init_d *const *_pp = (_start);        \
+	     _pp < (struct init_d *const *)(_end); _pp++) \
 		if (((_init_d) = *_pp))
 
 #define CALL_INIT_D                                                        \
 	do {                                                               \
 		struct init_d *p_init_d;                                   \
-		_FOR_EACH_INIT_D(_init_d_start, _init_d_end, p_init_d)   \
+		_FOR_EACH_INIT_D(_init_d_start, _init_d_end, p_init_d)     \
 		{                                                          \
 			if (p_init_d && p_init_d->_init_entry) {           \
 				p_init_d->_init_entry(p_init_d->_private); \

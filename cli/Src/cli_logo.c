@@ -21,13 +21,13 @@
 
 void pr_logo(void *arg)
 {
-	cli_printk(" _     _        ____ _     ___ \n");
-	cli_printk("| |   (_)_ __  / ___| |   |_ _|\n");
-	cli_printk("| |   | | '_ \\| |   | |    | | \n");
-	cli_printk("| |___| | | | | |___| |___ | | \n");
-	cli_printk("|_____|_|_| |_|\\____|_____|___|\n");
+	cli_printk(" _     _        ____ _     ___ \r\n");
+	cli_printk("| |   (_)_ __  / ___| |   |_ _|\r\n");
+	cli_printk("| |   | | '_ \\| |   | |    | | \r\n");
+	cli_printk("| |___| | | | | |___| |___ | | \r\n");
+	cli_printk("|_____|_|_| |_|\\____|_____|___|\r\n");
 
-	pr_info("欢迎使用LinCLI\n");
+	pr_info("欢迎使用LinCLI\r\n");
 }
 
 _EXPORT_INIT_SYMBOL(logo, NULL, pr_logo);
