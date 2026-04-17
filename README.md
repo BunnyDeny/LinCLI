@@ -224,7 +224,6 @@ void *cli_task_thread_entry(void *arg)
 int main(void)
 {
     // 硬件初始化 ...
-    cli_io_init();
     scheduler_init();
 
     while (1) {
