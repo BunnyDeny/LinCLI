@@ -329,7 +329,70 @@ void cli_putc(char ch)
 
 ### 4. 链接脚本适配
 
-将 `default.ld` 中自定义段的定义迁移到你的 MCU 链接脚本中：
+首先改写 `链接脚本cli.ld` ，将自定义段定义到单片机的FLASH中，一般的写法如下（仅仅是每个段加上了>FLASH）：
+```ld
+  .cli_commands : {
+    _cli_commands_start = .;
+    KEEP(*(.cli_commands))
+    _cli_commands_end = .;
+  } >FLASH
+  .cli_cmd_line : {
+    _cli_cmd_line_start = .;
+    KEEP(*(.cli_cmd_line))
+    _cli_cmd_line_end = .;
+  } >FLASH
+  .scheduler : {
+    _scheduler_start = .;
+    KEEP(*(.scheduler))
+    _scheduler_end = .;
+  } >FLASH
+  .my_init_d : {
+    _init_d_start = .;
+    KEEP(*(.my_init_d))
+    _init_d_end = .;
+  } >FLASH
+
+  .dispose : {
+    _dispose_start = .;
+    KEEP(*(.dispose))
+    _dispose_end = .;
+  } >FLASH
+```
+然后在mcu的链接脚本中使用  INCLUDE cli.ld 包含上述链接脚本，以某型号的stm32单片机为例子：
+
+```ld
+  ...
+  .fini_array (READONLY) : /* The "READONLY" keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
+    . = ALIGN(4);
+    PROVIDE_HIDDEN (__fini_array_start = .);
+    KEEP (*(SORT(.fini_array.*)))
+    KEEP (*(.fini_array*))
+    PROVIDE_HIDDEN (__fini_array_end = .);
+    . = ALIGN(4);
+  } >FLASH
+
+  /* 包含我们自己的链接脚本，或者更直接，你可以直接将上述cli.ld复制到这里，效果一样 *
+  INCLUDE cli.ld
+
+  /* used by the startup to initialize data */
+  _sidata = LOADADDR(.data);
+
+  /* Initialized data sections goes into RAM, load LMA copy after code */
+  .data :
+  {
+    . = ALIGN(4);
+    _sdata = .;        /* create a global symbol at data start */
+    *(.data)           /* .data sections */
+    *(.data*)          /* .data* sections */
+    *(.RamFunc)        /* .RamFunc sections */
+    *(.RamFunc*)       /* .RamFunc* sections */
+
+    . = ALIGN(4);
+    _edata = .;        /* define a global symbol at data end */
+  } >RAM AT> FLASH
+  ...
+```
 
 ```ld
 .cli_commands : {
