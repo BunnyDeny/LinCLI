@@ -24,8 +24,8 @@
 #include <ctype.h>
 
 struct tStateEngine dispose_mec;
-extern struct tState _dispose_start;
-extern struct tState _dispose_end;
+extern struct tState * const _dispose_start[];
+extern struct tState * const _dispose_end[];
 
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 int g_last_cmd_ret = 0;
@@ -42,8 +42,8 @@ static char cli_help_dep_mark[CLI_HELP_DEP_MARK_SIZE];
  */
 static const cli_command_t *cli_command_find(const char *_name)
 {
-	cli_command_t *_cmd;
-	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, _cmd)
+	const cli_command_t *_cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, _cmd)
 	{
 		if (_cmd->name && strcmp(_cmd->name, _name) == 0)
 			return _cmd;
@@ -527,8 +527,8 @@ _EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start_task, NULL, ".dispose");
  */
 int dispose_init(void)
 {
-	int status = engine_init(&dispose_mec, "dispose_start", &_dispose_start,
-				 &_dispose_end);
+	int status = engine_init(&dispose_mec, "dispose_start", _dispose_start,
+				 _dispose_end);
 	if (status < 0) {
 		return status;
 	}

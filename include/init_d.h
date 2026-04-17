@@ -19,39 +19,35 @@
 #ifndef _INIT_D__H__
 #define _INIT_D__H__
 
-#include <stdint.h>
-
-#define INIT_D_MAGIC 0x494E4931U
-
 struct init_d {
-	uint32_t magic;
 	char name[32];
 	void *_private;
 	void (*_init_entry)(void *);
 } __attribute__((aligned(sizeof(long))));
 
 #define _EXPORT_INIT_SYMBOL(obj, private, init_entry)                    \
-	static struct init_d init_d_##obj __attribute__((                \
-		used, section(".my_init_d"), aligned(sizeof(long)))) = { \
-		.magic = INIT_D_MAGIC,                                   \
+	static struct init_d init_d_##obj = {                            \
 		.name = #obj,                                            \
 		._private = private,                                     \
 		._init_entry = init_entry,                               \
-	}
+	}; \
+	static struct init_d * const _init_d_ptr_##obj \
+		__attribute__((used, section(".my_init_d"), aligned(sizeof(long)))) = \
+		&init_d_##obj
 
-extern struct init_d _init_d_start;
-extern struct init_d _init_d_end;
+extern struct init_d * const _init_d_start[];
+extern struct init_d * const _init_d_end[];
 
 #define _FOR_EACH_INIT_D(_start, _end, _init_d) \
-	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
-	     _addr + sizeof(struct init_d) <= _end_addr; \
-	     _addr += sizeof(struct init_d)) \
-		if (((_init_d) = (struct init_d *)(_addr))->magic == INIT_D_MAGIC)
+	for (struct init_d * const *_pp = (_start); \
+	     _pp < (struct init_d * const *)(_end); \
+	     _pp++) \
+		if (((_init_d) = *_pp))
 
 #define CALL_INIT_D                                                        \
 	do {                                                               \
 		struct init_d *p_init_d;                                   \
-		_FOR_EACH_INIT_D(&_init_d_start, &_init_d_end, p_init_d)   \
+		_FOR_EACH_INIT_D(_init_d_start, _init_d_end, p_init_d)   \
 		{                                                          \
 			if (p_init_d && p_init_d->_init_entry) {           \
 				p_init_d->_init_entry(p_init_d->_private); \

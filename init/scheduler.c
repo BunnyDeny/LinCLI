@@ -25,8 +25,8 @@
 #include "cli_auto_cmd.h"
 
 struct tStateEngine scheduler_eng;
-extern struct tState _scheduler_start;
-extern struct tState _scheduler_end;
+extern struct tState * const _scheduler_start[];
+extern struct tState * const _scheduler_end[];
 
 __attribute__((weak)) void cli_prompt_print(void)
 {
@@ -170,7 +170,7 @@ int scheduler_init(void)
 	int status;
 	cli_io_init();
 	status = engine_init(&scheduler_eng, "scheduler_start",
-			     &_scheduler_start, &_scheduler_end);
+			     _scheduler_start, _scheduler_end);
 	if (status < 0) {
 		pr_emerg("调度器初始化异常，请检查调度器状态机\n");
 		return status;

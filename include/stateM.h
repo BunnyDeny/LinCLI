@@ -44,10 +44,7 @@
 #ifndef _STATE_M_
 #define _STATE_M_
 
-#include <stdint.h>
 #include "rbtree.h"
-
-#define STATE_MAGIC 0x53544131U
 
 #define STATEM_FORMAT_LOG(fmt, ...)
 
@@ -69,7 +66,6 @@
 	}
 
 struct tState {
-	uint32_t magic;      /*magic for section traversal sanity check*/
 	char name[32];
 	struct rb_node node; /*user no need to care*/
 	void (*state_entry)(void *);
@@ -97,9 +93,9 @@ struct tState {
  * 2. Use this macro to export the state, note that obj should not have quotes:
  *    _EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task, NULL, ".scheduler");
  * 3. In initialization code, declare with extern and call engine_init:
- *    extern struct tState _scheduler_start;
- *    extern struct tState _scheduler_end;
- *    engine_init(&engine, "scheduler_idle", &_scheduler_start, &_scheduler_end);
+ *    extern struct tState * const _scheduler_start[];
+ *    extern struct tState * const _scheduler_end[];
+ *    engine_init(&engine, "scheduler_idle", _scheduler_start, _scheduler_end);
  * 4. In the task loop, call stateEngineRun:
  *    stateEngineRun(&engine, NULL);
  * 5. To switch states, call state_switch with the destination state, using the obj parameter
@@ -109,19 +105,21 @@ struct tState {
  * @note For detailed usage, refer to init/scheduler.c and cli_project.ld in this project
  */
 #define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
-	static struct tState state_##obj __attribute__((             \
-		used, section(_section), aligned(sizeof(long)))) = { \
-		.magic = STATE_MAGIC,                                \
+	static struct tState state_##obj = {                         \
 		.name = #obj,                                        \
+		.node = { 0 },                                       \
 		.state_entry = entry,                                \
 		.state_task = task,                                  \
 		.state_exit = exit,                                  \
-	}
+	}; \
+	static struct tState * const _state_ptr_##obj \
+		__attribute__((used, section(_section), aligned(sizeof(long)))) = \
+		&state_##obj
 #define _FOR_EACH_STATE(_start, _end, _state) \
-	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
-	     _addr + sizeof(struct tState) <= _end_addr; \
-	     _addr += sizeof(struct tState)) \
-		if (((_state) = (struct tState *)(_addr))->magic == STATE_MAGIC)
+	for (struct tState * const *_pp = (_start); \
+	     _pp < (struct tState * const *)(_end); \
+	     _pp++) \
+		if (((_state) = *_pp))
 
 struct tStateEngine {
 	struct tState *from;
@@ -130,7 +128,8 @@ struct tStateEngine {
 };
 
 int engine_init(struct tStateEngine *engine, char *startup_state,
-		struct tState *sec_start, struct tState *sec_end);
+		struct tState * const *sec_start,
+		struct tState * const *sec_end);
 int state_switch(struct tStateEngine *engine, char *name);
 int stateEngineRun(struct tStateEngine *engine, void *private);
 

@@ -26,11 +26,8 @@
 #include <stddef.h>
 #include <getopt.h>
 #include <assert.h>
-#include <stdint.h>
 
 #define dispose_exit 1
-
-#define CLI_MAGIC 0x434C4901U
 
 /* ============================================================
  * 类型系统定义
@@ -59,7 +56,6 @@ typedef struct cli_option {
 } cli_option_t;
 
 typedef struct cli_command {
-	uint32_t magic;   // 魔法数，用于段遍历校验
 	const char *name; // 命令名
 	const char *doc; // 命令说明
 	void *arg_struct; // 参数结构体指针（运行时填充）
@@ -75,14 +71,14 @@ typedef struct cli_command {
  * 链接脚本段收集符号声明
  * ============================================================ */
 
-extern cli_command_t _cli_commands_start;
-extern cli_command_t _cli_commands_end;
+extern const cli_command_t * const _cli_commands_start[];
+extern const cli_command_t * const _cli_commands_end[];
 
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd) \
-	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
-	     _addr + sizeof(cli_command_t) <= _end_addr; \
-	     _addr += sizeof(cli_command_t)) \
-		if (((_cmd) = (cli_command_t *)(_addr))->magic == CLI_MAGIC)
+	for (const cli_command_t * const *_pp = (_start); \
+	     _pp < (const cli_command_t * const *)(_end); \
+	     _pp++) \
+		if (((_cmd) = *_pp))
 
 /* ============================================================
  * 宏工具：计算偏移量
@@ -271,9 +267,7 @@ extern cli_command_t _cli_commands_end;
 
 #define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts,     \
 				   _opts_cnt, _vld, _buf, _buf_size, _section) \
-	static cli_command_t _cli_cmd_def_##_obj __attribute__((               \
-		used, section(_section), aligned(sizeof(long)))) = {           \
-		.magic = CLI_MAGIC,                                            \
+	static const cli_command_t _cli_cmd_def_##_obj = {                   \
 		.name = _cmd_str,                                              \
 		.doc = _doc_str,                                               \
 		.arg_struct = NULL,                                            \
@@ -283,7 +277,10 @@ extern cli_command_t _cli_commands_end;
 		.validator = _vld,                                             \
 		.arg_buf = _buf,                                               \
 		.arg_buf_size = _buf_size,                                     \
-	}
+	}; \
+	static const cli_command_t * const _cli_cmd_ptr_##_obj \
+		__attribute__((used, section(_section), aligned(sizeof(long)))) = \
+		&_cli_cmd_def_##_obj
 
 /* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
  * 由于 CLI 解析与执行在单一线程中串行完成，不会产生并发冲突。

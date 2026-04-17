@@ -72,7 +72,7 @@ static int state_insert(struct rb_root *root, struct tState *state_to_insert)
  * @return 0 on success, -1 if engine or startup_state is NULL.
  */
 int engine_init(struct tStateEngine *engine, char *startup_state,
-		struct tState *sec_start, struct tState *sec_end)
+		struct tState * const *sec_start, struct tState * const *sec_end)
 {
 	if (engine == NULL || startup_state == NULL || sec_start == NULL ||
 	    sec_end == NULL)

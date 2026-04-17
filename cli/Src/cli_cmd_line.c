@@ -23,8 +23,8 @@
 #include "cli_cmd_line.h"
 #include "cmd_dispose.h"
 
-extern struct tState _cli_cmd_line_start;
-extern struct tState _cli_cmd_line_end;
+extern struct tState * const _cli_cmd_line_start[];
+extern struct tState * const _cli_cmd_line_end[];
 
 static bool is_valid_char(char c);
 
@@ -158,8 +158,8 @@ static int str_common_prefix_len(const char *a, const char *b)
 
 static const cli_command_t *find_cmd_by_name(const char *name)
 {
-	cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+	const cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (cmd->name && strcmp(cmd->name, name) == 0)
 			return cmd;
@@ -171,9 +171,9 @@ static void complete_command_name(const char *prefix, int prefix_len)
 {
 	const cli_command_t *match = NULL;
 	int match_cnt = 0;
-	cli_command_t *cmd;
+	const cli_command_t *cmd;
 
-	_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd->name)
 			continue;
@@ -199,8 +199,8 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		char lcp[CMD_LINE_BUF_SIZE];
 		memcpy(lcp, match->name, lcp_len);
 
-		cli_command_t *cmd2;
-		_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end,
+		const cli_command_t *cmd2;
+		_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end,
 				      cmd2)
 		{
 			if (!cmd2->name)
@@ -216,8 +216,8 @@ static void complete_command_name(const char *prefix, int prefix_len)
 			cmd_line_replace(lcp, lcp_len);
 		} else {
 			cli_out_push((_u8 *)"\a\n", 2);
-			_FOR_EACH_CLI_COMMAND(&_cli_commands_start,
-					      &_cli_commands_end, cmd)
+			_FOR_EACH_CLI_COMMAND(_cli_commands_start,
+					      _cli_commands_end, cmd)
 			{
 				if (!cmd->name)
 					continue;
@@ -415,7 +415,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 int cli_cmd_line_init(void)
 {
 	int status = engine_init(&cmd_line_mec, "cmd_line_start",
-				 &_cli_cmd_line_start, &_cli_cmd_line_end);
+				 _cli_cmd_line_start, _cli_cmd_line_end);
 	if (status < 0) {
 		return status;
 	}
