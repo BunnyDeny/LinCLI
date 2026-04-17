@@ -45,8 +45,8 @@ static int bool_handler(void *_args)
 {
 	struct bool_args *args = _args;
 	cli_printk("BOOL test executed!\n");
-	if (args->verbose)
-		cli_printk("  verbose = true\n");
+	(args->verbose) ? cli_printk("  verbose = true\n") :
+			  cli_printk("  verbose = false\n");
 	return 0;
 }
 
