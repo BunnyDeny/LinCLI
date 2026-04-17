@@ -358,7 +358,7 @@ void cli_putc(char ch)
     _dispose_end = .;
   } >FLASH
 ```
-然后在mcu的链接脚本中使用  INCLUDE cli.ld 包含上述链接脚本，以某型号的stm32单片机为例子：
+然后在mcu的链接脚本中使用  INCLUDE cli.ld 包含上述链接脚本，以某型号的stm32单片机的makefile工程的ld文件为例子：
 
 ```ld
   ...
@@ -392,29 +392,6 @@ void cli_putc(char ch)
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
   ...
-```
-
-```ld
-.cli_commands : {
-    _cli_commands_start = .;
-    *(.cli_commands)
-    _cli_commands_end = .;
-}
-.cli_cmd_line : {
-    _cli_cmd_line_start = .;
-    *(.cli_cmd_line)
-    _cli_cmd_line_end = .;
-}
-.scheduler : {
-    _scheduler_start = .;
-    *(.scheduler)
-    _scheduler_end = .;
-}
-.my_init_d : {
-    _init_d_start = .;
-    *(.my_init_d)
-    _init_d_end = .;
-}
 ```
 
 > **不要畏惧 `default.ld` 的篇幅**：它看起来很长，但其实只是在 GCC 为 x86_64 Linux 平台生成的**默认链接脚本**基础上，增加了上面这寥寥几行段收集代码而已。你真正需要关心的，就是本文档中提到的这几个自定义段及其起始/结束符号。
