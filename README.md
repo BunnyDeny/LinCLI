@@ -351,7 +351,6 @@ void cli_putc(char ch)
     KEEP(*(.my_init_d))
     _init_d_end = .;
   } >FLASH
-
   .dispose : {
     _dispose_start = .;
     KEEP(*(.dispose))

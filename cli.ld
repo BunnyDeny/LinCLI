@@ -18,7 +18,6 @@
     KEEP(*(.my_init_d))
     _init_d_end = .;
   }
-
   .dispose : {
     _dispose_start = .;
     KEEP(*(.dispose))
