@@ -22,6 +22,7 @@
 #include <string.h>
 #include "cli_cmd_line.h"
 #include "cmd_dispose.h"
+#include "cli_auto_cmd.h"
 
 struct tStateEngine scheduler_eng;
 extern struct tState _scheduler_start;
@@ -42,9 +43,9 @@ void start_entry(void *private)
 }
 int start_task(void *private)
 {
-	int status = state_switch(&scheduler_eng, "scheduler_get_char");
+	int status = state_switch(&scheduler_eng, "scheduler_auto_run");
 	if (status < 0) {
-		pr_crit("[scheduler]切换空闲任务异常\n");
+		pr_crit("[scheduler]切换自动运行任务异常\n");
 		return status;
 	}
 	return 0;
@@ -93,16 +94,62 @@ _EXPORT_STATE_SYMBOL(scheduler_get_char, scheduler_get_char_entry,
 		     scheduler_get_char_task, scheduler_get_char_exit,
 		     ".scheduler");
 
-void scheduler_dispose_entry(void *arg)
+static int auto_run_idx = 0;
+
+void scheduler_auto_run_entry(void *private)
 {
-	int status = dispose_init();
-	if (status < 0) {
-		pr_err("dispose_init异常\n");
-	}
+	auto_run_idx = 0;
 }
+
+int scheduler_auto_run_task(void *private)
+{
+	extern int g_last_cmd_ret;
+
+	if (!cli_auto_cmds || cli_auto_cmds_count <= 0) {
+		int status = state_switch(&scheduler_eng, "scheduler_get_char");
+		return status < 0 ? status : 0;
+	}
+
+	while (auto_run_idx < cli_auto_cmds_count) {
+		const char *cmd = cli_auto_cmds[auto_run_idx];
+		if (!cmd) {
+			auto_run_idx++;
+			continue;
+		}
+
+		int len = strlen(cmd);
+		if (len >= CMD_LINE_BUF_SIZE)
+			len = CMD_LINE_BUF_SIZE - 1;
+		memset(origin_cmd.buf, 0, CMD_LINE_BUF_SIZE);
+		memcpy(origin_cmd.buf, cmd, len);
+		origin_cmd.size = len;
+
+		int status = dispose_task(origin_cmd.buf);
+		if (status < 0) {
+			return status;
+		}
+
+		if (g_last_cmd_ret < 0) {
+			pr_err("自动命令执行失败，停止后续执行\n");
+			int s = state_switch(&scheduler_eng,
+					     "scheduler_get_char");
+			return s < 0 ? s : 0;
+		}
+
+		auto_run_idx++;
+	}
+
+	int status = state_switch(&scheduler_eng, "scheduler_get_char");
+	return status < 0 ? status : 0;
+}
+_EXPORT_STATE_SYMBOL(scheduler_auto_run, scheduler_auto_run_entry,
+		     scheduler_auto_run_task, NULL, ".scheduler");
+
 int scheduler_dispose_task(void *arg)
 {
 	int status;
+	(void)arg;
+
 	status = dispose_task(origin_cmd.buf);
 	if (status < 0) {
 		return status;
@@ -114,8 +161,8 @@ int scheduler_dispose_task(void *arg)
 	}
 	return 0;
 }
-_EXPORT_STATE_SYMBOL(schedule_dispose, scheduler_dispose_entry,
-		     scheduler_dispose_task, NULL, ".scheduler");
+_EXPORT_STATE_SYMBOL(schedule_dispose, NULL, scheduler_dispose_task, NULL,
+		     ".scheduler");
 
 int scheduler_init(void)
 {

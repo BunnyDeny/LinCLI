@@ -19,6 +19,7 @@
 #include "cmd_dispose.h"
 #include "stateM.h"
 #include "cli_io.h"
+#include "cli_cmd_line.h"
 #include <stdlib.h>
 #include <ctype.h>
 
@@ -27,6 +28,7 @@ extern struct tState _dispose_start;
 extern struct tState _dispose_end;
 
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
+int g_last_cmd_ret = 0;
 
 /**
  * @brief 在链接脚本段中按名称查找已注册的命令。
@@ -457,17 +459,20 @@ static int dispose_start_task(void *cmd)
 	int argc = tokenize((char *)cmd, argv, 64);
 	cli_printk("\r\n");
 	if (argc < 1) {
+		g_last_cmd_ret = 0;
 		return dispose_exit;
 	}
 
 	const cli_command_t *cmd_def = cli_command_find(argv[0]);
 	if (!cmd_def) {
 		pr_err("未知命令: %s\n", argv[0]);
+		g_last_cmd_ret = -1;
 		return dispose_exit;
 	}
 
 	if (has_help_flag(argc, argv)) {
 		cli_print_help(cmd_def);
+		g_last_cmd_ret = 0;
 		return dispose_exit;
 	}
 
@@ -476,6 +481,7 @@ static int dispose_start_task(void *cmd)
 		pr_err("命令 %s 的参数缓冲区不足 (%zu > %zu)\n", cmd_def->name,
 		       cmd_def->arg_struct_size,
 		       cmd_def->arg_buf ? cmd_def->arg_buf_size : 0);
+		g_last_cmd_ret = -1;
 		return dispose_exit;
 	}
 
@@ -485,16 +491,20 @@ static int dispose_start_task(void *cmd)
 	if (status < 0) {
 		pr_err("命令解析失败: %s\n", argv[0]);
 		cli_print_help(cmd_def);
+		g_last_cmd_ret = -1;
 		return dispose_exit;
 	}
 
 	if (cmd_def->validator) {
 		int ret = cmd_def->validator(cmd_def->arg_buf);
+		g_last_cmd_ret = ret;
 		if (ret < 0) {
 			pr_err("命令 %s 执行失败，返回值: %d\n", cmd_def->name,
 			       ret);
 			return dispose_exit;
 		}
+	} else {
+		g_last_cmd_ret = 0;
 	}
 
 	return dispose_exit;
@@ -514,22 +524,97 @@ int dispose_init(void)
 	return 0;
 }
 
-/**
- * @brief 运行 dispose 状态机，直到当前状态任务返回 dispose_exit。
- */
-int dispose_task(char *cmd)
+/* ============================================================
+ *  命令链（&&）支持
+ * ============================================================ */
+
+#define CMD_CHAIN_MAX 8
+
+static int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 {
-	int status = 0;
+	int cnt = 0;
+	char *p = buf;
+
+	while (*p && cnt < max_cmds) {
+		while (*p == ' ')
+			p++;
+		if (!*p)
+			break;
+
+		cmds[cnt++] = p;
+
+		char *next = strstr(p, "&&");
+		if (next) {
+			*next = '\0';
+			char *end = next - 1;
+			while (end > p && *end == ' ')
+				*end-- = '\0';
+			p = next + 2;
+		} else {
+			char *end = p + strlen(p) - 1;
+			while (end > p && *end == ' ')
+				*end-- = '\0';
+			break;
+		}
+	}
+	return cnt;
+}
+
+static int run_dispose_once(char *cmd)
+{
+	int status = dispose_init();
+	if (status < 0) {
+		pr_err("dispose_init异常\n");
+		return -1;
+	}
+
+	g_last_cmd_ret = 0;
 	while (1) {
 		status = stateEngineRun(&dispose_mec, cmd);
 		if (status < 0) {
 			pr_err("dispose状态机异常\n");
 			return -1;
 		} else if (status == dispose_exit) {
-			return status;
+			return 0;
 		}
 	}
-	return 0;
+}
+
+/**
+ * @brief 运行 dispose 状态机，支持 && 命令链。
+ */
+int dispose_task(char *cmd)
+{
+	if (!cmd || !cmd[0]) {
+		g_last_cmd_ret = 0;
+		return dispose_exit;
+	}
+
+	char chain_buf[CMD_LINE_BUF_SIZE];
+	int len = strlen(cmd);
+	if (len >= CMD_LINE_BUF_SIZE)
+		len = CMD_LINE_BUF_SIZE - 1;
+	memcpy(chain_buf, cmd, len);
+	chain_buf[len] = '\0';
+
+	char *cmds[CMD_CHAIN_MAX];
+	int cnt = split_cmd_chain(chain_buf, cmds, CMD_CHAIN_MAX);
+
+	for (int i = 0; i < cnt; i++) {
+		if (!cmds[i] || cmds[i][0] == '\0') {
+			pr_err("空命令\n");
+			return dispose_exit;
+		}
+
+		int status = run_dispose_once(cmds[i]);
+		if (status < 0)
+			return status;
+
+		if (g_last_cmd_ret < 0)
+			return dispose_exit;
+	}
+
+	return dispose_exit;
 }
 
 /* ============================================================
