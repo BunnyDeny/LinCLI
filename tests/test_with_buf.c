@@ -50,7 +50,7 @@ struct tw_args {
 };
 
 /* 用户自定义的独立参数缓冲区 */
-static char tw_buf[1024];
+static char tw_buf[128];
 
 static int tw_handler(void *_args)
 {
