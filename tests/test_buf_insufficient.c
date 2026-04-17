@@ -25,20 +25,20 @@
  * 1. big1 —— 使用默认共享缓冲区 g_cli_cmd_buf（大小为 CLI_CMD_BUF_SIZE）
  *    结构体仅包含一个 char[CLI_CMD_BUF_SIZE] 数组，因此结构体大小恰好等于
  *    CLI_CMD_BUF_SIZE，剩余空间为 0。注册了 1 个 BOOL 选项后，opt_seen
- *    需要 1 字节，0 < 1，会触发 "命令 big1 的参数缓冲区不足以容纳解析状态"。
+ *    需要 1 字节，0 < 1，会触发 "命令 big1 缓冲区不足，缺少 1 字节"。
  *
  * 2. big2 —— 使用 CLI_COMMAND_WITH_BUF 指定独立缓冲区 big2_buf（1 B）
  *    结构体仅包含一个 char[1]，大小为 1，剩余空间为 0。注册了 1 个选项后，
- *    opt_seen 需要 1 字节，0 < 1，同样会触发缓冲区不足错误。
+ *    opt_seen 需要 1 字节，0 < 1，同样会触发 "命令 big2 缓冲区不足，缺少 1 字节"。
  *
  * 预期终端输出：
  *   lin@linCli> big1
- *   [ERR] 命令 big1 的参数缓冲区不足以容纳解析状态
+ *   [ERR] 命令 big1 缓冲区不足，缺少 1 字节
  *   [ERR] 命令解析失败: big1
  *   ...
  *
  *   lin@linCli> big2
- *   [ERR] 命令 big2 的参数缓冲区不足以容纳解析状态
+ *   [ERR] 命令 big2 缓冲区不足，缺少 1 字节
  *   [ERR] 命令解析失败: big2
  *   ...
  */
