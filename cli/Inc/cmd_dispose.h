@@ -86,10 +86,6 @@ extern const cli_command_t * const _cli_commands_end[];
 
 #define CLI_OFFSETOF(type, field) offsetof(type, field)
 
-// 安全地获取数组长度的偏移量（假设紧跟在数组指针后面的是_count字段）
-#define CLI_ARRAY_COUNT_OFFSET(type, field) \
-	(offsetof(type, field) + sizeof(((type *)0)->field))
-
 /* ============================================================
  * OPTION 宏定义（统一入口）
  * ============================================================
