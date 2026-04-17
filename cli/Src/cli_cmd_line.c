@@ -498,7 +498,7 @@ int cmd_line_start_task(void *pch)
 			return status;
 		}
 	} else {
-		status = state_switch(&cmd_line_mec, "unvalid_char");
+		status = state_switch(&cmd_line_mec, "invalid_char");
 		if (status < 0) {
 			return status;
 		}
@@ -560,7 +560,7 @@ label_cmd_line_exit:
 }
 _EXPORT_STATE_SYMBOL(valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
 
-int unvalid_char_task(void *pch)
+int invalid_char_task(void *pch)
 {
 	char ch = *((char *)pch);
 	char *next_state;
@@ -591,7 +591,7 @@ int unvalid_char_task(void *pch)
 		return status;
 	return 0;
 }
-_EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
+_EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
 		     ".cli_cmd_line");
 
 int ESC_handler(void *pch)

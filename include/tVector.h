@@ -48,7 +48,7 @@ void vectorInit(struct vector *v, _u8 *buf, int buf_size);
 bool at(struct vector *v, int pos, _u8 *data);
 bool pop_front(struct vector *v, int n);
 bool pop_back(struct vector *v, int n);
-bool push_font(struct vector *v, _u8 *date, int n);
+bool push_front(struct vector *v, _u8 *date, int n);
 bool push_back(struct vector *v, _u8 *date, int n);
 
 #endif

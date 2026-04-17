@@ -56,7 +56,7 @@ bool pop_back(struct vector *v, int n)
 	return true;
 }
 
-bool push_font(struct vector *v, _u8 *date, int n)
+bool push_front(struct vector *v, _u8 *date, int n)
 {
 	if (v->size + n > v->buf_size || n <= 0) {
 		return false;

@@ -112,43 +112,43 @@ __attribute__((weak)) const char *pre_CONT_gen(void)
 	return COLOR_CYAN "[CONT] ";
 }
 
-static const char *prefiex_gen(const char *level)
+static const char *prefix_gen(const char *level)
 {
 	char lv = level[0];
-	const char *prefiex;
+	const char *prefix;
 	switch (lv) {
 	case '0':
-		prefiex = pre_EMERG_gen();
+		prefix = pre_EMERG_gen();
 		break;
 	case '1':
-		prefiex = pre_ALERT_gen();
+		prefix = pre_ALERT_gen();
 		break;
 	case '2':
-		prefiex = pre_CRIT_gen();
+		prefix = pre_CRIT_gen();
 		break;
 	case '3':
-		prefiex = pre_ERR_gen();
+		prefix = pre_ERR_gen();
 		break;
 	case '4':
-		prefiex = pre_WARNING_gen();
+		prefix = pre_WARNING_gen();
 		break;
 	case '5':
-		prefiex = pre_NOTICE_gen();
+		prefix = pre_NOTICE_gen();
 		break;
 	case '6':
-		prefiex = pre_INFO_gen();
+		prefix = pre_INFO_gen();
 		break;
 	case '7':
-		prefiex = pre_DEBUG_gen();
+		prefix = pre_DEBUG_gen();
 		break;
 	case 'c':
-		prefiex = pre_CONT_gen();
+		prefix = pre_CONT_gen();
 		break;
 	default:
-		prefiex = pre_DEFAULT_gen();
+		prefix = pre_DEFAULT_gen();
 		break;
 	}
-	return prefiex;
+	return prefix;
 }
 
 static inline int is_kern_level(char c)
@@ -176,7 +176,7 @@ int cli_printk(const char *fmt, ...)
 	    strcmp("8", log_level)) {
 		return 0;
 	}
-	const char *_pre = prefiex_gen(pre);
+	const char *_pre = prefix_gen(pre);
 	if (is_kern_level(buffer[0])) {
 		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
 	}

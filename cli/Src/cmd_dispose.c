@@ -112,6 +112,7 @@ struct parse_state {
 	int cur_opt_idx;
 	char *scratch_pool;
 	size_t scratch_remain;
+	const cli_command_t *cmd;
 };
 
 static int check_prev_opt_missing_arg(struct parse_state *state)
@@ -177,9 +178,14 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 	if (!arr) {
 		size_t need = opt->max_args * sizeof(int);
 		if (need > state->scratch_remain) {
-			pr_err("选项 -%c/--%s 缓冲区不足\n",
+			pr_err("选项 -%c/--%s 缓冲区不足 (需 %zu 字节, scratch 剩余 %zu 字节; 布局: arg_buf=%zu, arg_struct=%zu, opt_seen=%zu, scratch=%zu)\n",
 			       opt->short_opt ? opt->short_opt : ' ',
-			       opt->long_opt ? opt->long_opt : "");
+			       opt->long_opt ? opt->long_opt : "",
+			       need, state->scratch_remain,
+			       state->cmd->arg_buf_size, state->cmd->arg_struct_size,
+			       state->cmd->option_count * sizeof(bool),
+			       state->cmd->arg_buf_size > state->cmd->arg_struct_size ?
+				       (state->cmd->arg_buf_size - state->cmd->arg_struct_size) : 0);
 			return -1;
 		}
 		arr = (int *)state->scratch_pool;
@@ -345,7 +351,9 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 
 	size_t opt_seen_need = cmd->option_count * sizeof(bool);
 	if (scratch_size < opt_seen_need) {
-		pr_err("命令 %s 的参数缓冲区不足以容纳解析状态\n", cmd->name);
+		pr_err("命令 %s 的参数缓冲区不足以容纳解析状态 (arg_buf=%zu, arg_struct=%zu, opt_seen=%zu, 剩余=%zu)\n",
+		       cmd->name, cmd->arg_buf_size, cmd->arg_struct_size,
+		       opt_seen_need, scratch_size);
 		return -1;
 	}
 	bool *opt_seen = (bool *)scratch;
@@ -356,6 +364,7 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	struct parse_state state = { 0 };
 	state.scratch_pool = scratch;
 	state.scratch_remain = scratch_size;
+	state.cmd = cmd;
 
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
@@ -377,7 +386,12 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 				}
 				if (end > i) {
 					if (total + 1 > state.scratch_remain) {
-						pr_err("字符串参数过长\n");
+						pr_err("字符串参数过长 (需 %zu 字节, scratch 剩余 %zu 字节; 布局: arg_buf=%zu, arg_struct=%zu, opt_seen=%zu, scratch=%zu)\n",
+						       total + 1, state.scratch_remain,
+						       state.cmd->arg_buf_size, state.cmd->arg_struct_size,
+						       state.cmd->option_count * sizeof(bool),
+						       state.cmd->arg_buf_size > state.cmd->arg_struct_size ?
+							       (state.cmd->arg_buf_size - state.cmd->arg_struct_size) : 0);
 						return -1;
 					}
 					char *dest = state.scratch_pool;
@@ -487,11 +501,15 @@ static int dispose_start_task(void *cmd)
 		return dispose_exit;
 	}
 
-	if (!cmd_def->arg_buf ||
-	    cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
-		pr_err("命令 %s 的参数缓冲区不足 (%zu > %zu)\n", cmd_def->name,
-		       cmd_def->arg_struct_size,
-		       cmd_def->arg_buf ? cmd_def->arg_buf_size : 0);
+	if (!cmd_def->arg_buf) {
+		pr_err("命令 %s 未分配参数缓冲区\n", cmd_def->name);
+		g_last_cmd_ret = -1;
+		return dispose_exit;
+	}
+	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
+		pr_err("命令 %s 的参数缓冲区不足 (arg_struct=%zu > arg_buf=%zu)\n",
+		       cmd_def->name, cmd_def->arg_struct_size,
+		       cmd_def->arg_buf_size);
 		g_last_cmd_ret = -1;
 		return dispose_exit;
 	}
