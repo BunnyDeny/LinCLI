@@ -416,7 +416,7 @@ OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose",
 | 4 | `"Tag list"` | **帮助文本**。`log --help` 时显示在该选项后面。 |
 | 5 | `struct log_args` | **参数结构体类型**。必须与 `CLI_COMMAND` 第 5 个参数推导出的类型一致。 |
 | 6 | `tags` | **结构体字段名**。解析成功后，结果会写入 `args->tags`。对于 `INT_ARRAY`，该字段必须是 `int *` 类型。框架会自动寻找同名的 `_count` 字段（如 `tags` → `tags_count`）来存放实际解析到的元素个数。 |
-| 7 | `8` | **最大参数个数**（仅 `INT_ARRAY` 有效）。表示该数组选项最多接收 8 个整数，同时框架也会一次性从 `arg_buf` 尾部预分配 `8 × sizeof(int)` 字节的内存。如果缓冲区剩余空间不足，解析会直接失败。 |
+| 7 | `8` | **最大参数个数**（仅 `INT_ARRAY` 有效）。表示该数组选项最多接收 8 个整数，同时框架也会在 `arg_buf` 尾部静态预留 `8 × sizeof(int)` 字节的连续空间用于存放解析结果。如果 `arg_buf` 尾部剩余空间不足，解析会直接失败。 |
 | 8 | `"!verbose"` | **依赖/互斥字符串**。<br>• 普通字符串（如 `"verbose"`）→ **依赖**：表示该选项只有在 `-v`/`--verbose` 也出现时才合法。<br>• 以 `!` 开头的字符串（如 `"!verbose"`）→ **互斥**：表示该选项与 `-v`/`--verbose` **不能同时出现**。 |
 | 9 | `true` | **是否必需**（`required`）。`true` 表示用户必须提供该选项，否则报错。 |
 
@@ -424,7 +424,7 @@ OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose",
 >
 > 1. **字段名配对**：若 `INT_ARRAY` 的字段名为 `xxx`，则结构体中**必须存在**名为 `xxx_count` 的字段（类型通常为 `size_t`），用于存放实际解析到的数组长度。该字段在结构体中的位置没有强制要求。
 > 2. **初始化为 `NULL`**：`int *xxx` 字段在解析前必须保证为 `NULL`（框架会在 `cli_auto_parse` 开始时 `memset(arg_struct, 0, ...)` 清零，因此默认即可满足）。如果用户手动将其设为某个非 `NULL` 指针，框架会直接把解析结果写入该地址，**不再进行任何边界检查**，可能导致越界。
-> 3. **内存上限**：`max_args` 同时决定了“允许用户输入的最大个数”和“一次性预分配的内存大小”。如果 `arg_buf` 尾部剩余空间 < `max_args × sizeof(int)`，即使只输入 1 个整数也会直接报错“缓冲区不足”。
+> 3. **静态缓冲区上限**：`max_args` 同时决定了“允许用户输入的最大个数”和“框架静态预留的连续空间大小”。如果 `arg_buf` 尾部剩余空间 < `max_args × sizeof(int)`，即使只输入 1 个整数也会直接报错“缓冲区不足”。
 
 对于参数较少的重载，后面的参数依次省略即可。例如上面的 `OPTION('f', "file", STRING, "Log file path", struct log_args, file, true)` 是 **7 参数**形式，最后一个 `true` 表示 `required`；而 `OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose")` 是 **8 参数**形式，`required` 缺省为 `false`。
 
@@ -637,7 +637,7 @@ lin@linCli>
 
 ### 9. `tw` — CLI_COMMAND_WITH_BUF 独立缓冲区测试
 
-**命令描述**：演示为命令分配独立的参数解析缓冲区（而非共享 `g_cli_cmd_buf`）。  
+**命令描述**：演示为命令指定独立的静态参数解析缓冲区（而非共享 `g_cli_cmd_buf`）。  
 **选项**：
 - `-v, --verbose`
 - `-n, --nums <list>`（INT_ARRAY，最多 16 个）
