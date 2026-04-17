@@ -120,7 +120,7 @@ struct tState {
 #define _FOR_EACH_STATE(_start, _end, _state) \
 	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
 	     _addr + sizeof(struct tState) <= _end_addr; \
-	     _addr += sizeof(long)) \
+	     _addr += sizeof(struct tState)) \
 		if (((_state) = (struct tState *)(_addr))->magic == STATE_MAGIC)
 
 struct tStateEngine {

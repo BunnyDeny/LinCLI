@@ -45,7 +45,7 @@ extern struct init_d _init_d_end;
 #define _FOR_EACH_INIT_D(_start, _end, _init_d) \
 	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
 	     _addr + sizeof(struct init_d) <= _end_addr; \
-	     _addr += sizeof(long)) \
+	     _addr += sizeof(struct init_d)) \
 		if (((_init_d) = (struct init_d *)(_addr))->magic == INIT_D_MAGIC)
 
 #define CALL_INIT_D                                                        \

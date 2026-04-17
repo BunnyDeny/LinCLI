@@ -81,7 +81,7 @@ extern cli_command_t _cli_commands_end;
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd) \
 	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
 	     _addr + sizeof(cli_command_t) <= _end_addr; \
-	     _addr += sizeof(long)) \
+	     _addr += sizeof(cli_command_t)) \
 		if (((_cmd) = (cli_command_t *)(_addr))->magic == CLI_MAGIC)
 
 /* ============================================================
