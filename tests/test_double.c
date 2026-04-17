@@ -38,11 +38,10 @@
  * 选项，要么直接调试程序看factor对应的值是否和预期对应即
  * 可
  */
--specs = nano.specs
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
-	 struct double_args {
+struct double_args {
 	double factor;
 };
 
