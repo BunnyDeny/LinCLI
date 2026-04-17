@@ -32,12 +32,17 @@
  * 预期输出（颜色前缀已省略）：
  *   DOUBLE test executed!
  *     factor = 3.140000
+ * 注意，链接器如果配置了-specs=nano.specs选项，会导致
+ * 无法格式化打印float,double等浮点数，会导致本测试用例
+ * 无法正常打印factor的值，此时要么去掉-specs=nano.specs
+ * 选项，要么直接调试程序看factor对应的值是否和预期对应即
+ * 可
  */
-
+-specs = nano.specs
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
-struct double_args {
+	 struct double_args {
 	double factor;
 };
 
