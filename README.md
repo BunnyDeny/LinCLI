@@ -706,11 +706,11 @@ lin@linCli> tb <Tab>
 lin@linCli> tb
 ```
 
-输入 `-` 后按 `Tab`，只列出**短选项**：
+输入 `-` 后按 `Tab`，列出该命令的**所有选项**（短选项 + 长选项）：
 
 ```text
 lin@linCli> tb -<Tab>
--v
+-v --verbose
 lin@linCli> tb -
 ```
 
