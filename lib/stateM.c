@@ -85,9 +85,6 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
 	struct tState *state;
 	_FOR_EACH_STATE(sec_start, sec_end, state)
 	{
-		if (state == NULL) {
-			return -3;
-		}
 		state_insert(rbtree_root, state);
 	}
 

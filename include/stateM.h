@@ -44,7 +44,10 @@
 #ifndef _STATE_M_
 #define _STATE_M_
 
+#include <stdint.h>
 #include "rbtree.h"
+
+#define STATE_MAGIC 0x53544131U
 
 #define STATEM_FORMAT_LOG(fmt, ...)
 
@@ -66,6 +69,7 @@
 	}
 
 struct tState {
+	uint32_t magic;      /*magic for section traversal sanity check*/
 	char name[32];
 	struct rb_node node; /*user no need to care*/
 	void (*state_entry)(void *);
@@ -107,13 +111,17 @@ struct tState {
 #define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section)       \
 	static struct tState state_##obj __attribute__((             \
 		used, section(_section), aligned(sizeof(long)))) = { \
+		.magic = STATE_MAGIC,                                \
 		.name = #obj,                                        \
 		.state_entry = entry,                                \
 		.state_task = task,                                  \
 		.state_exit = exit,                                  \
 	}
 #define _FOR_EACH_STATE(_start, _end, _state) \
-	for ((_state) = (_start); (_state) < (_end); (_state)++)
+	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
+	     _addr + sizeof(struct tState) <= _end_addr; \
+	     _addr += sizeof(long)) \
+		if (((_state) = (struct tState *)(_addr))->magic == STATE_MAGIC)
 
 struct tStateEngine {
 	struct tState *from;

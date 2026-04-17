@@ -26,8 +26,11 @@
 #include <stddef.h>
 #include <getopt.h>
 #include <assert.h>
+#include <stdint.h>
 
 #define dispose_exit 1
+
+#define CLI_MAGIC 0x434C4901U
 
 /* ============================================================
  * 类型系统定义
@@ -56,6 +59,7 @@ typedef struct cli_option {
 } cli_option_t;
 
 typedef struct cli_command {
+	uint32_t magic;   // 魔法数，用于段遍历校验
 	const char *name; // 命令名
 	const char *doc; // 命令说明
 	void *arg_struct; // 参数结构体指针（运行时填充）
@@ -75,7 +79,10 @@ extern cli_command_t _cli_commands_start;
 extern cli_command_t _cli_commands_end;
 
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd) \
-	for ((_cmd) = (_start); (_cmd) < (_end); (_cmd)++)
+	for (uintptr_t _addr = (uintptr_t)(_start), _end_addr = (uintptr_t)(_end); \
+	     _addr + sizeof(cli_command_t) <= _end_addr; \
+	     _addr += sizeof(long)) \
+		if (((_cmd) = (cli_command_t *)(_addr))->magic == CLI_MAGIC)
 
 /* ============================================================
  * 宏工具：计算偏移量
@@ -266,6 +273,7 @@ extern cli_command_t _cli_commands_end;
 				   _opts_cnt, _vld, _buf, _buf_size, _section) \
 	static cli_command_t _cli_cmd_def_##_obj __attribute__((               \
 		used, section(_section), aligned(sizeof(long)))) = {           \
+		.magic = CLI_MAGIC,                                            \
 		.name = _cmd_str,                                              \
 		.doc = _doc_str,                                               \
 		.arg_struct = NULL,                                            \
