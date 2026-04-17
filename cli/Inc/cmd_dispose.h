@@ -232,23 +232,6 @@ extern const cli_command_t * const _cli_commands_end[];
 	CLI_OFFSETOF(_stype, _field##_count)
 
 /* ============================================================
- * 位置参数宏（非选项参数）
- * ============================================================ */
-
-#define POSITIONAL(index, name, _type, _stype, _field)  \
-	{                                               \
-		.short_opt = 0,                         \
-		.long_opt = name,                       \
-		.type = CLI_TYPE_##_type,               \
-		.help = name " (positional)",           \
-		.offset = CLI_OFFSETOF(_stype, _field), \
-		.offset_count = 0,                      \
-		.max_args = 1,                          \
-		.required = true,                       \
-		.depends = NULL,                        \
-	}
-
-/* ============================================================
  * CLI_COMMAND宏：注册一个命令（通过链接脚本段收集）
  * ============================================================
  *

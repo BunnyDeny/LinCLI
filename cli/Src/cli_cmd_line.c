@@ -318,6 +318,57 @@ static void replace_long_option(const char *long_opt, int long_len)
 	cmd_line_replace(new_buf, new_size);
 }
 
+static void replace_short_option(char c)
+{
+	char new_buf[CMD_LINE_BUF_SIZE];
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	memcpy(new_buf, cmd_line.buf, tok_start);
+	new_buf[tok_start] = '-';
+	new_buf[tok_start + 1] = c;
+	int new_size = tok_start + 2;
+	if (new_size < CMD_LINE_BUF_SIZE - 1) {
+		new_buf[new_size] = ' ';
+		new_size++;
+	}
+	cmd_line_replace(new_buf, new_size);
+}
+
+static bool is_last_full_token_the_only_option(const cli_command_t *cmd)
+{
+	if (cmd->option_count != 1)
+		return false;
+
+	int end = cmd_line.size - 1;
+	while (end >= 0 && cmd_line.buf[end] == ' ')
+		end--;
+	if (end < 0)
+		return false;
+
+	int start = end;
+	while (start >= 0 && cmd_line.buf[start] != ' ')
+		start--;
+	start++;
+
+	int len = end - start + 1;
+	const cli_option_t *opt = &cmd->options[0];
+
+	if (opt->long_opt) {
+		int llen = (int)strlen(opt->long_opt);
+		if (len == llen + 2 &&
+		    cmd_line.buf[start] == '-' &&
+		    cmd_line.buf[start + 1] == '-' &&
+		    strncmp(&cmd_line.buf[start + 2], opt->long_opt, llen) == 0)
+			return true;
+	}
+	if (opt->short_opt) {
+		if (len == 2 &&
+		    cmd_line.buf[start] == '-' &&
+		    cmd_line.buf[start + 1] == opt->short_opt)
+			return true;
+	}
+	return false;
+}
+
 static void complete_long_option(const cli_command_t *cmd,
 				 const char *name_prefix, int name_prefix_len)
 {
@@ -368,11 +419,43 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 			    int prefix_len)
 {
 	if (prefix_len == 0) {
-		list_all_options(cmd);
+		if (cmd->option_count == 1) {
+			const cli_option_t *opt = &cmd->options[0];
+			if (is_last_full_token_the_only_option(cmd)) {
+				cli_out_push((_u8 *)"\a", 1);
+				cli_out_sync();
+			} else if (opt->long_opt) {
+				replace_long_option(opt->long_opt,
+					    (int)strlen(opt->long_opt));
+			} else if (opt->short_opt) {
+				replace_short_option(opt->short_opt);
+			} else {
+				cli_out_push((_u8 *)"\a", 1);
+				cli_out_sync();
+			}
+		} else if (cmd->option_count > 0) {
+			list_all_options(cmd);
+		} else {
+			cli_out_push((_u8 *)"\a", 1);
+			cli_out_sync();
+		}
 		return;
 	}
 	if (prefix_len == 1 && prefix[0] == '-') {
-		list_all_options(cmd);
+		if (cmd->option_count == 1) {
+			const cli_option_t *opt = &cmd->options[0];
+			if (opt->long_opt) {
+				replace_long_option(opt->long_opt,
+					    (int)strlen(opt->long_opt));
+			} else if (opt->short_opt) {
+				replace_short_option(opt->short_opt);
+			} else {
+				cli_out_push((_u8 *)"\a", 1);
+				cli_out_sync();
+			}
+		} else {
+			list_all_options(cmd);
+		}
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] == '-') {

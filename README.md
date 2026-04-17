@@ -703,23 +703,43 @@ lin@linCli> tb
 
 #### 命令选项补全
 
-在命令名后按空格再按 `Tab`，会列出该命令的**所有选项**（短选项 + 长选项）：
+在命令名后按空格再按 `Tab`：
 
-```text
-lin@linCli> tb <Tab>
--v --verbose
-lin@linCli> tb
-```
+- **若该命令只有一个选项**：直接补全该选项的长选项（或短选项），并追加空格：
 
-输入 `-` 后按 `Tab`，列出该命令的**所有选项**（短选项 + 长选项）：
+  ```text
+  lin@linCli> big1 <Tab>
+  lin@linCli> big1 --a 
+  ```
 
-```text
-lin@linCli> tb -<Tab>
--v --verbose
-lin@linCli> tb -
-```
+  再次按 `Tab` 会响铃（`\a`），不会重复补全。
 
-输入 `--` 后按 `Tab`，只列出**长选项**：
+- **若该命令有多个选项**：列出所有选项：
+
+  ```text
+  lin@linCli> tb <Tab>
+  -v --verbose
+  lin@linCli> tb
+  ```
+
+输入 `-` 后按 `Tab`：
+
+- **单选项命令**：直接补全（优先补全长选项）：
+
+  ```text
+  lin@linCli> big1 -<Tab>
+  lin@linCli> big1 --a 
+  ```
+
+- **多选项命令**：列出所有选项：
+
+  ```text
+  lin@linCli> tb -<Tab>
+  -v --verbose
+  lin@linCli> tb -
+  ```
+
+输入 `--` 后按 `Tab`，只列出**长选项**（单选项命令则直接补全）：
 
 ```text
 lin@linCli> tb --<Tab>
@@ -727,11 +747,11 @@ lin@linCli> tb --<Tab>
 lin@linCli> tb --
 ```
 
-输入长选项前缀后按 `Tab`，可前缀补全：
+输入长选项前缀后按 `Tab`，可前缀补全（与命令名补全逻辑相同，支持歧义前缀的 LCP 填充）：
 
 ```text
 lin@linCli> tb --v<Tab>
-lin@linCli> tb --verbose
+lin@linCli> tb --verbose 
 ```
 
 如果存在多个候选（有歧义），按一次 `Tab` 就会响铃并列出所有候选，然后自动重绘当前输入行，保持光标位置。
