@@ -329,7 +329,21 @@ void cli_putc(char ch)
 
 ### 4. 链接脚本适配
 
-首先改写 `链接脚本cli.ld` ，将自定义段定义到单片机的FLASH中，一般的写法如下（仅仅是每个段加上了>FLASH）：
+LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_commands`、`.scheduler` 等）聚合成连续的符号数组。由于不同平台的链接脚本语法和内存模型不同，需要对 `cli.ld` 做少量适配。
+
+#### 适配原理：为什么 MCU 需要 `>FLASH`，而 x86/Linux 不需要？
+
+| 平台 | 内存模型 | 是否需要 `>REGION` |
+|------|----------|-------------------|
+| **MCU（Cortex-M 等）** | 采用**分离的存储映射**：Flash 存放只读代码/常量，RAM 存放可变数据。链接脚本必须显式声明 `MEMORY { FLASH (rx) : ORIGIN = ... }`，并为每个段指定目标存储器（如 `>FLASH`），否则链接器无法确定该段应落入 Flash 还是 RAM。 | **必须** |
+| **x86_64 Linux** | 采用**统一的虚拟地址空间**，操作系统通过页表将 ELF 加载段映射到物理内存。GCC 的默认链接脚本不定义 `FLASH` 这类区域名，而是通过 `SECTIONS` 块内的相对地址（`. = ...`）顺序排布各段。自定义段只要按序放置，链接器就会自动将其纳入可执行文件的相应加载段，无需显式指定存储区域。 | **不需要** |
+
+简言之，`>FLASH` 是**嵌入式链接器脚本显式管理物理存储映射**的语法；在 x86/Linux 上，物理地址由操作系统运行时决定，链接阶段只需关心虚拟地址空间中的排布顺序即可。
+
+#### MCU 适配示例
+
+在 MCU 工程中，修改 `cli.ld`，为每个自定义段追加 `>FLASH`：
+
 ```ld
   .cli_commands : {
     _cli_commands_start = .;
@@ -357,11 +371,12 @@ void cli_putc(char ch)
     _dispose_end = .;
   } >FLASH
 ```
-然后在mcu的链接脚本中使用  INCLUDE cli.ld 包含上述链接脚本，以某型号的stm32单片机的makefile工程的ld文件为例子：
+
+然后在 MCU 的链接脚本中通过 `INCLUDE cli.ld` 引入上述定义。以下以 STM32 工程为例：
 
 ```ld
   ...
-  .fini_array (READONLY) : /* The "READONLY" keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  .fini_array (READONLY) : /* "READONLY" 关键字仅在 GCC 11 及以上版本支持，GCC 10 及以下请删除。 */
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__fini_array_start = .);
@@ -371,31 +386,31 @@ void cli_putc(char ch)
     . = ALIGN(4);
   } >FLASH
 
-  /* 包含我们自己的链接脚本，或者更直接，你可以直接将上述cli.ld复制到这里，效果一样 *
+  /* 引入自定义段收集脚本；也可直接将 cli.ld 的内容复制到此位置，效果相同 */
   INCLUDE cli.ld
 
-  /* used by the startup to initialize data */
+  /* 供启动文件初始化 .data 段使用 */
   _sidata = LOADADDR(.data);
 
-  /* Initialized data sections goes into RAM, load LMA copy after code */
+  /* 已初始化数据段放入 RAM，其加载副本（LMA）紧随代码之后 */
   .data :
   {
     . = ALIGN(4);
-    _sdata = .;        /* create a global symbol at data start */
-    *(.data)           /* .data sections */
-    *(.data*)          /* .data* sections */
-    *(.RamFunc)        /* .RamFunc sections */
-    *(.RamFunc*)       /* .RamFunc* sections */
+    _sdata = .;        /* data 段起始全局符号 */
+    *(.data)
+    *(.data*)
+    *(.RamFunc)
+    *(.RamFunc*)
 
     . = ALIGN(4);
-    _edata = .;        /* define a global symbol at data end */
+    _edata = .;        /* data 段结束全局符号 */
   } >RAM AT> FLASH
   ...
 ```
 
-> **不要畏惧 `default.ld` 的篇幅**：它看起来很长，但其实只是在 GCC 为 x86_64 Linux 平台生成的**默认链接脚本**基础上，增加了上面这寥寥几行段收集代码而已。你真正需要关心的，就是本文档中提到的这几个自定义段及其起始/结束符号。
+> **不要畏惧 `default.ld` 的篇幅**：它看起来很长，但其实只是在 GCC 为 x86_64 Linux 平台生成的**默认链接脚本**基础上，增加了寥寥几行段收集代码而已。你真正需要关心的，就是本文档中提到的这几个自定义段及其起始/结束符号。
 >
-> 如果你使用的是 Keil MDK（ARMCC/AC6 工具链），对应的链接脚本格式是 `.sct`（分散加载文件）。将上述逻辑迁移到 `.sct` 格式非常容易——核心思路同样是「把同一个 section 名的内容收集到一块连续区域，并导出该区域的起始和结束符号」。具体语法细节请自行搜索 "MDK SCT scatter file collect section start end symbol" 等关键词。
+> 如果你使用的是 Keil MDK（ARMCC/AC6 工具链），对应的链接脚本格式是 `.sct`（分散加载文件）。迁移逻辑同样直接——核心思路仍然是「把同一 section 名的内容收集到连续区域，并导出该区域的起始和结束符号」。具体语法细节请自行搜索 "MDK SCT scatter file collect section start end symbol" 等关键词。
 
 ### 5. 选择串口终端工具
 
