@@ -71,7 +71,7 @@ struct tState {
 	void (*state_entry)(void *);
 	int (*state_task)(void *);
 	void (*state_exit)(void *);
-} __attribute__((aligned(sizeof(long))));
+};
 
 /**
  * @brief Export state machine symbols to specified section
@@ -113,7 +113,7 @@ struct tState {
 		.state_exit = exit,                                  \
 	}; \
 	static struct tState * const _state_ptr_##obj \
-		__attribute__((used, section(_section), aligned(sizeof(long)))) = \
+		__attribute__((used, section(_section))) = \
 		&state_##obj
 #define _FOR_EACH_STATE(_start, _end, _state) \
 	for (struct tState * const *_pp = (_start); \

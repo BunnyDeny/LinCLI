@@ -279,7 +279,7 @@ extern const cli_command_t * const _cli_commands_end[];
 		.arg_buf_size = _buf_size,                                     \
 	}; \
 	static const cli_command_t * const _cli_cmd_ptr_##_obj \
-		__attribute__((used, section(_section), aligned(sizeof(long)))) = \
+		__attribute__((used, section(_section))) = \
 		&_cli_cmd_def_##_obj
 
 /* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。

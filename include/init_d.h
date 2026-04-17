@@ -23,7 +23,7 @@ struct init_d {
 	char name[32];
 	void *_private;
 	void (*_init_entry)(void *);
-} __attribute__((aligned(sizeof(long))));
+};
 
 #define _EXPORT_INIT_SYMBOL(obj, private, init_entry)                    \
 	static struct init_d init_d_##obj = {                            \
@@ -32,7 +32,7 @@ struct init_d {
 		._init_entry = init_entry,                               \
 	}; \
 	static struct init_d * const _init_d_ptr_##obj \
-		__attribute__((used, section(".my_init_d"), aligned(sizeof(long)))) = \
+		__attribute__((used, section(".my_init_d"))) = \
 		&init_d_##obj
 
 extern struct init_d * const _init_d_start[];
