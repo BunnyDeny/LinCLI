@@ -22,6 +22,8 @@
 #include "cli_cmd_line.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 
 struct tStateEngine dispose_mec;
 extern struct tState * const _dispose_start[];
@@ -163,6 +165,40 @@ static int parse_option_switch(const cli_command_t *cmd, const char *arg,
 	return 0;
 }
 
+static int cli_parse_int(const char *arg, int *out)
+{
+	char *endptr;
+	errno = 0;
+	long val = strtol(arg, &endptr, 10);
+	if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
+		pr_err("'%s' 超出整数范围\n", arg);
+		return -1;
+	}
+	if (endptr == arg || *endptr != '\0') {
+		pr_err("'%s' 不是有效的整数\n", arg);
+		return -1;
+	}
+	*out = (int)val;
+	return 0;
+}
+
+static int cli_parse_double(const char *arg, double *out)
+{
+	char *endptr;
+	errno = 0;
+	double val = strtod(arg, &endptr);
+	if (errno == ERANGE) {
+		pr_err("'%s' 超出浮点数范围\n", arg);
+		return -1;
+	}
+	if (endptr == arg || *endptr != '\0') {
+		pr_err("'%s' 不是有效的浮点数\n", arg);
+		return -1;
+	}
+	*out = val;
+	return 0;
+}
+
 static int parse_int_array(const cli_option_t *opt, const char *arg,
 			   void *arg_struct, struct parse_state *state)
 {
@@ -190,7 +226,10 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 		state->scratch_remain -= need;
 		*(int **)dst = arr;
 	}
-	arr[state->cur_opt_idx++] = atoi(arg);
+	int val;
+	if (cli_parse_int(arg, &val) < 0)
+		return -1;
+	arr[state->cur_opt_idx++] = val;
 	state->cur_opt_argc++;
 
 	if (opt->offset_count > 0) {
@@ -217,14 +256,22 @@ static int parse_option_value(const char *arg, void *arg_struct,
 		*(const char **)dst = arg;
 		state->cur_opt = NULL;
 		break;
-	case CLI_TYPE_INT:
-		*(int *)dst = atoi(arg);
+	case CLI_TYPE_INT: {
+		int val;
+		if (cli_parse_int(arg, &val) < 0)
+			return -1;
+		*(int *)dst = val;
 		state->cur_opt = NULL;
 		break;
-	case CLI_TYPE_DOUBLE:
-		*(double *)dst = atof(arg);
+	}
+	case CLI_TYPE_DOUBLE: {
+		double val;
+		if (cli_parse_double(arg, &val) < 0)
+			return -1;
+		*(double *)dst = val;
 		state->cur_opt = NULL;
 		break;
+	}
 	case CLI_TYPE_INT_ARRAY:
 		if (parse_int_array(state->cur_opt, arg, arg_struct, state) < 0)
 			return -1;
