@@ -717,34 +717,17 @@ lin@linCli> tb
 - **若该命令有多个选项**：列出所有选项：
 
   ```text
-  lin@linCli> tb <Tab>
-  -v --verbose
-  lin@linCli> tb
-  ```
-
-输入 `-` 后按 `Tab`：
-
-- **单选项命令**：直接补全（优先补全长选项）：
-
-  ```text
-  lin@linCli> big1 -<Tab>
-  lin@linCli> big1 --a 
-  ```
-
-- **多选项命令**：列出所有选项：
-
-  ```text
-  lin@linCli> tb -<Tab>
-  -v --verbose
-  lin@linCli> tb -
+  lin@linCli> log 
+  -f --file  -l --level  -v --verbose  -t --tags  
+  lin@linCli> log
   ```
 
 输入 `--` 后按 `Tab`，只列出**长选项**（单选项命令则直接补全）：
 
 ```text
-lin@linCli> tb --<Tab>
---verbose
-lin@linCli> tb --
+lin@linCli> log --
+--file  --level  --verbose  --tags  
+lin@linCli> log --
 ```
 
 输入长选项前缀后按 `Tab`，可前缀补全（与命令名补全逻辑相同，支持歧义前缀的 LCP 填充）：
