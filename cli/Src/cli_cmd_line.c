@@ -200,7 +200,8 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		memcpy(lcp, match->name, lcp_len);
 
 		cli_command_t *cmd2;
-		_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd2)
+		_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end,
+				      cmd2)
 		{
 			if (!cmd2->name)
 				continue;
@@ -215,12 +216,15 @@ static void complete_command_name(const char *prefix, int prefix_len)
 			cmd_line_replace(lcp, lcp_len);
 		} else {
 			cli_out_push((_u8 *)"\a\n", 2);
-			_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+			_FOR_EACH_CLI_COMMAND(&_cli_commands_start,
+					      &_cli_commands_end, cmd)
 			{
 				if (!cmd->name)
 					continue;
-				if (strncmp(cmd->name, prefix, prefix_len) == 0) {
-					cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
+				if (strncmp(cmd->name, prefix, prefix_len) ==
+				    0) {
+					cli_out_push((_u8 *)cmd->name,
+						     strlen(cmd->name));
 					cli_out_push((_u8 *)"  ", 2);
 				}
 			}
@@ -245,23 +249,9 @@ static void list_all_options(const cli_command_t *cmd)
 		}
 		if (opt->long_opt) {
 			cli_out_push((_u8 *)"--", 2);
-			cli_out_push((_u8 *)opt->long_opt, strlen(opt->long_opt));
+			cli_out_push((_u8 *)opt->long_opt,
+				     strlen(opt->long_opt));
 			cli_out_push((_u8 *)"  ", 2);
-		}
-	}
-	cli_out_push((_u8 *)"\n", 1);
-	cli_out_sync();
-	cmd_line_redraw();
-}
-
-static void list_short_options(const cli_command_t *cmd)
-{
-	cli_out_push((_u8 *)"\a\n", 2);
-	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
-		if (opt->short_opt) {
-			char buf[4] = { '-', opt->short_opt, ' ', '\0' };
-			cli_out_push((_u8 *)buf, 3);
 		}
 	}
 	cli_out_push((_u8 *)"\n", 1);
@@ -276,7 +266,8 @@ static void list_long_options(const cli_command_t *cmd)
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt) {
 			cli_out_push((_u8 *)"--", 2);
-			cli_out_push((_u8 *)opt->long_opt, strlen(opt->long_opt));
+			cli_out_push((_u8 *)opt->long_opt,
+				     strlen(opt->long_opt));
 			cli_out_push((_u8 *)"  ", 2);
 		}
 	}
@@ -318,7 +309,8 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 		if (opt->long_opt &&
 		    strncmp(opt->long_opt, name_prefix, name_prefix_len) == 0) {
 			cli_out_push((_u8 *)"--", 2);
-			cli_out_push((_u8 *)opt->long_opt, strlen(opt->long_opt));
+			cli_out_push((_u8 *)opt->long_opt,
+				     strlen(opt->long_opt));
 			cli_out_push((_u8 *)"  ", 2);
 		}
 	}
@@ -344,8 +336,7 @@ static void replace_long_option(const char *long_opt, int long_len)
 }
 
 static void complete_long_option(const cli_command_t *cmd,
-				 const char *name_prefix,
-				 int name_prefix_len)
+				 const char *name_prefix, int name_prefix_len)
 {
 	const cli_option_t *match = NULL;
 	int match_cnt = 0;
@@ -370,7 +361,8 @@ static void complete_long_option(const cli_command_t *cmd,
 		for (size_t i = 0; i < cmd->option_count; i++) {
 			const cli_option_t *opt = &cmd->options[i];
 			if (!opt->long_opt ||
-			    strncmp(opt->long_opt, name_prefix, name_prefix_len) != 0)
+			    strncmp(opt->long_opt, name_prefix,
+				    name_prefix_len) != 0)
 				continue;
 			int cpl = str_common_prefix_len(lcp, opt->long_opt);
 			if (cpl < lcp_len)
@@ -397,7 +389,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 		return;
 	}
 	if (prefix_len == 1 && prefix[0] == '-') {
-		list_short_options(cmd);
+		list_all_options(cmd);
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] == '-') {
