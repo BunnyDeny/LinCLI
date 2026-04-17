@@ -59,6 +59,7 @@ void scheduler_get_char_entry(void *private)
 	if (status < 0) {
 		pr_emerg("cli_cmd_line_init异常\n");
 	}
+	cli_printk("\r\n");
 	cli_prompt_print();
 	reset_cli_in_push_lock();
 }

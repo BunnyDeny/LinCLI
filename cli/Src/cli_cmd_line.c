@@ -496,39 +496,33 @@ _EXPORT_STATE_SYMBOL(valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
 
 int unvalid_char_task(void *pch)
 {
-	int status;
 	char ch = *((char *)pch);
-	if ((int)ch == 27) { // ESC
-		status = state_switch(&cmd_line_mec, "ESC_handler");
-		if (status < 0) {
-			return status;
-		}
-	} else if ((int)ch == 127) { //backspace
-		status = state_switch(&cmd_line_mec, "backspace_handler");
-		if (status < 0) {
-			return status;
-		}
-	} else if (ch == '\n') {
-		status = state_switch(&cmd_line_mec, "enter");
-		if (status < 0) {
-			return status;
-		}
-	} else if (ch == '\t') {
-		status = state_switch(&cmd_line_mec, "tab_complete");
-		if (status < 0) {
-			return status;
-		}
-	} else if (ch == (char)12) {
-		status = state_switch(&cmd_line_mec, "clear");
-		if (status < 0) {
-			return status;
-		}
-	} else {
-		status = state_switch(&cmd_line_mec, "exit_handler");
-		if (status < 0) {
-			return status;
-		}
+	char *next_state;
+
+	switch ((unsigned char)ch) {
+	case 27:
+		next_state = "ESC_handler";
+		break;
+	case 127:
+		next_state = "backspace_handler";
+		break;
+	case '\n':
+		next_state = "enter";
+		break;
+	case '\t':
+		next_state = "tab_complete";
+		break;
+	case 12:
+		next_state = "clear";
+		break;
+	default:
+		next_state = "exit_handler";
+		break;
 	}
+
+	int status = state_switch(&cmd_line_mec, next_state);
+	if (status < 0)
+		return status;
 	return 0;
 }
 _EXPORT_STATE_SYMBOL(unvalid_char, NULL, unvalid_char_task, NULL,
