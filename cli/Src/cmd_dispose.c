@@ -30,6 +30,13 @@ extern struct tState _dispose_end;
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 int g_last_cmd_ret = 0;
 
+#define CLI_HELP_REQ_MARK_SIZE 16
+#define CLI_HELP_DEP_MARK_SIZE 32
+#define CLI_MAX_ARGV 64
+
+static char cli_help_req_mark[CLI_HELP_REQ_MARK_SIZE];
+static char cli_help_dep_mark[CLI_HELP_DEP_MARK_SIZE];
+
 /**
  * @brief 在链接脚本段中按名称查找已注册的命令。
  */
@@ -418,22 +425,26 @@ static void cli_print_help(const cli_command_t *cmd)
 	cli_printk("选项:\n");
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
-		char req_mark[16] = "";
-		char dep_mark[32] = "";
+		cli_help_req_mark[0] = '\0';
+		cli_help_dep_mark[0] = '\0';
 		if (opt->required)
-			snprintf(req_mark, sizeof(req_mark), " [必需]");
+			snprintf(cli_help_req_mark, CLI_HELP_REQ_MARK_SIZE,
+				 " [必需]");
 		if (opt->depends) {
 			if (opt->depends[0] == '!')
-				snprintf(dep_mark, sizeof(dep_mark),
-					 " [互斥:%s]", opt->depends + 1);
+				snprintf(cli_help_dep_mark,
+					 CLI_HELP_DEP_MARK_SIZE, " [互斥:%s]",
+					 opt->depends + 1);
 			else
-				snprintf(dep_mark, sizeof(dep_mark),
-					 " [依赖:%s]", opt->depends);
+				snprintf(cli_help_dep_mark,
+					 CLI_HELP_DEP_MARK_SIZE, " [依赖:%s]",
+					 opt->depends);
 		}
 		cli_printk("  -%c, --%-16s %s%s%s\n",
 			   opt->short_opt ? opt->short_opt : ' ',
 			   opt->long_opt ? opt->long_opt : "",
-			   opt->help ? opt->help : "", req_mark, dep_mark);
+			   opt->help ? opt->help : "", cli_help_req_mark,
+			   cli_help_dep_mark);
 	}
 }
 
@@ -455,8 +466,8 @@ static bool has_help_flag(int argc, char **argv)
  */
 static int dispose_start_task(void *cmd)
 {
-	char *argv[64];
-	int argc = tokenize((char *)cmd, argv, 64);
+	char *argv[CLI_MAX_ARGV];
+	int argc = tokenize((char *)cmd, argv, CLI_MAX_ARGV);
 	cli_printk("\r\n");
 	if (argc < 1) {
 		g_last_cmd_ret = 0;
