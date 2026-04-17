@@ -148,6 +148,14 @@ static void cmd_line_redraw(void)
 	}
 }
 
+static int str_common_prefix_len(const char *a, const char *b)
+{
+	int i = 0;
+	while (a[i] && b[i] && a[i] == b[i])
+		i++;
+	return i;
+}
+
 static const cli_command_t *find_cmd_by_name(const char *name)
 {
 	cli_command_t *cmd;
@@ -187,19 +195,39 @@ static void complete_command_name(const char *prefix, int prefix_len)
 			cli_out_sync();
 		}
 	} else if (match_cnt > 1) {
-		cli_out_push((_u8 *)"\a\n", 2);
-		_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+		int lcp_len = (int)strlen(match->name);
+		char lcp[CMD_LINE_BUF_SIZE];
+		memcpy(lcp, match->name, lcp_len);
+
+		cli_command_t *cmd2;
+		_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd2)
 		{
-			if (!cmd->name)
+			if (!cmd2->name)
 				continue;
-			if (strncmp(cmd->name, prefix, prefix_len) == 0) {
-				cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
-				cli_out_push((_u8 *)"  ", 2);
-			}
+			if (strncmp(cmd2->name, prefix, prefix_len) != 0)
+				continue;
+			int cpl = str_common_prefix_len(lcp, cmd2->name);
+			if (cpl < lcp_len)
+				lcp_len = cpl;
 		}
-		cli_out_push((_u8 *)"\n", 1);
-		cli_out_sync();
-		cmd_line_redraw();
+
+		if (lcp_len > prefix_len) {
+			cmd_line_replace(lcp, lcp_len);
+		} else {
+			cli_out_push((_u8 *)"\a\n", 2);
+			_FOR_EACH_CLI_COMMAND(&_cli_commands_start, &_cli_commands_end, cmd)
+			{
+				if (!cmd->name)
+					continue;
+				if (strncmp(cmd->name, prefix, prefix_len) == 0) {
+					cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
+					cli_out_push((_u8 *)"  ", 2);
+				}
+			}
+			cli_out_push((_u8 *)"\n", 1);
+			cli_out_sync();
+			cmd_line_redraw();
+		}
 	} else {
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
@@ -311,7 +339,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 			memcpy(new_buf, cmd_line.buf, tok_start);
 			new_buf[tok_start] = '-';
 			new_buf[tok_start + 1] = '-';
-			int long_len = strlen(match->long_opt);
+			int long_len = (int)strlen(match->long_opt);
 			memcpy(new_buf + tok_start + 2, match->long_opt,
 			       long_len);
 			int new_size = tok_start + 2 + long_len;
@@ -321,21 +349,48 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 			}
 			cmd_line_replace(new_buf, new_size);
 		} else if (match_cnt > 1) {
-			cli_out_push((_u8 *)"\a\n", 2);
+			int lcp_len = (int)strlen(match->long_opt);
+			char lcp[CMD_LINE_BUF_SIZE];
+			memcpy(lcp, match->long_opt, lcp_len);
+
 			for (size_t i = 0; i < cmd->option_count; i++) {
 				const cli_option_t *opt = &cmd->options[i];
-				if (opt->long_opt &&
+				if (!opt->long_opt ||
 				    strncmp(opt->long_opt, name_prefix,
-					    name_prefix_len) == 0) {
-					cli_out_push((_u8 *)"--", 2);
-					cli_out_push((_u8 *)opt->long_opt,
-						     strlen(opt->long_opt));
-					cli_out_push((_u8 *)"  ", 2);
-				}
+					    name_prefix_len) != 0)
+					continue;
+				int cpl = str_common_prefix_len(lcp, opt->long_opt);
+				if (cpl < lcp_len)
+					lcp_len = cpl;
 			}
-			cli_out_push((_u8 *)"\n", 1);
-			cli_out_sync();
-			cmd_line_redraw();
+
+			if (lcp_len > name_prefix_len) {
+				char new_buf[CMD_LINE_BUF_SIZE];
+				int tok_start = get_last_token_start(
+					cmd_line.buf, cmd_line.size);
+				memcpy(new_buf, cmd_line.buf, tok_start);
+				new_buf[tok_start] = '-';
+				new_buf[tok_start + 1] = '-';
+				memcpy(new_buf + tok_start + 2, lcp, lcp_len);
+				int new_size = tok_start + 2 + lcp_len;
+				cmd_line_replace(new_buf, new_size);
+			} else {
+				cli_out_push((_u8 *)"\a\n", 2);
+				for (size_t i = 0; i < cmd->option_count; i++) {
+					const cli_option_t *opt = &cmd->options[i];
+					if (opt->long_opt &&
+					    strncmp(opt->long_opt, name_prefix,
+						    name_prefix_len) == 0) {
+						cli_out_push((_u8 *)"--", 2);
+						cli_out_push((_u8 *)opt->long_opt,
+							     strlen(opt->long_opt));
+						cli_out_push((_u8 *)"  ", 2);
+					}
+				}
+				cli_out_push((_u8 *)"\n", 1);
+				cli_out_sync();
+				cmd_line_redraw();
+			}
 		} else {
 			cli_out_push((_u8 *)"\a", 1);
 			cli_out_sync();
