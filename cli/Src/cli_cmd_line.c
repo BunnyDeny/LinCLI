@@ -259,23 +259,6 @@ static void list_all_options(const cli_command_t *cmd)
 	cmd_line_redraw();
 }
 
-static void list_long_options(const cli_command_t *cmd)
-{
-	cli_out_push((_u8 *)"\a\n", 2);
-	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
-		if (opt->long_opt) {
-			cli_out_push((_u8 *)"--", 2);
-			cli_out_push((_u8 *)opt->long_opt,
-				     strlen(opt->long_opt));
-			cli_out_push((_u8 *)"  ", 2);
-		}
-	}
-	cli_out_push((_u8 *)"\n", 1);
-	cli_out_sync();
-	cmd_line_redraw();
-}
-
 static void complete_short_option(char c)
 {
 	cli_out_push((_u8 *)"\a", 1);
@@ -393,7 +376,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] == '-') {
-		list_long_options(cmd);
+		complete_long_option(cmd, prefix + 2, 0);
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] != '-') {
