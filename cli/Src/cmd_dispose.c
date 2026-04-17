@@ -616,14 +616,3 @@ int dispose_task(char *cmd)
 
 	return dispose_exit;
 }
-
-/* ============================================================
- * 示例命令（测试用）
- * ============================================================ */
-
-struct hello_args {
-	bool verbose;
-	char *name;
-	int *numbers;
-	size_t numbers_count;
-};
