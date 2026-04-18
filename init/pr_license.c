@@ -24,11 +24,11 @@ void pr_license(void *)
 {
 	cli_printk("LinCLI  Copyright (C) 2026  bunnydeny\r\n");
 	cli_printk(
-		"This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.\r\n");
+		"This program comes with ABSOLUTELY NO WARRANTY; for details type `show -w'.\r\n");
 	cli_printk(
 		"This is free software, and you are welcome to redistribute it\r\n");
 	cli_printk(
-		"under certain conditions; type `show c' for details.\n\r\n");
+		"under certain conditions; type `show -c' for details.\n\r\n");
 }
 _EXPORT_INIT_SYMBOL(pr_license, NULL, pr_license);
 
