@@ -12,7 +12,7 @@
 
 #include "cli_auto_cmd.h"
 
-#define CLI_AUTO_CMDS_TEST_EN 1
+#define CLI_AUTO_CMDS_TEST_EN 0
 
 #if CLI_AUTO_CMDS_TEST_EN
 
