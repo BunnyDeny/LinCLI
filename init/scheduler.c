@@ -95,55 +95,40 @@ _EXPORT_STATE_SYMBOL(scheduler_get_char, scheduler_get_char_entry,
 		     scheduler_get_char_task, scheduler_get_char_exit,
 		     ".scheduler");
 
-static int auto_run_idx = 0;
-
-void scheduler_auto_run_entry(void *private)
-{
-	auto_run_idx = 0;
-}
-
 int scheduler_auto_run_task(void *private)
 {
+	int auto_run_idx = 0, status, cmd_ret;
 	if (!cli_auto_cmds || cli_auto_cmds_count <= 0) {
-		int status = state_switch(&scheduler_eng, "scheduler_get_char");
-		return status < 0 ? status : 0;
+		goto scheduler_auto_run_task_exit;
 	}
-
 	while (auto_run_idx < cli_auto_cmds_count) {
 		const char *cmd = cli_auto_cmds[auto_run_idx];
 		if (!cmd) {
 			auto_run_idx++;
 			continue;
 		}
-
 		int len = strlen(cmd);
 		if (len >= CMD_LINE_BUF_SIZE)
 			len = CMD_LINE_BUF_SIZE - 1;
 		memset(origin_cmd.buf, 0, CMD_LINE_BUF_SIZE);
 		memcpy(origin_cmd.buf, cmd, len);
 		origin_cmd.size = len;
-
-		int cmd_ret;
-		int status = dispose_task(origin_cmd.buf, &cmd_ret);
+		status = dispose_task(origin_cmd.buf, &cmd_ret);
 		if (status < 0) {
 			return status;
 		}
-
 		if (cmd_ret < 0) {
 			pr_err("自动命令执行失败，停止后续执行\r\n");
-			int s = state_switch(&scheduler_eng,
-					     "scheduler_get_char");
-			return s < 0 ? s : 0;
+			goto scheduler_auto_run_task_exit;
 		}
-
 		auto_run_idx++;
 	}
-
-	int status = state_switch(&scheduler_eng, "scheduler_get_char");
+scheduler_auto_run_task_exit:
+	status = state_switch(&scheduler_eng, "scheduler_get_char");
 	return status < 0 ? status : 0;
 }
-_EXPORT_STATE_SYMBOL(scheduler_auto_run, scheduler_auto_run_entry,
-		     scheduler_auto_run_task, NULL, ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
+		     ".scheduler");
 
 int scheduler_dispose_task(void *arg)
 {
@@ -153,11 +138,10 @@ int scheduler_dispose_task(void *arg)
 	status = dispose_task(origin_cmd.buf, NULL);
 	if (status < 0) {
 		return status;
-	} else if (status == dispose_exit) {
-		status = state_switch(&scheduler_eng, "scheduler_get_char");
-		if (status < 0) {
-			return status;
-		}
+	}
+	status = state_switch(&scheduler_eng, "scheduler_get_char");
+	if (status < 0) {
+		return status;
 	}
 	return 0;
 }
