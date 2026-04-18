@@ -104,8 +104,6 @@ void scheduler_auto_run_entry(void *private)
 
 int scheduler_auto_run_task(void *private)
 {
-	extern int g_last_cmd_ret;
-
 	if (!cli_auto_cmds || cli_auto_cmds_count <= 0) {
 		int status = state_switch(&scheduler_eng, "scheduler_get_char");
 		return status < 0 ? status : 0;
@@ -125,12 +123,13 @@ int scheduler_auto_run_task(void *private)
 		memcpy(origin_cmd.buf, cmd, len);
 		origin_cmd.size = len;
 
-		int status = dispose_task(origin_cmd.buf);
+		int cmd_ret;
+		int status = dispose_task(origin_cmd.buf, &cmd_ret);
 		if (status < 0) {
 			return status;
 		}
 
-		if (g_last_cmd_ret < 0) {
+		if (cmd_ret < 0) {
 			pr_err("自动命令执行失败，停止后续执行\r\n");
 			int s = state_switch(&scheduler_eng,
 					     "scheduler_get_char");
@@ -151,7 +150,7 @@ int scheduler_dispose_task(void *arg)
 	int status;
 	(void)arg;
 
-	status = dispose_task(origin_cmd.buf);
+	status = dispose_task(origin_cmd.buf, NULL);
 	if (status < 0) {
 		return status;
 	} else if (status == dispose_exit) {

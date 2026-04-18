@@ -30,7 +30,11 @@ extern struct tState *const _dispose_start[];
 extern struct tState *const _dispose_end[];
 
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
-int g_last_cmd_ret = 0;
+
+struct dispose_ctx {
+	char *cmd;
+	int *cmd_ret;
+};
 
 #define CLI_HELP_REQ_MARK_SIZE 16
 #define CLI_HELP_DEP_MARK_SIZE 32
@@ -521,39 +525,41 @@ static bool has_help_flag(int argc, char **argv)
 /**
  * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
  */
-static int dispose_start_task(void *cmd)
+static int dispose_start_task(void *arg)
 {
+	struct dispose_ctx *ctx = (struct dispose_ctx *)arg;
+	char *cmd = ctx->cmd;
 	char *argv[CLI_MAX_ARGV];
-	int argc = tokenize((char *)cmd, argv, CLI_MAX_ARGV);
+	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
 	cli_printk("\r\n");
 	if (argc < 1) {
-		g_last_cmd_ret = 0;
+		*ctx->cmd_ret = 0;
 		return dispose_exit;
 	}
 
 	const cli_command_t *cmd_def = cli_command_find(argv[0]);
 	if (!cmd_def) {
 		pr_err("未知命令: %s\r\n", argv[0]);
-		g_last_cmd_ret = -1;
+		*ctx->cmd_ret = -1;
 		return dispose_exit;
 	}
 
 	if (has_help_flag(argc, argv)) {
 		cli_print_help(cmd_def);
-		g_last_cmd_ret = 0;
+		*ctx->cmd_ret = 0;
 		return dispose_exit;
 	}
 
 	if (!cmd_def->arg_buf) {
 		pr_err("命令 %s 未分配参数缓冲区\r\n", cmd_def->name);
-		g_last_cmd_ret = -1;
+		*ctx->cmd_ret = -1;
 		return dispose_exit;
 	}
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
 		pr_err("命令 %s 结构体占 %zu 字节，超过缓冲区 %zu 字节\r\n",
 		       cmd_def->name, cmd_def->arg_struct_size,
 		       cmd_def->arg_buf_size);
-		g_last_cmd_ret = -1;
+		*ctx->cmd_ret = -1;
 		return dispose_exit;
 	}
 
@@ -563,20 +569,20 @@ static int dispose_start_task(void *cmd)
 	if (status < 0) {
 		pr_err("命令解析失败: %s\r\n", argv[0]);
 		cli_print_help(cmd_def);
-		g_last_cmd_ret = -1;
+		*ctx->cmd_ret = -1;
 		return dispose_exit;
 	}
 
 	if (cmd_def->validator) {
 		int ret = cmd_def->validator(cmd_def->arg_buf);
-		g_last_cmd_ret = ret;
+		*ctx->cmd_ret = ret;
 		if (ret < 0) {
 			pr_err("命令 %s 执行失败，返回值: %d\r\n",
 			       cmd_def->name, ret);
 			return dispose_exit;
 		}
 	} else {
-		g_last_cmd_ret = 0;
+		*ctx->cmd_ret = 0;
 	}
 
 	return dispose_exit;
@@ -632,7 +638,7 @@ static int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	return cnt;
 }
 
-static int run_dispose_once(char *cmd)
+static int run_dispose_once(char *cmd, int *cmd_ret)
 {
 	int status = dispose_init();
 	if (status < 0) {
@@ -640,9 +646,10 @@ static int run_dispose_once(char *cmd)
 		return -1;
 	}
 
-	g_last_cmd_ret = 0;
+	struct dispose_ctx ctx = { cmd, cmd_ret };
+	*cmd_ret = 0;
 	while (1) {
-		status = stateEngineRun(&dispose_mec, cmd);
+		status = stateEngineRun(&dispose_mec, &ctx);
 		if (status < 0) {
 			pr_err("dispose状态机异常\r\n");
 			return -1;
@@ -655,10 +662,14 @@ static int run_dispose_once(char *cmd)
 /**
  * @brief 运行 dispose 状态机，支持 && 命令链。
  */
-int dispose_task(char *cmd)
+int dispose_task(char *cmd, int *cmd_ret)
 {
+	int _local_ret = 0;
+	if (!cmd_ret)
+		cmd_ret = &_local_ret;
+
 	if (!cmd || !cmd[0]) {
-		g_last_cmd_ret = 0;
+		*cmd_ret = 0;
 		return dispose_exit;
 	}
 
@@ -678,11 +689,11 @@ int dispose_task(char *cmd)
 			return dispose_exit;
 		}
 
-		int status = run_dispose_once(cmds[i]);
+		int status = run_dispose_once(cmds[i], cmd_ret);
 		if (status < 0)
 			return status;
 
-		if (g_last_cmd_ret < 0)
+		if (*cmd_ret < 0)
 			return dispose_exit;
 	}
 

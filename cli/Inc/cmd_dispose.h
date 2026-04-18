@@ -302,6 +302,6 @@ extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 #define END_OPTIONS /* 结束标记，实际为空 */
 
 int dispose_init(void);
-int dispose_task(char *cmd);
+int dispose_task(char *cmd, int *cmd_ret);
 
 #endif
