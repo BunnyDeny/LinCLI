@@ -215,7 +215,7 @@ void pr_logo(void *arg)
 _EXPORT_INIT_SYMBOL(logo, NULL, pr_logo);
 ```
 
-就这么多。编译后，`_EXPORT_INIT_SYMBOL` 会自动把 `pr_license` 放入 `.my_init_d` 段，调度器在启动时会遍历并执行它。
+就这么多。编译后，`_EXPORT_INIT_SYMBOL` 会自动把 `pr_logo` 放入 `.my_init_d` 段，调度器在启动时会遍历并执行它。
 
 ### 调用时机
 
