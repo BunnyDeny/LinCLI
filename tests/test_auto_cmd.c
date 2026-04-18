@@ -12,11 +12,18 @@
 
 #include "cli_auto_cmd.h"
 
-// const char * const cli_auto_cmds[] = {
-// 	"tb -v",
-// 	"ti -n 100",
-// 	"big1",
-// 	"ts -m should_not_run",
-// };
+#define CLI_AUTO_CMDS_TEST_EN 0
 
-// const int cli_auto_cmds_count = sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0]);
+#if CLI_AUTO_CMDS_TEST_EN
+
+const char *const cli_auto_cmds[] = {
+	"tb -v",
+	"ti -n 100",
+	"big1",
+	"ts -m should_not_run",
+};
+
+const int cli_auto_cmds_count =
+	sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0]);
+
+#endif
