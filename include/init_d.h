@@ -19,19 +19,23 @@
 #ifndef _INIT_D__H__
 #define _INIT_D__H__
 
+#include "rbtree.h"
+
 struct init_d {
-	char name[32];
+	int priority;
+	struct rb_node node;
 	void *_private;
 	void (*_init_entry)(void *);
 };
 
-#define _EXPORT_INIT_SYMBOL(obj, private, init_entry) \
-	static struct init_d init_d_##obj = {         \
-		.name = #obj,                         \
-		._private = private,                  \
-		._init_entry = init_entry,            \
-	};                                            \
-	static struct init_d *const _init_d_ptr_##obj \
+#define _EXPORT_INIT_SYMBOL(obj, _priority, private, init_entry) \
+	static struct init_d init_d_##obj = {                    \
+		.priority = _priority,                           \
+		.node = { 0 },                                   \
+		._private = private,                             \
+		._init_entry = init_entry,                       \
+	};                                                       \
+	static struct init_d *const _init_d_ptr_##obj            \
 		__attribute__((used, section(".my_init_d"))) = &init_d_##obj
 
 extern struct init_d *const _init_d_start[];
@@ -42,15 +46,11 @@ extern struct init_d *const _init_d_end[];
 	     _pp < (struct init_d *const *)(_end); _pp++) \
 		if (((_init_d) = *_pp))
 
-#define CALL_INIT_D                                                        \
-	do {                                                               \
-		struct init_d *p_init_d;                                   \
-		_FOR_EACH_INIT_D(_init_d_start, _init_d_end, p_init_d)     \
-		{                                                          \
-			if (p_init_d && p_init_d->_init_entry) {           \
-				p_init_d->_init_entry(p_init_d->_private); \
-			}                                                  \
-		}                                                          \
+extern void call_init_d(void);
+
+#define CALL_INIT_D            \
+	do {                   \
+		call_init_d(); \
 	} while (0)
 
 #endif
