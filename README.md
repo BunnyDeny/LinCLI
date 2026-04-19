@@ -184,12 +184,13 @@ CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
 ### 宏参数格式
 
 ```c
-_EXPORT_INIT_SYMBOL(obj, private, init_entry)
+_EXPORT_INIT_SYMBOL(obj, priority, private, init_entry)
 ```
 
 | 参数 | 含义 |
 |------|------|
 | `obj` | **C 标识符名**。宏会用它生成内部静态符号（如 `init_d_pr_license`），同时作为该初始化节点的字符串名称。 |
+| `priority` | **优先级字符串**。按照字典序决定初始化函数的调用顺序，值越小越先执行（如 `"0"` 在 `"1"` 之前）。 |
 | `private` | **私有数据指针**。在调用 `init_entry` 时会作为参数传入；如果不需要，可以填 `NULL`。 |
 | `init_entry` | **初始化函数指针**。签名必须是 `void (*)(void *)`。 |
 
@@ -212,14 +213,14 @@ void pr_logo(void *arg)
     pr_info("欢迎使用LinCLI\n");
 }
 
-_EXPORT_INIT_SYMBOL(logo, NULL, pr_logo);
+_EXPORT_INIT_SYMBOL(logo, "0", NULL, pr_logo);
 ```
 
 就这么多。编译后，`_EXPORT_INIT_SYMBOL` 会自动把 `pr_logo` 放入 `.my_init_d` 段，调度器在启动时会遍历并执行它。
 
 ### 调用时机
 
-所有通过 `_EXPORT_INIT_SYMBOL` 注册的初始化函数，会在**调度器状态机的启动状态**（`scheduler_start` 的 `start_entry`）中被统一调用。具体来说，是在 `scheduler_init()` 完成、状态机进入 `scheduler_start` 状态时，通过 `CALL_INIT_D` 宏顺序遍历 `.my_init_d` 段并执行每一个 `init_entry`。
+所有通过 `_EXPORT_INIT_SYMBOL` 注册的初始化函数，会在**调度器状态机的启动状态**（`scheduler_start` 的 `start_entry`）中被统一调用。具体来说，是在 `scheduler_init()` 完成、状态机进入 `scheduler_start` 状态时，通过 `CALL_INIT_D` 将所有初始化项按 `priority` 字典序排序后依次执行。
 
 这发生在任何用户交互或自动命令执行之前，因此非常适合做开机 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
 
@@ -227,11 +228,11 @@ _EXPORT_INIT_SYMBOL(logo, NULL, pr_logo);
 
 > ⚠️ **1. 初始化函数必须是独立、幂等的**
 > 
-> `_EXPORT_INIT_SYMBOL` **不保证** 多个初始化函数之间的调用顺序。链接器收集段的顺序取决于对象文件的链接顺序，这在不同构建环境下可能不同。因此，**不要在初始化函数中依赖其他 `_EXPORT_INIT_SYMBOL` 注册的模块**——每个初始化函数都应当是自包含的。
+> `_EXPORT_INIT_SYMBOL` 现在通过红黑树按 `priority` 字典序排序后调用，因此**相同优先级的初始化函数之间不保证顺序**。建议为存在依赖关系的模块分配不同的优先级字符串，确保执行顺序明确。
 
 > ⚠️ **2. 只建议使用日志系统，避免复杂操作**
 > 
-> 在初始化阶段，其他外部模块（如硬件驱动、网络栈、文件系统等）可能尚未就绪——因为它们本身也可能通过 `_EXPORT_INIT_SYMBOL` 注册且顺序不确定。因此，**初始化函数中只建议使用 `cli_printk` 打印日志或做最简单的状态置位**，不要进行阻塞操作、创建线程、访问未初始化硬件等复杂行为。
+> 在初始化阶段，其他外部模块（如硬件驱动、网络栈、文件系统等）可能尚未就绪——因为它们本身也可能通过 `_EXPORT_INIT_SYMBOL` 注册且顺序可能不同。因此，**初始化函数中只建议使用 `cli_printk` 打印日志或做最简单的状态置位**，不要进行阻塞操作、创建线程、访问未初始化硬件等复杂行为。
 > 
 > 日志系统在此阶段是安全的，因为 `cli_io_init()` 已经在 `scheduler_init()` 中被提前调用。
 

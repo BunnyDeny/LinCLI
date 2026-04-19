@@ -30,7 +30,7 @@ void pr_license(void *)
 	cli_printk(
 		"under certain conditions; type `show -c' for details.\n\r\n");
 }
-_EXPORT_INIT_SYMBOL(pr_license, NULL, pr_license);
+_EXPORT_INIT_SYMBOL(pr_license, 10, NULL, pr_license);
 
 struct show_args {
 	bool warranty;

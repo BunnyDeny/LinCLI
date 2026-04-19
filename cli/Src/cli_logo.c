@@ -30,4 +30,4 @@ void pr_logo(void *arg)
 	pr_info("欢迎使用LinCLI\r\n");
 }
 
-_EXPORT_INIT_SYMBOL(logo, NULL, pr_logo);
+_EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);
