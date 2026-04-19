@@ -35,17 +35,8 @@ static int init_d_insert(struct init_d *init)
 		parent = *new;
 		if (p1 < p2)
 			new = &((*new)->rb_left);
-		else if (p1 > p2)
+		else
 			new = &((*new)->rb_right);
-		else {
-			int name_cmp = strcmp(init->name, this->name);
-			if (name_cmp < 0)
-				new = &((*new)->rb_left);
-			else if (name_cmp > 0)
-				new = &((*new)->rb_right);
-			else
-				return -1;
-		}
 	}
 
 	rb_link_node(&init->node, parent, new);

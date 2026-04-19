@@ -22,7 +22,6 @@
 #include "rbtree.h"
 
 struct init_d {
-	char name[32];
 	int priority;
 	struct rb_node node;
 	void *_private;
@@ -30,14 +29,13 @@ struct init_d {
 };
 
 #define _EXPORT_INIT_SYMBOL(obj, _priority, private, init_entry) \
-	static struct init_d init_d_##obj = {         \
-		.name = #obj,                         \
-		.priority = _priority,                \
-		.node = { 0 },                        \
-		._private = private,                  \
-		._init_entry = init_entry,            \
-	};                                            \
-	static struct init_d *const _init_d_ptr_##obj \
+	static struct init_d init_d_##obj = {                    \
+		.priority = _priority,                           \
+		.node = { 0 },                                   \
+		._private = private,                             \
+		._init_entry = init_entry,                       \
+	};                                                       \
+	static struct init_d *const _init_d_ptr_##obj            \
 		__attribute__((used, section(".my_init_d"))) = &init_d_##obj
 
 extern struct init_d *const _init_d_start[];
@@ -50,6 +48,9 @@ extern struct init_d *const _init_d_end[];
 
 extern void call_init_d(void);
 
-#define CALL_INIT_D  do { call_init_d(); } while (0)
+#define CALL_INIT_D            \
+	do {                   \
+		call_init_d(); \
+	} while (0)
 
 #endif
