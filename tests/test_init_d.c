@@ -23,28 +23,27 @@ static void test_init_m1(void *arg)
 	(void)arg;
 	pr_info("[init_d test] priority -1 executed\r\n");
 }
+_EXPORT_INIT_SYMBOL(test_init_m1, -1, NULL, test_init_m1);
 
 static void test_init_0(void *arg)
 {
 	(void)arg;
 	pr_info("[init_d test] priority 0 executed\r\n");
 }
+_EXPORT_INIT_SYMBOL(test_init_0, 0, NULL, test_init_0);
 
 static void test_init_1(void *arg)
 {
 	(void)arg;
 	pr_info("[init_d test] priority 1 executed\r\n");
 }
+_EXPORT_INIT_SYMBOL(test_init_1, 1, NULL, test_init_1);
 
 static void test_init_10(void *arg)
 {
 	(void)arg;
 	pr_info("[init_d test] priority 10 executed\r\n");
 }
-
-_EXPORT_INIT_SYMBOL(test_init_m1, -1, NULL, test_init_m1);
-_EXPORT_INIT_SYMBOL(test_init_0, 0, NULL, test_init_0);
-_EXPORT_INIT_SYMBOL(test_init_1, 1, NULL, test_init_1);
 _EXPORT_INIT_SYMBOL(test_init_10, 10, NULL, test_init_10);
 
 #endif
