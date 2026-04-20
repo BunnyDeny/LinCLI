@@ -17,6 +17,7 @@
  */
 
 #include "cli_cmd_line.h"
+#include "cli_errno.h"
 #include "cli_io.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
@@ -483,7 +484,7 @@ int cli_cmd_line_init(void)
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 
 int cmd_line_start_task(void *pch)
@@ -501,7 +502,7 @@ int cmd_line_start_task(void *pch)
 			return status;
 		}
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 		     ".cli_cmd_line");
@@ -554,7 +555,7 @@ label_cmd_line_exit:
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
 
@@ -590,7 +591,7 @@ int invalid_char_task(void *pch)
 	int status = state_switch(&cmd_line_mec, next_state);
 	if (status < 0)
 		return status;
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
 		     ".cli_cmd_line");
@@ -628,13 +629,13 @@ int ESC_handler(void *pch)
 		if (status < 0) {
 			return status;
 		}
-		return 0;
+		return CLI_OK;
 	} else if (esc_params[1] == 'B') {
 		status = state_switch(&cmd_line_mec, "history_down");
 		if (status < 0) {
 			return status;
 		}
-		return 0;
+		return CLI_OK;
 	} else if (esc_params[1] == '3') {
 		status = cli_in_pop((_u8 *)&ch, 1);
 		if (status < 0) {
@@ -645,14 +646,14 @@ int ESC_handler(void *pch)
 			if (status < 0) {
 				return status;
 			}
-			return 0;
+			return CLI_OK;
 		}
 	}
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
 
@@ -668,7 +669,7 @@ int history_up_task(void *pch)
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(history_up, NULL, history_up_task, NULL, ".cli_cmd_line");
 
@@ -687,7 +688,7 @@ int history_down_task(void *pch)
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(history_down, NULL, history_down_task, NULL,
 		     ".cli_cmd_line");
@@ -728,7 +729,7 @@ int tab_complete_task(void *pch)
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0)
 		return status;
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 		     ".cli_cmd_line");
@@ -769,7 +770,7 @@ delete_exit:
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
 
@@ -820,7 +821,7 @@ label_exit2:
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
 		     ".cli_cmd_line");
@@ -838,7 +839,7 @@ int clear_handler(void *arg)
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(clear, NULL, clear_handler, NULL, ".cli_cmd_line");
 
@@ -907,12 +908,12 @@ int cli_cmd_line_task(char ch)
 	while (status != cmd_line_exit) {
 		status = stateEngineRun(&cmd_line_mec, &ch);
 		if (status < 0) {
-			pr_err("cli_cmd_line状态机异常\r\n");
-			return -1;
+			pr_err("cli_cmd_line状态机异常，错误码: %d\r\n", status);
+			return status;
 		}
 		if (status == cmd_line_enter_press) {
 			return status;
 		}
 	}
-	return 0;
+	return CLI_OK;
 }

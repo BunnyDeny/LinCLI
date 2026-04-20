@@ -17,6 +17,7 @@
  */
 
 #include "stateM.h"
+#include "cli_errno.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,16 +70,18 @@ static int state_insert(struct rb_root *root, struct tState *state_to_insert)
  * @param startup_state The initial state to enter. Must not be NULL.
  * @param pool          Array of available states.
  * @param pool_size     Number of states in the pool.
- * @return 0 on success, -1 if engine or startup_state is NULL.
+ * @return CLI_OK on success, CLI_ERR_NULL if engine or startup_state is NULL,
+ *         CLI_ERR_STATEM_EMPTY if the state pool is empty,
+ *         CLI_ERR_NOTFOUND if the startup state is not found in the pool.
  */
 int engine_init(struct tStateEngine *engine, char *startup_state,
 		struct tState *const *sec_start, struct tState *const *sec_end)
 {
 	if (engine == NULL || startup_state == NULL || sec_start == NULL ||
 	    sec_end == NULL)
-		return -1;
+		return CLI_ERR_NULL;
 	if (sec_start >= sec_end)
-		return -2;
+		return CLI_ERR_STATEM_EMPTY;
 	engine->from = NULL;
 	struct rb_root *rbtree_root = &engine->state_tree_root;
 	*rbtree_root = RB_ROOT;
@@ -90,10 +93,10 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
 
 	struct tState *_to = state_search(rbtree_root, startup_state);
 	if (_to == NULL) {
-		return -4;
+		return CLI_ERR_NOTFOUND;
 	}
 	engine->to = _to;
-	return 0;
+	return CLI_OK;
 }
 
 /**
@@ -116,7 +119,7 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
 int stateEngineRun(struct tStateEngine *engine, void *private)
 {
 	if (engine == NULL)
-		return -1;
+		return CLI_ERR_NULL;
 	if (engine->from != engine->to) {
 		STATEM_EXIT(engine->from);
 		if (engine->from && engine->from->state_exit) {
@@ -150,28 +153,30 @@ int stateEngineRun(struct tStateEngine *engine, void *private)
  * Any negative value returned by a state task will cause the stateEngineRun()
  * to return that same negative value, triggering an engine exception.
  *
- * @return 0  Success.
- * @return -1 Invalid engine pointer or null state in pool.
- * @return -2 No matching state name found in the pool.
+ * @return CLI_OK              Success.
+ * @return CLI_ERR_NULL        Invalid engine pointer.
+ * @return CLI_ERR_NOTFOUND    No matching state name found in the pool.
+ * @return CLI_ERR_STATEM_SAME Target state is already the current state.
  *
  * @example
  * // 1. Inside a state task:
  * int my_state_task(struct tStateEngine *engine, void *ctx) {
  *     if (state_switch(engine, "state2")) {
  *         printf("switch error!\n");
- *         return -2; // Propagate error to the engine
+ *         return CLI_ERR_NOTFOUND; // Propagate error to the engine
  *     }
- *     return 0;
+ *     return CLI_OK;
  * }
  */
 int state_switch(struct tStateEngine *engine, char *name)
 {
 	if (engine == NULL)
-		return -1;
+		return CLI_ERR_NULL;
 	struct tState *_to = state_search(&engine->state_tree_root, name);
-	if (_to == NULL || _to == engine->from) {
-		return -2;
-	}
+	if (_to == NULL)
+		return CLI_ERR_NOTFOUND;
+	if (_to == engine->from)
+		return CLI_ERR_STATEM_SAME;
 	engine->to = _to;
-	return 0;
+	return CLI_OK;
 }

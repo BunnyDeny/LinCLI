@@ -17,6 +17,7 @@
  */
 
 #include "cmd_dispose.h"
+#include "cli_errno.h"
 #include "stateM.h"
 #include "cli_io.h"
 #include "cli_cmd_line.h"
@@ -599,7 +600,7 @@ int dispose_init(void)
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 
 /* ============================================================
@@ -651,10 +652,10 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 	while (1) {
 		status = stateEngineRun(&dispose_mec, &ctx);
 		if (status < 0) {
-			pr_err("dispose状态机异常\r\n");
-			return -1;
+			pr_err("dispose状态机异常，错误码: %d\r\n", status);
+			return status;
 		} else if (status == dispose_exit) {
-			return 0;
+			return CLI_OK;
 		}
 	}
 }

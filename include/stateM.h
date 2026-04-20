@@ -32,6 +32,8 @@
  *    called within a `state_task`. If `state_switch()` returns a negative value
  *    (indicating a transition failure), the `state_task` should immediately
  *    propagate this failure by returning a negative error code itself.
+ *    Note: `CLI_ERR_STATEM_SAME` means the target state is already active,
+ *    which is typically harmless and can be ignored or propagated as needed.
  * 3. **Centralized Error Handling:** The caller of `stateEngineRun()`
  * (typically in the `main()` loop or an RTOS task context) must monitor the
  * return value. A negative result indicates an exception within a state task,

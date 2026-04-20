@@ -17,6 +17,7 @@
  */
 
 #include "stateM.h"
+#include "cli_errno.h"
 #include "cli_io.h"
 #include "init_d.h"
 #include <string.h>
@@ -45,10 +46,10 @@ int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_auto_run");
 	if (status < 0) {
-		pr_crit("[scheduler]切换自动运行任务异常\r\n");
+		pr_crit("[scheduler]切换自动运行任务异常，错误码: %d\r\n", status);
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
 		     ".scheduler");
@@ -82,10 +83,10 @@ int scheduler_get_char_task(void *private)
 			if (status < 0) {
 				return status;
 			}
-			return 0;
+			return CLI_OK;
 		}
 	}
-	return 0;
+	return CLI_OK;
 }
 void scheduler_get_char_exit(void *arg)
 {
@@ -125,7 +126,7 @@ int scheduler_auto_run_task(void *private)
 	}
 scheduler_auto_run_task_exit:
 	status = state_switch(&scheduler_eng, "scheduler_get_char");
-	return status < 0 ? status : 0;
+	return status < 0 ? status : CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
 		     ".scheduler");
@@ -143,7 +144,7 @@ int scheduler_dispose_task(void *arg)
 	if (status < 0) {
 		return status;
 	}
-	return 0;
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(schedule_dispose, NULL, scheduler_dispose_task, NULL,
 		     ".scheduler");
@@ -155,7 +156,8 @@ int scheduler_init(void)
 	status = engine_init(&scheduler_eng, "scheduler_start",
 			     _scheduler_start, _scheduler_end);
 	if (status < 0) {
-		pr_emerg("调度器初始化异常，请检查调度器状态机\r\n");
+		pr_emerg("调度器初始化异常: %s (%d)，请检查调度器状态机\r\n",
+		cli_strerror(status), status);
 		return status;
 	}
 	pr_info("[scheduler]调度器初始化成功\r\n");
