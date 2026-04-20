@@ -18,7 +18,6 @@
 
 #include "init_d.h"
 #include "rbtree.h"
-#include "cli_io.h"
 #include <string.h>
 
 static struct rb_root init_d_tree = RB_ROOT;
