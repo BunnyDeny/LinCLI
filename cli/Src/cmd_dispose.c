@@ -468,12 +468,10 @@ static int parse_one_arg(const cli_command_t *cmd, int argc, char **argv,
 	return parse_option_value(val_arg, arg_struct, state);
 }
 
-static int parse_init(const cli_command_t *cmd, int argc, char **argv,
+static int parse_init(const cli_command_t *cmd,
 			void **arg_struct_out, bool **opt_seen_out,
 			struct parse_state *state_out)
 {
-	if (!cmd || !argv || argc < 1)
-		return CLI_ERR_NULL;
 	void *arg_struct = cmd->arg_buf;
 	if (!arg_struct)
 		return CLI_ERR_NULL;
@@ -513,7 +511,9 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	bool *opt_seen;
 	struct parse_state state;
 
-	ret = parse_init(cmd, argc, argv, &arg_struct, &opt_seen, &state);
+	if (!cmd || !argv || argc < 1)
+		return CLI_ERR_NULL;
+	ret = parse_init(cmd, &arg_struct, &opt_seen, &state);
 	if (ret < 0)
 		return ret;
 
