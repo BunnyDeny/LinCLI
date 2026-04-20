@@ -170,8 +170,13 @@ int scheduler_task(void)
 	int status;
 	status = stateEngineRun(&scheduler_eng, NULL);
 	if (status < 0) {
-		pr_crit("调度器状态机异常: %s (%d)\r\n", cli_strerror(status),
-			status);
+		if (cli_err_is_system(status)) {
+			pr_crit("调度器系统错误: %s (%d)\r\n",
+				cli_strerror(status), status);
+		} else {
+			pr_err("调度器运行时错误: %s (%d)\r\n",
+			       cli_strerror(status), status);
+		}
 		return status;
 	}
 	if (cli_out_sync()) {
