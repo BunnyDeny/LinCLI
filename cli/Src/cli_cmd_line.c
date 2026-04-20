@@ -563,7 +563,6 @@ int invalid_char_task(void *pch)
 {
 	char ch = *((char *)pch);
 	char *next_state;
-
 	switch ((unsigned char)ch) {
 	case 27:
 		next_state = "ESC_handler";
@@ -587,7 +586,6 @@ int invalid_char_task(void *pch)
 		next_state = "exit_handler";
 		break;
 	}
-
 	int status = state_switch(&cmd_line_mec, next_state);
 	if (status < 0)
 		return status;
@@ -908,7 +906,8 @@ int cli_cmd_line_task(char ch)
 	while (status != cmd_line_exit) {
 		status = stateEngineRun(&cmd_line_mec, &ch);
 		if (status < 0) {
-			pr_err("cli_cmd_line状态机异常，错误码: %d\r\n", status);
+			pr_err("cli_cmd_line状态机异常，错误码: %d\r\n",
+			       status);
 			return status;
 		}
 		if (status == cmd_line_enter_press) {

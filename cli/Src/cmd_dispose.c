@@ -250,41 +250,33 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 static int parse_option_value(const char *arg, void *arg_struct,
 			      struct parse_state *state)
 {
-	int ret;
 	if (!state->cur_opt) {
 		pr_err("孤立参数: %s\r\n", arg);
 		return CLI_ERR_ORPHAN_ARG;
 	}
 	void *dst = (char *)arg_struct + state->cur_opt->offset;
+	int ret;
+
 	switch (state->cur_opt->type) {
 	case CLI_TYPE_STRING:
 	case CLI_TYPE_CALLBACK:
 		*(const char **)dst = arg;
-		state->cur_opt = NULL;
 		break;
-	case CLI_TYPE_INT: {
-		int val;
-		ret = cli_parse_int(arg, &val);
+	case CLI_TYPE_INT:
+		ret = cli_parse_int(arg, (int *)dst);
 		if (ret < 0)
 			return ret;
-		*(int *)dst = val;
-		state->cur_opt = NULL;
 		break;
-	}
-	case CLI_TYPE_DOUBLE: {
-		double val;
-		ret = cli_parse_double(arg, &val);
+	case CLI_TYPE_DOUBLE:
+		ret = cli_parse_double(arg, (double *)dst);
 		if (ret < 0)
 			return ret;
-		*(double *)dst = val;
-		state->cur_opt = NULL;
 		break;
-	}
 	case CLI_TYPE_INT_ARRAY:
 		ret = parse_int_array(state->cur_opt, arg, arg_struct, state);
 		if (ret < 0)
 			return ret;
-		break;
+		return CLI_OK;
 	default:
 		pr_err("选项 -%c/--%s 类型未实现\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
@@ -293,7 +285,8 @@ static int parse_option_value(const char *arg, void *arg_struct,
 						  "");
 		return CLI_ERR_INVAL;
 	}
-	return 0;
+	state->cur_opt = NULL;
+	return CLI_OK;
 }
 
 static int validate_end_state(struct parse_state *state)
