@@ -468,16 +468,15 @@ static int parse_one_arg(const cli_command_t *cmd, int argc, char **argv,
 	return parse_option_value(val_arg, arg_struct, state);
 }
 
-static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
+static int parse_init(const cli_command_t *cmd, int argc, char **argv,
+			void **arg_struct_out, bool **opt_seen_out,
+			struct parse_state *state_out)
 {
-	int ret;
 	if (!cmd || !argv || argc < 1)
 		return CLI_ERR_NULL;
-
 	void *arg_struct = cmd->arg_buf;
 	if (!arg_struct)
 		return CLI_ERR_NULL;
-
 	memset(arg_struct, 0, cmd->arg_struct_size);
 
 	char *scratch = (char *)arg_struct + cmd->arg_struct_size;
@@ -500,6 +499,23 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	state.scratch_pool = scratch;
 	state.scratch_remain = scratch_size;
 	state.cmd = cmd;
+
+	*arg_struct_out = arg_struct;
+	*opt_seen_out = opt_seen;
+	*state_out = state;
+	return CLI_OK;
+}
+
+static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
+{
+	int ret;
+	void *arg_struct;
+	bool *opt_seen;
+	struct parse_state state;
+
+	ret = parse_init(cmd, argc, argv, &arg_struct, &opt_seen, &state);
+	if (ret < 0)
+		return ret;
 
 	for (int i = 1; i < argc; i++) {
 		ret = parse_one_arg(cmd, argc, argv, &i, arg_struct,
