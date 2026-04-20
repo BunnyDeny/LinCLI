@@ -582,43 +582,65 @@ static bool has_help_flag(int argc, char **argv)
 /**
  * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
  */
-static int dispose_start_task(void *arg)
+static const cli_command_t *prepare_cmd_def(int argc, char **argv,
+					    int *cmd_ret)
 {
-	struct dispose_ctx *ctx = (struct dispose_ctx *)arg;
-	char *cmd = ctx->cmd;
-	char *argv[CLI_MAX_ARGV];
-	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
-	cli_printk("\r\n");
 	if (argc < 1) {
-		*ctx->cmd_ret = 0;
-		return dispose_exit;
+		*cmd_ret = 0;
+		return NULL;
 	}
-
 	const cli_command_t *cmd_def = cli_command_find(argv[0]);
 	if (!cmd_def) {
 		pr_err("未知命令: %s\r\n", argv[0]);
-		*ctx->cmd_ret = -1;
-		return dispose_exit;
+		*cmd_ret = -1;
+		return NULL;
 	}
-
 	if (has_help_flag(argc, argv)) {
 		cli_print_help(cmd_def);
-		*ctx->cmd_ret = 0;
-		return dispose_exit;
+		*cmd_ret = 0;
+		return NULL;
 	}
-
 	if (!cmd_def->arg_buf) {
 		pr_err("命令 %s 未分配参数缓冲区\r\n", cmd_def->name);
-		*ctx->cmd_ret = -1;
-		return dispose_exit;
+		*cmd_ret = -1;
+		return NULL;
 	}
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
 		pr_err("命令 %s 结构体占 %zu 字节，超过缓冲区 %zu 字节\r\n",
 		       cmd_def->name, cmd_def->arg_struct_size,
 		       cmd_def->arg_buf_size);
-		*ctx->cmd_ret = -1;
-		return dispose_exit;
+		*cmd_ret = -1;
+		return NULL;
 	}
+	return cmd_def;
+}
+
+static int run_cmd_validator(const cli_command_t *cmd_def, int *cmd_ret)
+{
+	if (!cmd_def->validator) {
+		*cmd_ret = 0;
+		return 0;
+	}
+	int ret = cmd_def->validator(cmd_def->arg_buf);
+	*cmd_ret = ret;
+	if (ret < 0) {
+		pr_err("命令 %s 执行失败，返回值: %d\r\n",
+		       cmd_def->name, ret);
+		return -1;
+	}
+	return 0;
+}
+
+static int dispose_start_task(void *arg)
+{
+	struct dispose_ctx *ctx = (struct dispose_ctx *)arg;
+	char *argv[CLI_MAX_ARGV];
+	int argc = tokenize(ctx->cmd, argv, CLI_MAX_ARGV);
+	cli_printk("\r\n");
+
+	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, ctx->cmd_ret);
+	if (!cmd_def)
+		return dispose_exit;
 
 	memset(cmd_def->arg_buf, 0, cmd_def->arg_buf_size);
 
@@ -630,17 +652,8 @@ static int dispose_start_task(void *arg)
 		return dispose_exit;
 	}
 
-	if (cmd_def->validator) {
-		int ret = cmd_def->validator(cmd_def->arg_buf);
-		*ctx->cmd_ret = ret;
-		if (ret < 0) {
-			pr_err("命令 %s 执行失败，返回值: %d\r\n",
-			       cmd_def->name, ret);
-			return dispose_exit;
-		}
-	} else {
-		*ctx->cmd_ret = 0;
-	}
+	if (run_cmd_validator(cmd_def, ctx->cmd_ret) < 0)
+		return dispose_exit;
 
 	return dispose_exit;
 }
