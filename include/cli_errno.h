@@ -40,21 +40,19 @@ const char *cli_strerror(int err);
  * - cli_errno_dispose.h 中的错误全部属于用户级。
  */
 
-/* ========== 系统级错误集合（X-Macro）==========
+/* ========== 系统级错误集合（由各子模块就地声明，此处仅收集）==========
  *
- * 使用 X-Macro 技巧维护系统级错误列表。
- * 新增系统级错误时，只需在下面列表中加一行，
- * cli_err_is_system() 会自动同步，无需手动维护 switch-case。
+ * 每个子头文件（如 cli_errno_statem.h）在定义错误码的同时，
+ * 通过 X-Macro 声明哪些是系统级错误（如 CLI_ERR_STATEM_SYSTEM）。
+ * 此处只做聚合，不维护具体列表。
+ * 新增系统级错误时，只需在对应的子头文件中：
+ *   1. 定义错误码  2. 加入该模块的 _SYSTEM 宏列表
+ * 完全不需要修改本文件。
  */
-#define CLI_SYSTEM_ERRORS(X) \
-	X(CLI_ERR_NULL)        \
-	X(CLI_ERR_NOMEM)       \
-	X(CLI_ERR_STATEM_EMPTY)\
-	X(CLI_ERR_STATEM_DUP)  \
-	X(CLI_ERR_STATEM_SAME) \
-	X(CLI_ERR_FIFO_FULL)   \
-	X(CLI_ERR_FIFO_EMPTY)  \
-	X(CLI_ERR_IO_SYNC)
+#define CLI_SYSTEM_ERRORS(X)       \
+	CLI_ERR_COMMON_SYSTEM(X)   \
+	CLI_ERR_STATEM_SYSTEM(X)   \
+	CLI_ERR_IO_SYSTEM(X)
 
 /**
  * @brief 判断错误码是否为系统级错误。

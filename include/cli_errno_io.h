@@ -18,4 +18,10 @@
 #define CLI_ERR_FIFO_EMPTY    -41   /* FIFO 已空 */
 #define CLI_ERR_IO_SYNC       -42   /* IO 同步失败 */
 
+/* 本模块的系统级错误集合 */
+#define CLI_ERR_IO_SYSTEM(X) \
+	X(CLI_ERR_FIFO_FULL)   \
+	X(CLI_ERR_FIFO_EMPTY)  \
+	X(CLI_ERR_IO_SYNC)
+
 #endif

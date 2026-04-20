@@ -18,4 +18,10 @@
 #define CLI_ERR_STATEM_DUP    -11   /* 状态名重复 */
 #define CLI_ERR_STATEM_SAME   -12   /* 已在目标状态，无需切换 */
 
+/* 本模块的系统级错误集合 */
+#define CLI_ERR_STATEM_SYSTEM(X) \
+	X(CLI_ERR_STATEM_EMPTY)    \
+	X(CLI_ERR_STATEM_DUP)      \
+	X(CLI_ERR_STATEM_SAME)
+
 #endif
