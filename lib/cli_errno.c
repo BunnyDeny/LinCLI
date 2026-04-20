@@ -26,14 +26,10 @@ const char *cli_strerror(int err)
 		return "null pointer";
 	case CLI_ERR_NOTFOUND:
 		return "not found";
-	case CLI_ERR_NOMEM:
-		return "out of memory";
 	case CLI_ERR_INVAL:
 		return "invalid argument";
 	case CLI_ERR_STATEM_EMPTY:
 		return "state pool empty";
-	case CLI_ERR_STATEM_DUP:
-		return "duplicate state name";
 	case CLI_ERR_STATEM_SAME:
 		return "already in target state";
 	case CLI_ERR_UNKNOWN_OPT:

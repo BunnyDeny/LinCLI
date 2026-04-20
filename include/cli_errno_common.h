@@ -15,7 +15,6 @@
 #define CLI_OK 0
 #define CLI_ERR_NULL -1 /* 空指针入参 */
 #define CLI_ERR_NOTFOUND -2 /* 查找失败（状态、命令、选项等） */
-#define CLI_ERR_NOMEM -3 /* 内存/缓冲区不足 */
-#define CLI_ERR_INVAL -4 /* 非法参数 */
+#define CLI_ERR_INVAL -3 /* 非法参数 */
 
 #endif
