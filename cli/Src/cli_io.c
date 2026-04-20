@@ -186,13 +186,13 @@ int cli_printk(const char *fmt, ...)
 		memcpy(buffer, _pre, pre_len);
 		strcat(buffer, COLOR_NONE);
 		if (cli_out_sync())
-			return -2;
+			return CLI_ERR_IO_SYNC;
 		status = cli_out_push((_u8 *)buffer,
 				      pre_len + len + strlen(COLOR_NONE));
 		if (status < 0)
 			return status;
 		if (cli_out_sync())
-			return -2;
+			return CLI_ERR_IO_SYNC;
 	}
 	return len;
 }

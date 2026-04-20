@@ -518,7 +518,7 @@ int valid_char_task(void *pch)
 	if (cmd_line.pos == cmd_line.size) {
 		status = cli_out_push((_u8 *)pch, 1);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		cmd_line.buf[cmd_line.pos] = ch;
 		goto label_size_pos_inc;
@@ -530,19 +530,19 @@ int valid_char_task(void *pch)
 		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
 				      cmd_line.size - cmd_line.pos + 1);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		if (cli_out_sync()) {
-			return -1;
+			return CLI_ERR_IO_SYNC;
 		}
 		int pos_move_cnt = cmd_line.size - cmd_line.pos;
 		while (pos_move_cnt--) {
 			status = cli_out_push((_u8 *)"\033[D", 4);
 			if (status < 0) {
-				return -1;
+				return status;
 			}
 			if (cli_out_sync()) {
-				return -1;
+				return CLI_ERR_IO_SYNC;
 			}
 		}
 		goto label_size_pos_inc;
@@ -614,14 +614,14 @@ int ESC_handler(void *pch)
 		char *left_move = "\x1b[D";
 		status = cli_out_push((_u8 *)left_move, strlen(left_move) + 1);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		cmd_line.pos--;
 	} else if (esc_params[1] == 'C' && cmd_line.pos < cmd_line.size) {
 		char *left_move = "\x1b[C";
 		status = cli_out_push((_u8 *)left_move, strlen(left_move) + 1);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		cmd_line.pos++;
 	} else if (esc_params[1] == 'A') {
@@ -748,19 +748,19 @@ int delete(void *pch)
 		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
 				      writeNums);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		if (cli_out_sync()) {
-			return -1;
+			return CLI_ERR_IO_SYNC;
 		}
 		int pos_move_cnt = cmd_line.size - cmd_line.pos;
 		while (pos_move_cnt--) {
 			status = cli_out_push((_u8 *)"\033[D", 4);
 			if (status < 0) {
-				return -1;
+				return status;
 			}
 			if (cli_out_sync()) {
-				return -1;
+				return CLI_ERR_IO_SYNC;
 			}
 		}
 		cmd_line.size--;
@@ -780,7 +780,7 @@ int backspace_handler(void *pch)
 	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
 		status = cli_out_push((_u8 *)"\b \b", 4);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		goto label_size_pos_dis;
 	} else if (cmd_line.pos == 0) {
@@ -788,7 +788,7 @@ int backspace_handler(void *pch)
 	} else if (cmd_line.pos < cmd_line.size) {
 		status = cli_out_push((_u8 *)"\b \b", 4);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		for (int i = cmd_line.pos - 1; i < cmd_line.size - 1; i++) {
 			cmd_line.buf[i] = cmd_line.buf[i + 1];
@@ -797,19 +797,19 @@ int backspace_handler(void *pch)
 		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos - 1],
 				      cmd_line.size - cmd_line.pos + 1);
 		if (status < 0) {
-			return -1;
+			return status;
 		}
 		if (cli_out_sync()) {
-			return -1;
+			return CLI_ERR_IO_SYNC;
 		}
 		int pos_move_cnt = cmd_line.size - cmd_line.pos + 1;
 		while (pos_move_cnt--) {
 			status = cli_out_push((_u8 *)"\033[D", 4);
 			if (status < 0) {
-				return -1;
+				return status;
 			}
 			if (cli_out_sync()) {
-				return -1;
+				return CLI_ERR_IO_SYNC;
 			}
 		}
 	}
@@ -831,7 +831,7 @@ int clear_handler(void *arg)
 	int status;
 	status = cli_out_push((_u8 *)"\x1b[H\x1b[2J", sizeof("\x1b[H\x1b[2J"));
 	if (status < 0) {
-		return -1;
+		return status;
 	}
 	void cli_prompt_print(void);
 	cli_prompt_print();

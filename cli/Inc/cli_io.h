@@ -19,6 +19,7 @@
 #ifndef _CLI_IO_H
 #define _CLI_IO_H
 
+#include "cli_errno.h"
 #include "tVector.h"
 #include <stdio.h>
 
@@ -116,15 +117,15 @@ static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 		return -(*ref);
 	}
 	if (*ref == 0) {
-		return -2; /*uninited*/
+		return CLI_ERR_INVAL; /*uninited*/
 	}
 	(*ref)++;
 	status = push_back(v, data, size);
 	(*ref)--;
 	if (status == false) {
-		return -1;
+		return CLI_ERR_FIFO_FULL;
 	} else {
-		return 0;
+		return CLI_OK;
 	}
 }
 
@@ -134,7 +135,7 @@ static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 		return -(*ref);
 	}
 	if (*ref == 0) {
-		return -2; /*uninited*/
+		return CLI_ERR_INVAL; /*uninited*/
 	}
 	(*ref)++;
 	int remain_to_pop = size;
@@ -142,7 +143,7 @@ static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 		_u8 front;
 		if (at(v, 0, &front) == false) {
 			(*ref)--;
-			return -1;
+			return CLI_ERR_FIFO_EMPTY;
 		}
 		int idx = size - remain_to_pop;
 		*(data + idx) = front;
@@ -150,13 +151,13 @@ static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 		remain_to_pop--;
 	}
 	(*ref)--;
-	return 0;
+	return CLI_OK;
 }
 
 static inline int cli_in_push(_u8 *data, int size)
 {
 	if (cli_in_push_lock) {
-		return -1;
+		return CLI_ERR_FIFO_FULL;
 	} else {
 		return _cli_io_push(&_cli_io.in, data, size,
 				    &_cli_io.in_push_ref);

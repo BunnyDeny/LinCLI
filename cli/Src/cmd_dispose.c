@@ -131,7 +131,7 @@ static int check_prev_opt_missing_arg(struct parse_state *state)
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
 						  "");
-		return -1;
+		return CLI_ERR_MISSING_ARG;
 	}
 	return 0;
 }
@@ -140,13 +140,14 @@ static int parse_option_switch(const cli_command_t *cmd, const char *arg,
 			       void *arg_struct, bool *opt_seen,
 			       struct parse_state *state)
 {
-	if (check_prev_opt_missing_arg(state) < 0)
-		return -1;
+	int ret = check_prev_opt_missing_arg(state);
+	if (ret < 0)
+		return ret;
 
 	state->cur_opt = find_option(cmd, arg);
 	if (!state->cur_opt) {
 		pr_err("未知选项: %s\r\n", arg);
-		return -1;
+		return CLI_ERR_UNKNOWN_OPT;
 	}
 
 	size_t idx = (size_t)(state->cur_opt - cmd->options);
@@ -156,7 +157,7 @@ static int parse_option_switch(const cli_command_t *cmd, const char *arg,
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
 						  "");
-		return -1;
+		return CLI_ERR_DUP_OPT;
 	}
 	opt_seen[idx] = true;
 	state->cur_opt_argc = 0;
@@ -177,11 +178,11 @@ static int cli_parse_int(const char *arg, int *out)
 	long val = strtol(arg, &endptr, 10);
 	if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
 		pr_err("'%s' 超出整数范围\r\n", arg);
-		return -1;
+		return CLI_ERR_INT_RANGE;
 	}
 	if (endptr == arg || *endptr != '\0') {
 		pr_err("'%s' 不是有效的整数\r\n", arg);
-		return -1;
+		return CLI_ERR_INT_FMT;
 	}
 	*out = (int)val;
 	return 0;
@@ -194,11 +195,11 @@ static int cli_parse_double(const char *arg, double *out)
 	double val = strtod(arg, &endptr);
 	if (errno == ERANGE) {
 		pr_err("'%s' 超出浮点数范围\r\n", arg);
-		return -1;
+		return CLI_ERR_DOUBLE_RANGE;
 	}
 	if (endptr == arg || *endptr != '\0') {
 		pr_err("'%s' 不是有效的浮点数\r\n", arg);
-		return -1;
+		return CLI_ERR_DOUBLE_FMT;
 	}
 	*out = val;
 	return 0;
@@ -207,11 +208,12 @@ static int cli_parse_double(const char *arg, double *out)
 static int parse_int_array(const cli_option_t *opt, const char *arg,
 			   void *arg_struct, struct parse_state *state)
 {
+	int ret;
 	if (state->cur_opt_idx >= (int)opt->max_args) {
 		pr_err("选项 -%c/--%s 参数过多\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "");
-		return -1;
+		return CLI_ERR_ARRAY_MAX;
 	}
 
 	void *dst = (char *)arg_struct + opt->offset;
@@ -225,7 +227,7 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 			       opt->short_opt ? opt->short_opt : ' ',
 			       opt->long_opt ? opt->long_opt : "", shortfall,
 			       need);
-			return -1;
+			return CLI_ERR_BUF_INSUFF;
 		}
 		arr = (int *)state->scratch_pool;
 		state->scratch_pool += need;
@@ -233,8 +235,9 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 		*(int **)dst = arr;
 	}
 	int val;
-	if (cli_parse_int(arg, &val) < 0)
-		return -1;
+	ret = cli_parse_int(arg, &val);
+	if (ret < 0)
+		return ret;
 	arr[state->cur_opt_idx++] = val;
 	state->cur_opt_argc++;
 
@@ -249,9 +252,10 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 static int parse_option_value(const char *arg, void *arg_struct,
 			      struct parse_state *state)
 {
+	int ret;
 	if (!state->cur_opt) {
 		pr_err("孤立参数: %s\r\n", arg);
-		return -1;
+		return CLI_ERR_ORPHAN_ARG;
 	}
 
 	void *dst = (char *)arg_struct + state->cur_opt->offset;
@@ -264,23 +268,26 @@ static int parse_option_value(const char *arg, void *arg_struct,
 		break;
 	case CLI_TYPE_INT: {
 		int val;
-		if (cli_parse_int(arg, &val) < 0)
-			return -1;
+		ret = cli_parse_int(arg, &val);
+		if (ret < 0)
+			return ret;
 		*(int *)dst = val;
 		state->cur_opt = NULL;
 		break;
 	}
 	case CLI_TYPE_DOUBLE: {
 		double val;
-		if (cli_parse_double(arg, &val) < 0)
-			return -1;
+		ret = cli_parse_double(arg, &val);
+		if (ret < 0)
+			return ret;
 		*(double *)dst = val;
 		state->cur_opt = NULL;
 		break;
 	}
 	case CLI_TYPE_INT_ARRAY:
-		if (parse_int_array(state->cur_opt, arg, arg_struct, state) < 0)
-			return -1;
+		ret = parse_int_array(state->cur_opt, arg, arg_struct, state);
+		if (ret < 0)
+			return ret;
 		break;
 	default:
 		pr_err("选项 -%c/--%s 类型未实现\r\n",
@@ -288,7 +295,7 @@ static int parse_option_value(const char *arg, void *arg_struct,
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
 						  "");
-		return -1;
+		return CLI_ERR_INVAL;
 	}
 	return 0;
 }
@@ -302,7 +309,7 @@ static int validate_end_state(struct parse_state *state)
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
 						  "");
-		return -1;
+		return CLI_ERR_MISSING_ARG;
 	}
 	return 0;
 }
@@ -318,7 +325,7 @@ static int validate_required(const cli_command_t *cmd, const bool *opt_seen)
 			       cmd->options[i].long_opt ?
 				       cmd->options[i].long_opt :
 				       "");
-			return -1;
+			return CLI_ERR_REQ_OPT;
 		}
 	}
 	return 0;
@@ -363,7 +370,7 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 					       cmd->options[i].long_opt :
 					       "",
 				       target_name);
-				return -1;
+				return CLI_ERR_CONFLICT;
 			}
 		} else {
 			if (!target_found) {
@@ -375,7 +382,7 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 					       cmd->options[i].long_opt :
 					       "",
 				       target_name);
-				return -1;
+				return CLI_ERR_DEP_MISSING;
 			}
 		}
 	}
@@ -384,12 +391,13 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 
 static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 {
+	int ret;
 	if (!cmd || !argv || argc < 1)
-		return -1;
+		return CLI_ERR_NULL;
 
 	void *arg_struct = cmd->arg_buf;
 	if (!arg_struct)
-		return -1;
+		return CLI_ERR_NULL;
 
 	memset(arg_struct, 0, cmd->arg_struct_size);
 
@@ -402,7 +410,7 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	if (scratch_avail < (long)opt_seen_need) {
 		pr_err("命令 %s 缓冲区不足，缺少 %ld 字节\r\n", cmd->name,
 		       (long)opt_seen_need - scratch_avail);
-		return -1;
+		return CLI_ERR_BUF_INSUFF;
 	}
 	bool *opt_seen = (bool *)scratch;
 	memset(opt_seen, 0, opt_seen_need);
@@ -416,9 +424,10 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			if (parse_option_switch(cmd, argv[i], arg_struct,
-						opt_seen, &state) < 0) {
-				return -1;
+			ret = parse_option_switch(cmd, argv[i], arg_struct,
+						opt_seen, &state);
+			if (ret < 0) {
+				return ret;
 			}
 		} else {
 			const char *val_arg = argv[i];
@@ -440,7 +449,7 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 								.scratch_remain;
 						pr_err("字符串参数过长，缺少 %ld 字节（需 %zu B）\r\n",
 						       shortfall, total + 1);
-						return -1;
+						return CLI_ERR_BUF_INSUFF;
 					}
 					char *dest = state.scratch_pool;
 					size_t pos = 0;
@@ -459,20 +468,24 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 					i = end;
 				}
 			}
-			if (parse_option_value(val_arg, arg_struct, &state) <
-			    0) {
-				return -1;
+			ret = parse_option_value(val_arg, arg_struct, &state);
+			if (ret < 0) {
+				return ret;
 			}
 		}
 	}
 
-	if (validate_end_state(&state) < 0 ||
-	    validate_required(cmd, opt_seen) < 0 ||
-	    validate_depends_and_conflicts(cmd, opt_seen) < 0) {
-		return -1;
-	}
+	ret = validate_end_state(&state);
+	if (ret < 0)
+		return ret;
+	ret = validate_required(cmd, opt_seen);
+	if (ret < 0)
+		return ret;
+	ret = validate_depends_and_conflicts(cmd, opt_seen);
+	if (ret < 0)
+		return ret;
 
-	return 0;
+	return CLI_OK;
 }
 
 /**
@@ -643,8 +656,8 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 {
 	int status = dispose_init();
 	if (status < 0) {
-		pr_err("dispose_init异常\r\n");
-		return -1;
+		pr_err("dispose_init异常: %s (%d)\r\n", cli_strerror(status), status);
+		return status;
 	}
 
 	struct dispose_ctx ctx = { cmd, cmd_ret };
