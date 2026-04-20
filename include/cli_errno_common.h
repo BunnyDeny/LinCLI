@@ -12,16 +12,10 @@
 #define _CLI_ERRNO_COMMON_H_
 
 /* ========== 通用错误码 (-1 ~ -9) ========== */
-#define CLI_OK              0
-#define CLI_ERR_NULL       -1   /* 空指针入参 */
-#define CLI_ERR_NOTFOUND   -2   /* 查找失败（状态、命令、选项等） */
-#define CLI_ERR_NOMEM      -3   /* 内存/缓冲区不足 */
-#define CLI_ERR_INVAL      -4   /* 非法参数 */
-
-/* 本模块的系统级错误集合（定义即分类，无需再在外部同步） */
-#define CLI_ERR_COMMON_SYSTEM(X) \
-	X(CLI_ERR_NULL)            \
-	X(CLI_ERR_NOMEM)           \
-	X(CLI_ERR_INVAL)
+#define CLI_OK 0
+#define CLI_ERR_NULL -1 /* 空指针入参 */
+#define CLI_ERR_NOTFOUND -2 /* 查找失败（状态、命令、选项等） */
+#define CLI_ERR_NOMEM -3 /* 内存/缓冲区不足 */
+#define CLI_ERR_INVAL -4 /* 非法参数 */
 
 #endif
