@@ -389,6 +389,68 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 	return 0;
 }
 
+static int join_string_args(int argc, char **argv, int start,
+			      struct parse_state *state,
+			      const char **out_arg, int *consumed)
+{
+	int end = start;
+	size_t total = strlen(argv[start]);
+	while (end + 1 < argc && argv[end + 1][0] != '-') {
+		end++;
+		total += 1 + strlen(argv[end]);
+	}
+	if (end == start) {
+		*out_arg = argv[start];
+		*consumed = 0;
+		return CLI_OK;
+	}
+	if (total + 1 > state->scratch_remain) {
+		long shortfall =
+			(long)(total + 1) - (long)state->scratch_remain;
+		pr_err("字符串参数过长，缺少 %ld 字节（需 %zu B）\r\n",
+		       shortfall, total + 1);
+		return CLI_ERR_BUF_INSUFF;
+	}
+	char *dest = state->scratch_pool;
+	size_t pos = 0;
+	for (int j = start; j <= end; j++) {
+		if (j > start)
+			dest[pos++] = ' ';
+		size_t len = strlen(argv[j]);
+		memcpy(dest + pos, argv[j], len);
+		pos += len;
+	}
+	dest[pos] = '\0';
+	state->scratch_pool += total + 1;
+	state->scratch_remain -= total + 1;
+	*out_arg = dest;
+	*consumed = end - start;
+	return CLI_OK;
+}
+
+static int parse_one_arg(const cli_command_t *cmd, int argc, char **argv,
+			 int *idx, void *arg_struct, bool *opt_seen,
+			 struct parse_state *state)
+{
+	int i = *idx;
+	if (argv[i][0] == '-') {
+		return parse_option_switch(cmd, argv[i], arg_struct,
+					   opt_seen, state);
+	}
+	const char *val_arg = argv[i];
+	if (state->cur_opt &&
+	    (state->cur_opt->type == CLI_TYPE_STRING ||
+	     state->cur_opt->type == CLI_TYPE_CALLBACK)) {
+		int consumed = 0;
+		int ret = join_string_args(argc, argv, i, state,
+					   &val_arg, &consumed);
+		if (ret < 0)
+			return ret;
+		*idx += consumed;
+	}
+	return parse_option_value(val_arg, arg_struct, state);
+}
+
 static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 {
 	int ret;
@@ -423,56 +485,10 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	state.cmd = cmd;
 
 	for (int i = 1; i < argc; i++) {
-		if (argv[i][0] == '-') {
-			ret = parse_option_switch(cmd, argv[i], arg_struct,
-						opt_seen, &state);
-			if (ret < 0) {
-				return ret;
-			}
-		} else {
-			const char *val_arg = argv[i];
-			if (state.cur_opt &&
-			    (state.cur_opt->type == CLI_TYPE_STRING ||
-			     state.cur_opt->type == CLI_TYPE_CALLBACK)) {
-				int end = i;
-				size_t total = strlen(argv[i]);
-				while (end + 1 < argc &&
-				       argv[end + 1][0] != '-') {
-					end++;
-					total += 1 + strlen(argv[end]);
-				}
-				if (end > i) {
-					if (total + 1 > state.scratch_remain) {
-						long shortfall =
-							(long)(total + 1) -
-							(long)state
-								.scratch_remain;
-						pr_err("字符串参数过长，缺少 %ld 字节（需 %zu B）\r\n",
-						       shortfall, total + 1);
-						return CLI_ERR_BUF_INSUFF;
-					}
-					char *dest = state.scratch_pool;
-					size_t pos = 0;
-					for (int j = i; j <= end; j++) {
-						if (j > i)
-							dest[pos++] = ' ';
-						size_t len = strlen(argv[j]);
-						memcpy(dest + pos, argv[j],
-						       len);
-						pos += len;
-					}
-					dest[pos] = '\0';
-					state.scratch_pool += total + 1;
-					state.scratch_remain -= total + 1;
-					val_arg = dest;
-					i = end;
-				}
-			}
-			ret = parse_option_value(val_arg, arg_struct, &state);
-			if (ret < 0) {
-				return ret;
-			}
-		}
+		ret = parse_one_arg(cmd, argc, argv, &i, arg_struct,
+				    opt_seen, &state);
+		if (ret < 0)
+			return ret;
 	}
 
 	ret = validate_end_state(&state);
