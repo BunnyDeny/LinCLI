@@ -215,7 +215,6 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 		       opt->long_opt ? opt->long_opt : "");
 		return CLI_ERR_ARRAY_MAX;
 	}
-
 	void *dst = (char *)arg_struct + opt->offset;
 	int *arr = *(int **)dst;
 	if (!arr) {
@@ -240,7 +239,6 @@ static int parse_int_array(const cli_option_t *opt, const char *arg,
 		return ret;
 	arr[state->cur_opt_idx++] = val;
 	state->cur_opt_argc++;
-
 	if (opt->offset_count > 0) {
 		size_t *cnt =
 			(size_t *)((char *)arg_struct + opt->offset_count);
@@ -257,9 +255,7 @@ static int parse_option_value(const char *arg, void *arg_struct,
 		pr_err("孤立参数: %s\r\n", arg);
 		return CLI_ERR_ORPHAN_ARG;
 	}
-
 	void *dst = (char *)arg_struct + state->cur_opt->offset;
-
 	switch (state->cur_opt->type) {
 	case CLI_TYPE_STRING:
 	case CLI_TYPE_CALLBACK:
@@ -726,28 +722,23 @@ int dispose_task(char *cmd, int *cmd_ret)
 	int _local_ret = 0;
 	if (!cmd_ret)
 		cmd_ret = &_local_ret;
-
 	if (!cmd || !cmd[0]) {
 		*cmd_ret = 0;
 		return dispose_exit;
 	}
-
 	char chain_buf[CMD_LINE_BUF_SIZE];
 	int len = strlen(cmd);
 	if (len >= CMD_LINE_BUF_SIZE)
 		len = CMD_LINE_BUF_SIZE - 1;
 	memcpy(chain_buf, cmd, len);
 	chain_buf[len] = '\0';
-
 	char *cmds[CMD_CHAIN_MAX];
 	int cnt = split_cmd_chain(chain_buf, cmds, CMD_CHAIN_MAX);
-
 	for (int i = 0; i < cnt; i++) {
 		if (!cmds[i] || cmds[i][0] == '\0') {
 			pr_err("空命令\r\n");
 			return dispose_exit;
 		}
-
 		int status = run_dispose_once(cmds[i], cmd_ret);
 		if (status < 0)
 			return status;
@@ -755,6 +746,5 @@ int dispose_task(char *cmd, int *cmd_ret)
 		if (*cmd_ret < 0)
 			return dispose_exit;
 	}
-
 	return dispose_exit;
 }
