@@ -390,8 +390,8 @@ static int validate_depends_and_conflicts(const cli_command_t *cmd,
 }
 
 static int join_string_args(int argc, char **argv, int start,
-			      struct parse_state *state,
-			      const char **out_arg, int *consumed)
+			    struct parse_state *state, const char **out_arg,
+			    int *consumed)
 {
 	int end = start;
 	size_t total = strlen(argv[start]);
@@ -445,32 +445,8 @@ static int validate_parsed_result(const cli_command_t *cmd,
 	return CLI_OK;
 }
 
-static int parse_one_arg(const cli_command_t *cmd, int argc, char **argv,
-			 int *idx, void *arg_struct, bool *opt_seen,
-			 struct parse_state *state)
-{
-	int i = *idx;
-	if (argv[i][0] == '-') {
-		return parse_option_switch(cmd, argv[i], arg_struct,
-					   opt_seen, state);
-	}
-	const char *val_arg = argv[i];
-	if (state->cur_opt &&
-	    (state->cur_opt->type == CLI_TYPE_STRING ||
-	     state->cur_opt->type == CLI_TYPE_CALLBACK)) {
-		int consumed = 0;
-		int ret = join_string_args(argc, argv, i, state,
-					   &val_arg, &consumed);
-		if (ret < 0)
-			return ret;
-		*idx += consumed;
-	}
-	return parse_option_value(val_arg, arg_struct, state);
-}
-
-static int parse_init(const cli_command_t *cmd,
-			void **arg_struct_out, bool **opt_seen_out,
-			struct parse_state *state_out)
+static int parse_init(const cli_command_t *cmd, void **arg_struct_out,
+		      bool **opt_seen_out, struct parse_state *state_out)
 {
 	void *arg_struct = cmd->arg_buf;
 	if (!arg_struct)
@@ -510,24 +486,37 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 	void *arg_struct;
 	bool *opt_seen;
 	struct parse_state state;
-
 	if (!cmd || !argv || argc < 1)
 		return CLI_ERR_NULL;
 	ret = parse_init(cmd, &arg_struct, &opt_seen, &state);
 	if (ret < 0)
 		return ret;
-
 	for (int i = 1; i < argc; i++) {
-		ret = parse_one_arg(cmd, argc, argv, &i, arg_struct,
-				    opt_seen, &state);
-		if (ret < 0)
-			return ret;
+		if (argv[i][0] == '-') {
+			ret = parse_option_switch(cmd, argv[i], arg_struct,
+						  opt_seen, &state);
+			if (ret < 0)
+				return ret;
+		} else {
+			const char *val_arg = argv[i];
+			if (state.cur_opt &&
+			    (state.cur_opt->type == CLI_TYPE_STRING ||
+			     state.cur_opt->type == CLI_TYPE_CALLBACK)) {
+				int consumed = 0;
+				ret = join_string_args(argc, argv, i, &state,
+						       &val_arg, &consumed);
+				if (ret < 0)
+					return ret;
+				i += consumed;
+			}
+			ret = parse_option_value(val_arg, arg_struct, &state);
+			if (ret < 0)
+				return ret;
+		}
 	}
-
 	ret = validate_parsed_result(cmd, &state, opt_seen);
 	if (ret < 0)
 		return ret;
-
 	return CLI_OK;
 }
 
@@ -582,8 +571,7 @@ static bool has_help_flag(int argc, char **argv)
 /**
  * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
  */
-static const cli_command_t *prepare_cmd_def(int argc, char **argv,
-					    int *cmd_ret)
+static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 {
 	if (argc < 1) {
 		*cmd_ret = 0;
@@ -624,8 +612,7 @@ static int run_cmd_validator(const cli_command_t *cmd_def, int *cmd_ret)
 	int ret = cmd_def->validator(cmd_def->arg_buf);
 	*cmd_ret = ret;
 	if (ret < 0) {
-		pr_err("命令 %s 执行失败，返回值: %d\r\n",
-		       cmd_def->name, ret);
+		pr_err("命令 %s 执行失败，返回值: %d\r\n", cmd_def->name, ret);
 		return -1;
 	}
 	return 0;
@@ -638,7 +625,8 @@ static int dispose_start_task(void *arg)
 	int argc = tokenize(ctx->cmd, argv, CLI_MAX_ARGV);
 	cli_printk("\r\n");
 
-	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, ctx->cmd_ret);
+	const cli_command_t *cmd_def =
+		prepare_cmd_def(argc, argv, ctx->cmd_ret);
 	if (!cmd_def)
 		return dispose_exit;
 
@@ -712,7 +700,8 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 {
 	int status = dispose_init();
 	if (status < 0) {
-		pr_err("dispose_init异常: %s (%d)\r\n", cli_strerror(status), status);
+		pr_err("dispose_init异常: %s (%d)\r\n", cli_strerror(status),
+		       status);
 		return status;
 	}
 
