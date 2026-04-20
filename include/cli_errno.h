@@ -40,6 +40,22 @@ const char *cli_strerror(int err);
  * - cli_errno_dispose.h 中的错误全部属于用户级。
  */
 
+/* ========== 系统级错误集合（X-Macro）==========
+ *
+ * 使用 X-Macro 技巧维护系统级错误列表。
+ * 新增系统级错误时，只需在下面列表中加一行，
+ * cli_err_is_system() 会自动同步，无需手动维护 switch-case。
+ */
+#define CLI_SYSTEM_ERRORS(X) \
+	X(CLI_ERR_NULL)        \
+	X(CLI_ERR_NOMEM)       \
+	X(CLI_ERR_STATEM_EMPTY)\
+	X(CLI_ERR_STATEM_DUP)  \
+	X(CLI_ERR_STATEM_SAME) \
+	X(CLI_ERR_FIFO_FULL)   \
+	X(CLI_ERR_FIFO_EMPTY)  \
+	X(CLI_ERR_IO_SYNC)
+
 /**
  * @brief 判断错误码是否为系统级错误。
  *
@@ -51,15 +67,9 @@ const char *cli_strerror(int err);
 static inline bool cli_err_is_system(int err)
 {
 	switch (err) {
-	case CLI_ERR_NULL:
-	case CLI_ERR_NOMEM:
-	case CLI_ERR_STATEM_EMPTY:
-	case CLI_ERR_STATEM_DUP:
-	case CLI_ERR_STATEM_SAME:
-	case CLI_ERR_FIFO_FULL:
-	case CLI_ERR_FIFO_EMPTY:
-	case CLI_ERR_IO_SYNC:
-		return true;
+#define _CLI_ERR_CASE(e) case e: return true;
+	CLI_SYSTEM_ERRORS(_CLI_ERR_CASE)
+#undef _CLI_ERR_CASE
 	default:
 		return false;
 	}
