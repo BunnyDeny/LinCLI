@@ -46,7 +46,8 @@ int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_auto_run");
 	if (status < 0) {
-		pr_crit("[scheduler]切换自动运行任务异常，错误码: %d\r\n", status);
+		pr_crit("[scheduler]切换自动运行任务异常，错误码: %d\r\n",
+			status);
 		return status;
 	}
 	return CLI_OK;
@@ -157,7 +158,7 @@ int scheduler_init(void)
 			     _scheduler_start, _scheduler_end);
 	if (status < 0) {
 		pr_emerg("调度器初始化异常: %s (%d)，请检查调度器状态机\r\n",
-		cli_strerror(status), status);
+			 cli_strerror(status), status);
 		return status;
 	}
 	pr_info("[scheduler]调度器初始化成功\r\n");
@@ -170,17 +171,10 @@ int scheduler_task(void)
 	int status;
 	status = stateEngineRun(&scheduler_eng, NULL);
 	if (status < 0) {
-		if (cli_err_is_system(status)) {
-			pr_crit("调度器系统错误: %s (%d)\r\n",
-				cli_strerror(status), status);
-		} else {
-			pr_err("调度器运行时错误: %s (%d)\r\n",
-			       cli_strerror(status), status);
-		}
 		return status;
 	}
 	if (cli_out_sync()) {
-		return CLI_ERR_IO_SYNC;
+		return -2;
 	}
 	return 0;
 }

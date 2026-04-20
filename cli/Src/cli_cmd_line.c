@@ -908,8 +908,7 @@ int cli_cmd_line_task(char ch)
 	while (status != cmd_line_exit) {
 		status = stateEngineRun(&cmd_line_mec, &ch);
 		if (status < 0) {
-			pr_err("cli_cmd_line状态机异常: %s (%d)\r\n",
-				cli_strerror(status), status);
+			pr_err("cli_cmd_line状态机异常，错误码: %d\r\n", status);
 			return status;
 		}
 		if (status == cmd_line_enter_press) {

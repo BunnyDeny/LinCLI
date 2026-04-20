@@ -665,8 +665,7 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 	while (1) {
 		status = stateEngineRun(&dispose_mec, &ctx);
 		if (status < 0) {
-			pr_err("dispose状态机异常: %s (%d)\r\n", cli_strerror(status),
-				status);
+			pr_err("dispose状态机异常，错误码: %d\r\n", status);
 			return status;
 		} else if (status == dispose_exit) {
 			return CLI_OK;
