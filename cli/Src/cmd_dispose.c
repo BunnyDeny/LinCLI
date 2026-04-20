@@ -428,6 +428,23 @@ static int join_string_args(int argc, char **argv, int start,
 	return CLI_OK;
 }
 
+static int validate_parsed_result(const cli_command_t *cmd,
+				  struct parse_state *state,
+				  const bool *opt_seen)
+{
+	int ret;
+	ret = validate_end_state(state);
+	if (ret < 0)
+		return ret;
+	ret = validate_required(cmd, opt_seen);
+	if (ret < 0)
+		return ret;
+	ret = validate_depends_and_conflicts(cmd, opt_seen);
+	if (ret < 0)
+		return ret;
+	return CLI_OK;
+}
+
 static int parse_one_arg(const cli_command_t *cmd, int argc, char **argv,
 			 int *idx, void *arg_struct, bool *opt_seen,
 			 struct parse_state *state)
@@ -491,13 +508,7 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 			return ret;
 	}
 
-	ret = validate_end_state(&state);
-	if (ret < 0)
-		return ret;
-	ret = validate_required(cmd, opt_seen);
-	if (ret < 0)
-		return ret;
-	ret = validate_depends_and_conflicts(cmd, opt_seen);
+	ret = validate_parsed_result(cmd, &state, opt_seen);
 	if (ret < 0)
 		return ret;
 
