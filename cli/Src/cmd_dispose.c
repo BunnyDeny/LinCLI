@@ -715,9 +715,13 @@ CLI_COMMAND(alias, "alias", "list all the alias cmds", alias_handler, NULL,
 static char *alias_replace(char *cmd)
 {
 	struct alias_cmd *alias_cmd;
+
+	char *argv[CLI_MAX_ARGV];
+	tokenize(cmd, argv, CLI_MAX_ARGV);
+
 	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
 	{
-		if (!strcmp(alias_cmd->alias_name, cmd)) {
+		if (!strcmp(alias_cmd->alias_name, argv[0])) {
 			memcpy(alias_buf, alias_cmd->original_name,
 			       strlen(alias_cmd->original_name) + 1);
 			return alias_buf;
