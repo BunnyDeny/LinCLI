@@ -14,13 +14,7 @@
 #include "cli_errno_common.h"
 
 /* ========== stateM 模块 (-10 ~ -19) ========== */
-#define CLI_ERR_STATEM_EMPTY  -10   /* 状态池为空 */
-#define CLI_ERR_STATEM_SAME   -11   /* 已在目标状态，无需切换 */
-
-/* 本模块的系统级错误集合 */
-#define CLI_ERR_STATEM_SYSTEM(X) \
-	X(CLI_ERR_STATEM_EMPTY)    \
-	X(CLI_ERR_STATEM_DUP)      \
-	X(CLI_ERR_STATEM_SAME)
+#define CLI_ERR_STATEM_EMPTY -10 /* 状态池为空 */
+#define CLI_ERR_STATEM_SAME -11 /* 已在目标状态，无需切换 */
 
 #endif
