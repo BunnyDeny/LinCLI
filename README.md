@@ -709,6 +709,7 @@ hello                ts --msg hello world
 lin@linCli> 
 ```
 当CMD_ALIAS重命名的命令的新名字与CLI_COMMAND注册的命令冲突的时候，前者会覆盖后者，这也是linux系统的行为
+
 ---
 
 ## 测试用例与终端操作示例
