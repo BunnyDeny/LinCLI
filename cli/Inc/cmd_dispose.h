@@ -72,28 +72,15 @@ struct alias_cmd {
 	char *original_name; // 原始命令，例如 "ls -l"
 };
 
-#define CMD_ALIAS(new, origin)                            \
-	struct alias_cmd alias_cmd##new = {               \
-		.alias_name = #new,                       \
-		.original_name = origin,                  \
-	};                                                \
-	static struct alias_cmd *const alias_cmd_ptr##new \
-		__attribute__((used, section(".alias_cmd"))) = &alias_cmd##new
-
-extern struct alias_cmd *const _alias_cmd_start[];
-extern struct alias_cmd *const _alias_cmd_end[];
-
-#define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
-	for (struct alias_cmd *const *_pp = (_start);        \
-	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
-		if (((alias_cmd) = *_pp))
-
 /* ============================================================
  * 链接脚本段收集符号声明
  * ============================================================ */
 
 extern const cli_command_t *const _cli_commands_start[];
 extern const cli_command_t *const _cli_commands_end[];
+
+extern struct alias_cmd *const _alias_cmd_start[];
+extern struct alias_cmd *const _alias_cmd_end[];
 
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd)               \
 	for (const cli_command_t *const *_pp = (_start);        \
@@ -321,6 +308,21 @@ extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
+
+#define CMD_ALIAS(new, origin, doc_str)                        \
+	struct alias_cmd alias_cmd##new = {                    \
+		.alias_name = #new,                            \
+		.original_name = origin,                       \
+	};                                                     \
+	static struct alias_cmd *const alias_cmd_ptr##new      \
+		__attribute__((used, section(".alias_cmd"))) = \
+			&alias_cmd##new;                       \
+	CLI_COMMAND(cmd_alias##new, #new, doc_str, NULL, NULL, END_OPTIONS);
+
+#define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
+	for (struct alias_cmd *const *_pp = (_start);        \
+	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
+		if (((alias_cmd) = *_pp))
 
 int dispose_init(void);
 int dispose_task(char *cmd, int *cmd_ret);

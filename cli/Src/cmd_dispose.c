@@ -714,18 +714,13 @@ CLI_COMMAND(alias, "alias", "list all the alias cmds", alias_handler, NULL,
 
 static char *alias_replace(char *cmd)
 {
-	if (!cli_command_find(cmd)) {
-		struct alias_cmd *alias_cmd;
-		FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
-		{
-			if (strcmp(alias_cmd->alias_name, cmd)) {
-				pr_notice(
-					"未找到cmd的定义，找到alias替换命令%s\r\n",
-					alias_cmd->original_name);
-				memcpy(alias_buf, alias_cmd->original_name,
-				       strlen(alias_cmd->original_name) + 1);
-				return alias_buf;
-			}
+	struct alias_cmd *alias_cmd;
+	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
+	{
+		if (!strcmp(alias_cmd->alias_name, cmd)) {
+			memcpy(alias_buf, alias_cmd->original_name,
+			       strlen(alias_cmd->original_name) + 1);
+			return alias_buf;
 		}
 	}
 	return cmd;
