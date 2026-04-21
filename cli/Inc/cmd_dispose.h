@@ -286,7 +286,7 @@ extern const cli_command_t *const _cli_commands_end[];
  * 若用户结构体超过此大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
 #ifndef CLI_CMD_BUF_SIZE
-#define CLI_CMD_BUF_SIZE 512
+#define CLI_CMD_BUF_SIZE 128
 #endif
 extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 
