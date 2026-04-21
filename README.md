@@ -679,36 +679,34 @@ CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
 	    (struct string_args *)0,
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg),
 	    END_OPTIONS);
-CMD_ALIAS(hello, "ts --msg hello world", "ts alias");
+CMD_ALIAS(echo, "ts --msg", "print the string");
 ```
 首先通过CLI_COMMAND宏注册了一个ts命令，这个命令可以通过ts --msg hello world向终端打印hello world字符串
-可以通过下面的方式将ts --msg hello world这个复杂命令重命名为hello这样的简短
-命令：
+可以通过下面的方式将`ts --msg`这个较复杂的命令重命名为echo这样的简短命令：
 ```c
-CMD_ALIAS(hello, "ts --msg hello world", "ts alias");
+CMD_ALIAS(echo, "ts --msg", "print the string");
 ```
-其中参数3代表的是帮助描述信息，例如向终端输入hello -h或者hello --help:
-```bash
-lin@linCli> hello -h
- command : hello
- description : ts alias
- option :
-
-lin@linCli>
-```
-由于新名字只能是单个单词，所以新命令不存在"选项"的概念因此帮助信息中的option是空的
-通过alias命令可以列出当前所有CMD_ALIAS重命名的命令：
+其中参数3 `"print the string"` 代表alias命令反馈结果的帮助描述信息，通过alias命令可以打印出系统当前通过CMD_ALIAS
+重命名名的所有命令：
 ```bash
 lin@linCli> alias 
 
 ALIAS                ORIGINAL COMMAND                        
 ------------------------------------------------------------
-hello                ts --msg hello world                    
+echo                 ts --msg                                
 ------------------------------------------------------------
 
 lin@linCli> 
 ```
 当CMD_ALIAS重命名的命令的新名字与CLI_COMMAND注册的命令冲突的时候，前者会覆盖后者，这也是linux系统的行为
+
+所以，现在，通过echo即可实现`ts --msg`相同的功能：
+```bash
+lin@linCli> echo hello world
+ hello world
+
+lin@linCli> 
+```
 
 ---
 

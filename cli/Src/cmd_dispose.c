@@ -712,18 +712,36 @@ static int alias_handler(void *_args)
 CLI_COMMAND(alias, "alias", "list all the alias cmds", alias_handler, NULL,
 	    END_OPTIONS);
 
+static bool is_prefix(char *pre, char *str)
+{
+	int idx = 0;
+	while (pre[idx]) {
+		if (pre[idx] != str[idx]) {
+			return false;
+		}
+		idx++;
+	}
+	return true;
+}
+
 static char *alias_replace(char *cmd)
 {
 	struct alias_cmd *alias_cmd;
-
-	char *argv[CLI_MAX_ARGV];
-	tokenize(cmd, argv, CLI_MAX_ARGV);
-
+	char *p = cmd;
+	int pre = 0;
+	while ((*p) && (*p) != ' ' && (*p) != '\t') {
+		p++;
+		pre++;
+	}
 	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
 	{
-		if (!strcmp(alias_cmd->alias_name, argv[0])) {
+		if (is_prefix(alias_cmd->alias_name, cmd)) {
+			memset(alias_buf, 0, CMD_LINE_BUF_SIZE);
 			memcpy(alias_buf, alias_cmd->original_name,
-			       strlen(alias_cmd->original_name) + 1);
+			       strlen(alias_cmd->original_name));
+			if ((*p)) {
+				strcat(alias_buf, p);
+			}
 			return alias_buf;
 		}
 	}

@@ -53,4 +53,4 @@ CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
 	    (struct string_args *)0,
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg),
 	    END_OPTIONS);
-CMD_ALIAS(hello, "ts --msg hello world", "ts alias");
+CMD_ALIAS(echo, "ts --msg", "print the string");
