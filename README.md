@@ -734,8 +734,8 @@ lin@linCli>
 
 ```bash
 lin@linCli> ts -m hello
-STRING test executed!
-  msg = hello
+ hello
+
 lin@linCli>
 ```
 
