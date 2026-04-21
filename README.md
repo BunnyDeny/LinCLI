@@ -656,9 +656,9 @@ lin@linCli>
 可以看到，所有选项的描述、是否必需、与谁互斥，都是框架自动生成的。这进一步减少了开发者的重复劳动：你只需要在注册时写一次帮助文本，系统会自动把它呈现给用户。
 ---
 ## alias-命令重命名
-通过CMD_ALIAS宏来重命名你的命令，这适用于简化已经定义的一些复杂命令
-需要注意的是，新的名字只能是单个单词的形式，形如"msg log"这样的名字
-是不被允许的。举一个重命名的例子(tests/test_string.c)：
+通过`CMD_ALIAS`宏来重命名你的命令，这适用于简化已经定义的一些复杂命令
+需要注意的是，新的名字只能是单个单词的形式，形如`msg log`这样的名字
+是不被允许的。举一个重命名的例子(`tests/test_string.c`)：
 ```c
 struct string_args {
 	char *msg;
@@ -678,12 +678,12 @@ CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
 	    END_OPTIONS);
 CMD_ALIAS(echo, "ts --msg");
 ```
-首先通过CLI_COMMAND宏注册了一个ts命令，这个命令可以通过ts --msg hello world向终端打印hello world字符串
+首先通过`CLI_COMMAND宏`注册了一个`ts`命令，这个命令可以通过`ts --msg hello world`向终端打印`hello world`字符串
 可以通过下面的方式将`ts --msg`这个较复杂的命令重命名为echo这样的简短命令：
 ```c
 CMD_ALIAS(echo, "ts --msg");
 ```
-通过alias命令可以打印出系统当前通过CMD_ALIAS重命名名的所有命令：
+通过`alias`命令可以打印出系统当前通过`CMD_ALIAS`重命名名的所有命令：
 ```bash
 lin@linCli> alias 
 
@@ -694,16 +694,16 @@ echo                 ts --msg
 
 lin@linCli> 
 ```
-当CMD_ALIAS重命名的命令的新名字与CLI_COMMAND注册的命令冲突的时候，前者会覆盖后者，这也是linux系统的行为
+当`CMD_ALIAS`重命名的命令的新名字与`CLI_COMMAND`注册的命令冲突的时候，前者会覆盖后者，这也是linux系统的行为
 
-所以，现在，通过echo即可实现`ts --msg`相同的功能：
+所以，现在，通过`echo`即可实现`ts --msg`相同的功能：
 ```bash
 lin@linCli> echo hello world
  hello world
 
 lin@linCli> 
 ```
-另外注意，重命名之后的命令使用-h选项，会打印出重命名之前的命令的帮助信息，例如上述echo,如果使用`echo -h`则等价于`ts -h`：
+另外注意，重命名之后的命令使用`-h`选项，会打印出重命名之前的命令的帮助信息，例如上述`echo`,如果使用`echo -h`则等价于`ts -h`：
 ```bash
 lin@linCli> echo -h
  command     : ts
