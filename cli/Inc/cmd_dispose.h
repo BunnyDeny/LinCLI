@@ -273,8 +273,8 @@ extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 	/* 前向声明参数结构体类型 */                                        \
 	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                 \
                                                                             \
-	/* 定义选项数组（放在静态区） */                                    \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };  \
+	/* 定义选项数组（放在全局区） */                                    \
+	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };         \
                                                                             \
 	/* 通过链接脚本段收集注册，使用全局共享缓冲区 */                    \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                         \

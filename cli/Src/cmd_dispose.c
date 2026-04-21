@@ -739,6 +739,7 @@ int dispose_task(char *cmd, int *cmd_ret)
 	for (int i = 0; i < cnt; i++) {
 		if (!cmds[i] || cmds[i][0] == '\0') {
 			pr_err("empty command\r\n");
+			*cmd_ret = 0;
 			return dispose_exit;
 		}
 		int status = run_dispose_once(cmds[i], cmd_ret);
