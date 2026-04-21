@@ -731,7 +731,6 @@ static int alias_handler(void *_args)
 		"------------------------------------------------------------\r\n");
 	return 0;
 }
-
 CLI_COMMAND(alias, "alias", "list all the alias cmds", alias_handler, NULL,
 	    END_OPTIONS);
 
