@@ -39,14 +39,16 @@ __attribute__((weak)) void cli_prompt_print(void)
 
 void start_entry(void *private)
 {
-	pr_info("执行_EXPORT_INIT_SYMBOL导出的初始化程序\r\n");
+	pr_info("execute initialization routines"
+		" exported by _EXPORT_INIT_SYMBOL\r\n");
 	CALL_INIT_D;
 }
 int start_task(void *private)
 {
 	int status = state_switch(&scheduler_eng, "scheduler_auto_run");
 	if (status < 0) {
-		pr_crit("[scheduler]切换自动运行任务异常，错误码: %d\r\n",
+		pr_crit("[scheduler] failed to switch \
+			auto-run task, error code: %d\r\n",
 			status);
 		return status;
 	}
@@ -59,7 +61,7 @@ void scheduler_get_char_entry(void *private)
 {
 	int status = cli_cmd_line_init();
 	if (status < 0) {
-		pr_emerg("cli_cmd_line_init异常\r\n");
+		pr_emerg("cli_cmd_line_init exception\r\n");
 	}
 	cli_printk("\r\n");
 	cli_prompt_print();
@@ -120,7 +122,8 @@ int scheduler_auto_run_task(void *private)
 			return status;
 		}
 		if (cmd_ret < 0) {
-			pr_err("自动命令执行失败，停止后续执行\r\n");
+			pr_err("auto-command execution failed, \
+				stopping subsequent execution\r\n");
 			goto scheduler_auto_run_task_exit;
 		}
 		auto_run_idx++;
@@ -157,11 +160,12 @@ int scheduler_init(void)
 	status = engine_init(&scheduler_eng, "scheduler_start",
 			     _scheduler_start, _scheduler_end);
 	if (status < 0) {
-		pr_emerg("调度器初始化异常: %s (%d)，请检查调度器状态机\r\n",
+		pr_emerg("[scheduler] init failed: %s (%d), \
+			check scheduler state machine\r\n",
 			 cli_strerror(status), status);
 		return status;
 	}
-	pr_info("[scheduler]调度器初始化成功\r\n");
+	pr_info("[scheduler] initialization successful\r\n");
 	return 0;
 }
 

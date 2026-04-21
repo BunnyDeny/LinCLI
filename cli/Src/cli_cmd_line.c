@@ -512,7 +512,7 @@ int valid_char_task(void *pch)
 	int status;
 	char ch = *((char *)pch);
 	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
-		pr_warn("超出单个命令最长限制\r\n");
+		pr_warn("command length exceeds the limit. \r\n");
 		goto label_cmd_line_exit;
 	}
 	if (cmd_line.pos == cmd_line.size) {

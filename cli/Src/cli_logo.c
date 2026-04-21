@@ -27,7 +27,7 @@ void pr_logo(void *arg)
 	cli_printk("| |___| | | | | |___| |___ | | \r\n");
 	cli_printk("|_____|_|_| |_|\\____|_____|___|\r\n");
 
-	pr_info("欢迎使用LinCLI\r\n");
+	pr_info("welcome to use LinCLI\r\n");
 }
 
 _EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);

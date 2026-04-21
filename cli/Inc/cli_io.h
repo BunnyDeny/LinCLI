@@ -192,7 +192,6 @@ static inline int cli_get_out_size(void)
 void cli_io_init(void);
 int cli_out_sync(void);
 int cli_printk(const char *fmt, ...);
-void cli_printk_test(void);
 int cli_in_clear(void);
 void set_cli_in_push_lock(void);
 void reset_cli_in_push_lock(void);
