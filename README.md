@@ -713,6 +713,19 @@ lin@linCli> echo -h
 
 lin@linCli> 
 ```
+
+重命名的新命令可以正常使用下文的命令链（详情看下文命令链章节）：
+```bash
+lin@linCli> tb --verbose && echo hello && echo nihao shijie
+BOOL test executed!
+  verbose = true
+
+ hello
+
+ nihao shijie
+
+lin@linCli> 
+```
 ---
 
 ## 测试用例与终端操作示例
