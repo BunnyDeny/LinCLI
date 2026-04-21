@@ -660,9 +660,6 @@ lin@linCli>
 需要注意的是，新的名字只能是单个单词的形式，形如"msg log"这样的名字
 是不被允许的。举一个重命名的例子(tests/test_string.c)：
 ```c
-#include "cmd_dispose.h"
-#include "cli_io.h"
-
 struct string_args {
 	char *msg;
 };
@@ -679,15 +676,14 @@ CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
 	    (struct string_args *)0,
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg),
 	    END_OPTIONS);
-CMD_ALIAS(echo, "ts --msg", "print the string");
+CMD_ALIAS(echo, "ts --msg");
 ```
 首先通过CLI_COMMAND宏注册了一个ts命令，这个命令可以通过ts --msg hello world向终端打印hello world字符串
 可以通过下面的方式将`ts --msg`这个较复杂的命令重命名为echo这样的简短命令：
 ```c
-CMD_ALIAS(echo, "ts --msg", "print the string");
+CMD_ALIAS(echo, "ts --msg");
 ```
-其中参数3 `"print the string"` 代表alias命令反馈结果的帮助描述信息，通过alias命令可以打印出系统当前通过CMD_ALIAS
-重命名名的所有命令：
+通过alias命令可以打印出系统当前通过CMD_ALIAS重命名名的所有命令：
 ```bash
 lin@linCli> alias 
 
@@ -707,7 +703,16 @@ lin@linCli> echo hello world
 
 lin@linCli> 
 ```
+另外注意，重命名之后的命令使用-h选项，会打印出重命名之前的命令的帮助信息，例如上述echo,如果使用`echo -h'打印出来的是ts命令的帮助信息：
+```bash
+lin@linCli> echo -h
+ command     : ts
+ description : Test STRING option
+ option      :
+  -m, --msg              Message text
 
+lin@linCli> 
+```
 ---
 
 ## 测试用例与终端操作示例

@@ -309,7 +309,7 @@ extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
-#define CMD_ALIAS(new, origin, doc_str)                        \
+#define CMD_ALIAS(new, origin)                                 \
 	struct alias_cmd alias_cmd##new = {                    \
 		.alias_name = #new,                            \
 		.original_name = origin,                       \
@@ -317,7 +317,7 @@ extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 	static struct alias_cmd *const alias_cmd_ptr##new      \
 		__attribute__((used, section(".alias_cmd"))) = \
 			&alias_cmd##new;                       \
-	CLI_COMMAND(cmd_alias##new, #new, doc_str, NULL, NULL, END_OPTIONS);
+	CLI_COMMAND(cmd_alias##new, #new, NULL, NULL, NULL, END_OPTIONS);
 
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
 	for (struct alias_cmd *const *_pp = (_start);        \
