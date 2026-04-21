@@ -18,7 +18,7 @@
 
 /**
  * @file test_with_buf.c
- * @brief CLI_COMMAND_WITH_BUF 宏测试用例。
+ * @brief CLI_COMMAND_WITH_BUF 宏测试。
  *
  * 注册命令：tw
  * 命令描述：Test CLI_COMMAND_WITH_BUF with INT_ARRAY
