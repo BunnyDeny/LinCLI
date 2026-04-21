@@ -408,6 +408,11 @@ LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_c
     KEEP(*(.dispose))
     _dispose_end = .;
   } >FLASH
+  .alias_cmd : {
+    _alias_cmd_start = .;
+    KEEP(*(.alias_cmd))
+    _alias_cmd_end = .;
+  } >FLASH
 ```
 
 然后在 MCU 的链接脚本中通过 `INCLUDE cli.ld` 引入上述定义。以下以 STM32 工程为例：
