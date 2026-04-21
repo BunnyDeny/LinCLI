@@ -18,7 +18,7 @@
 
 /**
  * @file test_bool.c
- * @brief CLI 框架 BOOL 类型选项测试用例。
+ * @brief CLI 框架 BOOL 类型选项测试。
  *
  * 注册命令：tb
  * 命令描述：Test BOOL option
