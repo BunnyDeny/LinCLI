@@ -703,7 +703,7 @@ lin@linCli> echo hello world
 
 lin@linCli> 
 ```
-另外注意，重命名之后的命令使用-h选项，会打印出重命名之前的命令的帮助信息，例如上述echo,如果使用`echo -h'打印出来的是ts命令的帮助信息：
+另外注意，重命名之后的命令使用-h选项，会打印出重命名之前的命令的帮助信息，例如上述echo,如果使用`echo -h`则等价于`ts -h`：
 ```bash
 lin@linCli> echo -h
  command     : ts
