@@ -67,6 +67,27 @@ typedef struct cli_command {
 	size_t arg_buf_size; // 缓冲区大小
 } cli_command_t;
 
+struct alias_cmd {
+	const char *alias_name; // 重命名后的名字，例如 "ll"
+	const char *original_name; // 原始命令，例如 "ls -l"
+};
+
+#define CMD_ALIAS(new, origin)                            \
+	struct alias_cmd alias_cmd##new = {               \
+		.alias_name = #new,                       \
+		.original_name = origin,                  \
+	};                                                \
+	static struct alias_cmd *const alias_cmd_ptr##new \
+		__attribute__((used, section(".alias_cmd"))) = &alias_cmd##new
+
+extern struct alias_cmd *const _alias_cmd_start[];
+extern struct alias_cmd *const _alias_cmd_end[];
+
+#define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
+	for (struct alias_cmd *const *_pp = (_start);        \
+	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
+		if (((alias_cmd) = *_pp))
+
 /* ============================================================
  * 链接脚本段收集符号声明
  * ============================================================ */

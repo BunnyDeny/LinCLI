@@ -23,3 +23,8 @@
     KEEP(*(.dispose))
     _dispose_end = .;
   }
+  .alias_cmd : {
+    _alias_cmd_start = .;
+    KEEP(*(.alias_cmd))
+    _alias_cmd_end = .;
+  }

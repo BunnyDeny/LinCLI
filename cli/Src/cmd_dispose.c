@@ -716,6 +716,25 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 	}
 }
 
+static int alias_handler(void *_args)
+{
+	struct alias_cmd *alias_cmd;
+	cli_printk("\r\n%-20s %-40s\r\n", "ALIAS", "ORIGINAL COMMAND");
+	cli_printk(
+		"------------------------------------------------------------\r\n");
+	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
+	{
+		cli_printk("%-20s %-40s\r\n", alias_cmd->alias_name,
+			   alias_cmd->original_name);
+	}
+	cli_printk(
+		"------------------------------------------------------------\r\n");
+	return 0;
+}
+
+CLI_COMMAND(alias, "alias", "list all the alias cmds", alias_handler, NULL,
+	    END_OPTIONS);
+
 /**
  * @brief 运行 dispose 状态机，支持 && 命令链。
  */
