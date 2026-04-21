@@ -68,8 +68,8 @@ typedef struct cli_command {
 } cli_command_t;
 
 struct alias_cmd {
-	const char *alias_name; // 重命名后的名字，例如 "ll"
-	const char *original_name; // 原始命令，例如 "ls -l"
+	char *alias_name; // 重命名后的名字，例如 "ll"
+	char *original_name; // 原始命令，例如 "ls -l"
 };
 
 #define CMD_ALIAS(new, origin)                            \

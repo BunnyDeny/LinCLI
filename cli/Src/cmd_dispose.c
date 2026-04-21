@@ -31,6 +31,8 @@ extern struct tState *const _dispose_start[];
 extern struct tState *const _dispose_end[];
 
 char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
+char chain_buf[CMD_LINE_BUF_SIZE];
+char alias_buf[CMD_LINE_BUF_SIZE];
 
 struct dispose_ctx {
 	char *cmd;
@@ -692,30 +694,6 @@ static int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	return cnt;
 }
 
-static int run_dispose_once(char *cmd, int *cmd_ret)
-{
-	int status = dispose_init();
-	if (status < 0) {
-		pr_err("dispose_init exception: %s (%d)\r\n",
-		       cli_strerror(status), status);
-		return status;
-	}
-
-	struct dispose_ctx ctx = { cmd, cmd_ret };
-	*cmd_ret = 0;
-	while (1) {
-		status = stateEngineRun(&dispose_mec, &ctx);
-		if (status < 0) {
-			pr_err("dispose state machine exception, "
-			       "error code: %d\r\n",
-			       status);
-			return status;
-		} else if (status == dispose_exit) {
-			return CLI_OK;
-		}
-	}
-}
-
 static int alias_handler(void *_args)
 {
 	struct alias_cmd *alias_cmd;
@@ -734,6 +712,49 @@ static int alias_handler(void *_args)
 CLI_COMMAND(alias, "alias", "list all the alias cmds", alias_handler, NULL,
 	    END_OPTIONS);
 
+static char *alias_replace(char *cmd)
+{
+	if (!cli_command_find(cmd)) {
+		struct alias_cmd *alias_cmd;
+		FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
+		{
+			if (strcmp(alias_cmd->alias_name, cmd)) {
+				pr_notice(
+					"未找到cmd的定义，找到alias替换命令%s\r\n",
+					alias_cmd->original_name);
+				memcpy(alias_buf, alias_cmd->original_name,
+				       strlen(alias_cmd->original_name) + 1);
+				return alias_buf;
+			}
+		}
+	}
+	return cmd;
+}
+
+static int run_dispose_once(char *cmd, int *cmd_ret)
+{
+	int status = dispose_init();
+	if (status < 0) {
+		pr_err("dispose_init exception: %s (%d)\r\n",
+		       cli_strerror(status), status);
+		return status;
+	}
+	cmd = alias_replace(cmd);
+	struct dispose_ctx ctx = { cmd, cmd_ret };
+	*cmd_ret = 0;
+	while (1) {
+		status = stateEngineRun(&dispose_mec, &ctx);
+		if (status < 0) {
+			pr_err("dispose state machine exception, "
+			       "error code: %d\r\n",
+			       status);
+			return status;
+		} else if (status == dispose_exit) {
+			return CLI_OK;
+		}
+	}
+}
+
 /**
  * @brief 运行 dispose 状态机，支持 && 命令链。
  */
@@ -746,7 +767,6 @@ int dispose_task(char *cmd, int *cmd_ret)
 		*cmd_ret = 0;
 		return dispose_exit;
 	}
-	char chain_buf[CMD_LINE_BUF_SIZE];
 	int len = strlen(cmd);
 	if (len >= CMD_LINE_BUF_SIZE)
 		len = CMD_LINE_BUF_SIZE - 1;
