@@ -64,16 +64,15 @@ static int key_handler(void *_args)
 				pr_err("Key ctrl+w detected, aborting.\n");
 				return -1;
 			}
-			// cli_printk("\r get %c, ascii %3d       ",
-			// 	   (ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
-
-			// pr_debug(
-			// 	"\r_cli_io.in_ref : %d   ,_cli_io.out_ref : %d  get %c, ascii %3d       ",
-			// 	_cli_io.in_ref, _cli_io.out_ref,
-			// 	(ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
+			pr_debug(
+				"\r_cli_io.in_ref : %d   ,_cli_io.out_ref : %d  get %c, ascii %3d       ",
+				_cli_io.in_ref, _cli_io.out_ref,
+				(ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
 		}
-		cli_printk("\r get %c, ascii %3d       ",
-			   (ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
+		// pr_debug(
+		// 	"\r_cli_io.in_ref : %d   ,_cli_io.out_ref : %d  get %c, ascii %3d       ",
+		// 	_cli_io.in_ref, _cli_io.out_ref,
+		// 	(ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
 	}
 	return 0;
 }
