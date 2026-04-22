@@ -733,10 +733,8 @@ static char *alias_replace(char *cmd)
 {
 	struct alias_cmd *alias_cmd;
 	char *p = cmd;
-	int pre = 0;
 	while ((*p) && (*p) != ' ' && (*p) != '\t') {
 		p++;
-		pre++;
 	}
 	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
 	{
