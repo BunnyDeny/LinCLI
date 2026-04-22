@@ -17,7 +17,6 @@
  */
 
 #include "cli_io.h"
-#include <pthread.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -30,8 +29,6 @@ struct cli_io _cli_io = {
 	.in_ref = 0,
 	.out_ref = 0,
 };
-
-static pthread_mutex_t _cli_io_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void cli_io_init(void)
 {
@@ -50,15 +47,16 @@ __attribute__((weak)) void cli_putc(char ch)
 static int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	bool status;
-	pthread_mutex_lock(&_cli_io_mutex);
 	if (*ref == 0) {
-		pthread_mutex_unlock(&_cli_io_mutex);
 		return CLI_ERR_INVAL; /*uninited*/
 	}
-	(*ref)++;
+	while (!__sync_bool_compare_and_swap(ref, 1, 2)) {
+		if (*ref == 0) {
+			return CLI_ERR_INVAL;
+		}
+	}
 	status = push_back(v, data, size);
-	(*ref)--;
-	pthread_mutex_unlock(&_cli_io_mutex);
+	__sync_fetch_and_sub(ref, 1);
 	if (status == false) {
 		return CLI_ERR_FIFO_FULL;
 	} else {
@@ -68,12 +66,14 @@ static int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 
 static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
-	pthread_mutex_lock(&_cli_io_mutex);
 	if (*ref == 0) {
-		pthread_mutex_unlock(&_cli_io_mutex);
 		return CLI_ERR_INVAL; /*uninited*/
 	}
-	(*ref)++;
+	while (!__sync_bool_compare_and_swap(ref, 1, 2)) {
+		if (*ref == 0) {
+			return CLI_ERR_INVAL;
+		}
+	}
 	int remain_to_pop = size;
 	while (remain_to_pop) {
 		_u8 front;
@@ -86,8 +86,7 @@ static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 		remain_to_pop--;
 	}
 _cli_io_pop_exit:
-	(*ref)--;
-	pthread_mutex_unlock(&_cli_io_mutex);
+	__sync_fetch_and_sub(ref, 1);
 	return CLI_OK;
 }
 
@@ -118,18 +117,26 @@ int cli_out_pop(_u8 *data, int size)
 int cli_get_in_size(void)
 {
 	int size;
-	pthread_mutex_lock(&_cli_io_mutex);
+	while (!__sync_bool_compare_and_swap(&_cli_io.in_ref, 1, 2)) {
+		if (_cli_io.in_ref == 0) {
+			return 0;
+		}
+	}
 	size = _cli_io.in.size;
-	pthread_mutex_unlock(&_cli_io_mutex);
+	__sync_fetch_and_sub(&_cli_io.in_ref, 1);
 	return size;
 }
 
 int cli_get_out_size(void)
 {
 	int size;
-	pthread_mutex_lock(&_cli_io_mutex);
+	while (!__sync_bool_compare_and_swap(&_cli_io.out_ref, 1, 2)) {
+		if (_cli_io.out_ref == 0) {
+			return 0;
+		}
+	}
 	size = _cli_io.out.size;
-	pthread_mutex_unlock(&_cli_io_mutex);
+	__sync_fetch_and_sub(&_cli_io.out_ref, 1);
 	return size;
 }
 
