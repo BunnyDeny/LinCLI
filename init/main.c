@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <termios.h>
 #include "cli_io.h"
-#include "stateM.h"
 
 static pthread_t cli_in_thread;
 static pthread_t cli_task_thread;
