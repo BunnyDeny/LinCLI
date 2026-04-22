@@ -281,7 +281,7 @@ lin@linCli>
 
 ## 如何移植到单片机
 
-LinCLI 的核心代码是纯 C11，不依赖 pthread、文件系统等 PC 特有设施。移植时主要做三件事：
+LinCLI 的核心代码是纯 C11，不依赖 pthread、文件系统等 PC 特有设施。移植时主要做四件事：
 
 ### 1. 替换输入入口 —— 将 UART 中断映射为 `cli_in_push`
 
@@ -340,12 +340,59 @@ int main(void)
 }
 ```
 
-### 3. 实现单字符输出 —— 替换 `cli_putc`
+### 3. 实现临界区保护 —— 覆盖 `cli_io_enter_critical` / `cli_io_exit_critical`
 
-`cli_io.c` 中提供了一个 **weak** 的默认实现，用于 PC 终端输出：
+框架在 `cli_io.c` 中定义了一对 **weak** 的空函数作为临界区钩子：
 
 ```c
-__attribute__((weak)) void cli_putc(char ch)
+__attribute__((weak)) void cli_io_enter_critical(void) {}
+__attribute__((weak)) void cli_io_exit_critical(void)  {}
+```
+
+所有对 `cli_io.in` / `cli_io.out` 缓冲区的访问（`cli_in_push`、`cli_in_pop`、`cli_get_in_size` 等）都会调用这两个钩子。在 PC 模拟中，我们在 `init/main.c` 里用原子自旋锁实现：
+
+```c
+/* PC 模拟层：用原子自旋锁模拟 MCU 的关中断/开中断 */
+static volatile int cli_io_spinlock = 0;
+
+void cli_io_enter_critical(void)
+{
+    while (__sync_lock_test_and_set(&cli_io_spinlock, 1)) {
+    }
+}
+
+void cli_io_exit_critical(void)
+{
+    __sync_lock_release(&cli_io_spinlock);
+}
+```
+
+在 MCU 中，**必须覆盖这两个函数**，推荐用保存/恢复 `PRIMASK` 的方式实现（比简单开关中断更安全，不会破坏主程序已有的中断屏蔽状态）：
+
+```c
+// 在你的 MCU 项目中实现（如 main.c 或专门的移植层文件）
+static uint32_t g_primask_save;
+
+void cli_io_enter_critical(void)
+{
+    g_primask_save = __get_PRIMASK();
+    __disable_irq();
+}
+
+void cli_io_exit_critical(void)
+{
+    __set_PRIMASK(g_primask_save);
+}
+```
+
+> **为什么需要临界区？** 在 PC 上，输入线程和调度线程是真正的多线程并行，必须保护共享的 `cli_io` 缓冲区不被并发破坏。在 MCU 上，串口中断可以随时打断主程序，如果主程序正在 `cli_in_pop` 时被中断里的 `cli_in_push` 插入，同样会破坏 FIFO 的 `head`/`tail`/`size` 指针。通过在进入临界区时关中断、退出时恢复，可以确保对缓冲区的访问是原子的。
+
+### 4. 实现单字符输出 —— 替换 `cli_putc`
+
+与临界区钩子一样，`cli_putc` 也是 `cli_io.c` 中定义的 **weak** 函数。PC 模拟层把它和临界区一起放在 `init/main.c` 中：
+
+```c
+void cli_putc(char ch)
 {
     write(STDOUT_FILENO, &ch, 1);
 }
@@ -365,7 +412,7 @@ void cli_putc(char ch)
 
 > 框架内部通过 `cli_out_push` 缓存输出，然后 `cli_out_sync()` 逐个调用 `cli_putc` 发送，因此你只需要保证 `cli_putc` 能正确发送一个字节即可。
 
-### 4. 链接脚本适配
+### 5. 链接脚本适配
 
 LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_commands`、`.scheduler` 等）聚合成连续的符号数组。由于不同平台的链接脚本语法和内存模型不同，需要对 `cli.ld` 做少量适配。
 
@@ -455,7 +502,7 @@ LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_c
 >
 > 如果你使用的是 Keil MDK（ARMCC/AC6 工具链），对应的链接脚本格式是 `.sct`（分散加载文件）。迁移逻辑同样直接——核心思路仍然是「把同一 section 名的内容收集到连续区域，并导出该区域的起始和结束符号」。具体语法细节请自行搜索 "MDK SCT scatter file collect section start end symbol" 等关键词。
 
-### 5. 选择串口终端工具
+### 6. 选择串口终端工具
 
 移植完成后，你需要通过串口终端工具连接单片机，与 LinCLI 进行交互。以下是不同平台下的常用工具推荐：
 
