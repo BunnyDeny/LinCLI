@@ -41,7 +41,6 @@ void cli_io_init(void)
 //移植的时候实现
 __attribute__((weak)) void cli_putc(char ch)
 {
-	write(STDOUT_FILENO, &ch, 1);
 }
 
 /* 平台相关的临界区保护钩子，默认空实现 */

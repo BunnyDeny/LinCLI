@@ -37,6 +37,11 @@ void cli_io_exit_critical(void)
 	__sync_lock_release(&cli_io_spinlock);
 }
 
+void cli_putc(char ch)
+{
+	write(STDOUT_FILENO, &ch, 1);
+}
+
 static pthread_t cli_in_thread;
 static pthread_t cli_task_thread;
 
