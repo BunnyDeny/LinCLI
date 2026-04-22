@@ -110,81 +110,12 @@ struct cli_io {
 
 extern struct cli_io _cli_io;
 
-static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
-{
-	bool status;
-	if (*ref == 0) {
-		return CLI_ERR_INVAL; /*uninited*/
-	}
-	while (*ref > 1) {
-	}
-	(*ref)++;
-	status = push_back(v, data, size);
-	(*ref)--;
-	if (status == false) {
-		return CLI_ERR_FIFO_FULL;
-	} else {
-		return CLI_OK;
-	}
-}
-
-static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
-{
-	if (*ref == 0) {
-		return CLI_ERR_INVAL; /*uninited*/
-	}
-	while (*ref > 1) {
-	}
-	(*ref)++;
-	int remain_to_pop = size;
-	while (remain_to_pop) {
-		_u8 front;
-		if (at(v, 0, &front) == false) {
-			goto _cli_io_pop_exit;
-		}
-		int idx = size - remain_to_pop;
-		*(data + idx) = front;
-		pop_front(v, 1);
-		remain_to_pop--;
-	}
-_cli_io_pop_exit:
-	(*ref)--;
-	return CLI_OK;
-}
-
-static inline int cli_in_push(_u8 *data, int size)
-{
-	if (cli_in_push_lock) {
-		return CLI_ERR_FIFO_FULL;
-	} else {
-		return _cli_io_push(&_cli_io.in, data, size, &_cli_io.in_ref);
-	}
-}
-
-static inline int cli_out_push(_u8 *data, int size)
-{
-	return _cli_io_push(&_cli_io.out, data, size, &_cli_io.out_ref);
-}
-
-static inline int cli_in_pop(_u8 *data, int size)
-{
-	return _cli_io_pop(&_cli_io.in, data, size, &_cli_io.in_ref);
-}
-
-static inline int cli_out_pop(_u8 *data, int size)
-{
-	return _cli_io_pop(&_cli_io.out, data, size, &_cli_io.out_ref);
-}
-
-static inline int cli_get_in_size(void)
-{
-	return _cli_io.in.size;
-}
-
-static inline int cli_get_out_size(void)
-{
-	return _cli_io.out.size;
-}
+int cli_in_push(_u8 *data, int size);
+int cli_out_push(_u8 *data, int size);
+int cli_in_pop(_u8 *data, int size);
+int cli_out_pop(_u8 *data, int size);
+int cli_get_in_size(void);
+int cli_get_out_size(void);
 
 void cli_io_init(void);
 int cli_out_sync(void);

@@ -17,6 +17,7 @@
  */
 
 #include "cli_io.h"
+#include <pthread.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -30,6 +31,8 @@ struct cli_io _cli_io = {
 	.out_ref = 0,
 };
 
+static pthread_mutex_t _cli_io_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void cli_io_init(void)
 {
 	vectorInit(&_cli_io.in, (_u8 *)_cli_io.in_buf, CLI_IO_SIZE);
@@ -42,6 +45,92 @@ void cli_io_init(void)
 __attribute__((weak)) void cli_putc(char ch)
 {
 	write(STDOUT_FILENO, &ch, 1);
+}
+
+static int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
+{
+	bool status;
+	pthread_mutex_lock(&_cli_io_mutex);
+	if (*ref == 0) {
+		pthread_mutex_unlock(&_cli_io_mutex);
+		return CLI_ERR_INVAL; /*uninited*/
+	}
+	(*ref)++;
+	status = push_back(v, data, size);
+	(*ref)--;
+	pthread_mutex_unlock(&_cli_io_mutex);
+	if (status == false) {
+		return CLI_ERR_FIFO_FULL;
+	} else {
+		return CLI_OK;
+	}
+}
+
+static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
+{
+	pthread_mutex_lock(&_cli_io_mutex);
+	if (*ref == 0) {
+		pthread_mutex_unlock(&_cli_io_mutex);
+		return CLI_ERR_INVAL; /*uninited*/
+	}
+	(*ref)++;
+	int remain_to_pop = size;
+	while (remain_to_pop) {
+		_u8 front;
+		if (at(v, 0, &front) == false) {
+			goto _cli_io_pop_exit;
+		}
+		int idx = size - remain_to_pop;
+		*(data + idx) = front;
+		pop_front(v, 1);
+		remain_to_pop--;
+	}
+_cli_io_pop_exit:
+	(*ref)--;
+	pthread_mutex_unlock(&_cli_io_mutex);
+	return CLI_OK;
+}
+
+int cli_in_push(_u8 *data, int size)
+{
+	if (cli_in_push_lock) {
+		return CLI_ERR_FIFO_FULL;
+	} else {
+		return _cli_io_push(&_cli_io.in, data, size, &_cli_io.in_ref);
+	}
+}
+
+int cli_out_push(_u8 *data, int size)
+{
+	return _cli_io_push(&_cli_io.out, data, size, &_cli_io.out_ref);
+}
+
+int cli_in_pop(_u8 *data, int size)
+{
+	return _cli_io_pop(&_cli_io.in, data, size, &_cli_io.in_ref);
+}
+
+int cli_out_pop(_u8 *data, int size)
+{
+	return _cli_io_pop(&_cli_io.out, data, size, &_cli_io.out_ref);
+}
+
+int cli_get_in_size(void)
+{
+	int size;
+	pthread_mutex_lock(&_cli_io_mutex);
+	size = _cli_io.in.size;
+	pthread_mutex_unlock(&_cli_io_mutex);
+	return size;
+}
+
+int cli_get_out_size(void)
+{
+	int size;
+	pthread_mutex_lock(&_cli_io_mutex);
+	size = _cli_io.out.size;
+	pthread_mutex_unlock(&_cli_io_mutex);
+	return size;
 }
 
 int cli_out_sync(void)
@@ -196,12 +285,14 @@ int cli_printk(const char *fmt, ...)
 int cli_in_clear(void)
 {
 	_u8 tmp;
-	int remain = _cli_io.in.size;
-	int status = cli_in_pop(&tmp, remain);
-	if (status < 0) {
-		return status;
+	int status;
+	while (_cli_io.in.size > 0) {
+		status = cli_in_pop(&tmp, 1);
+		if (status < 0) {
+			return status;
+		}
 	}
-	return _cli_io.in.size ? (-1) : 0;
+	return 0;
 }
 
 void set_cli_in_push_lock(void)
