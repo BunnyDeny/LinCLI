@@ -63,6 +63,10 @@ void scheduler_get_char_entry(void *private)
 	if (status < 0) {
 		pr_emerg("cli_cmd_line_init exception\r\n");
 	}
+	status = cli_in_clear();
+	if (status < 0) {
+		pr_err("failed to clear input buffer\r\n");
+	}
 	cli_printk("\r\n");
 	cli_prompt_print();
 	reset_cli_in_push_lock();

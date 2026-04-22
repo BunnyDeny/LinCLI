@@ -606,6 +606,11 @@ static int run_cmd_validator(const cli_command_t *cmd_def, int *cmd_ret)
 		*cmd_ret = 0;
 		return 0;
 	}
+	if (cli_in_clear() < 0) {
+		pr_err("failed to clear input buffer\r\n");
+		*cmd_ret = -1;
+		return -1;
+	}
 	int ret = cmd_def->validator(cmd_def->arg_buf);
 	*cmd_ret = ret;
 	if (ret < 0) {
