@@ -54,8 +54,6 @@ static int key_handler(void *_args)
 			if (status < 0) {
 				return status;
 			}
-			cli_printk("\r get %c, ascii %3d       ",
-				   (ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
 			if (ch == (char)4) {
 				cli_printk("\r\n");
 				pr_info("Key ctrl+d detected, exiting\r\n");
@@ -66,6 +64,8 @@ static int key_handler(void *_args)
 				pr_err("Key ctrl+w detected, aborting.\n");
 				return -1;
 			}
+			cli_printk("\r get %c, ascii %3d       ",
+				   (ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
 		}
 	}
 	return 0;
