@@ -44,19 +44,26 @@ __attribute__((weak)) void cli_putc(char ch)
 	write(STDOUT_FILENO, &ch, 1);
 }
 
+/* 平台相关的临界区保护钩子，默认空实现 */
+__attribute__((weak)) void cli_io_enter_critical(void)
+{
+}
+
+__attribute__((weak)) void cli_io_exit_critical(void)
+{
+}
+
 static int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	bool status;
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
 	}
-	while (!__sync_bool_compare_and_swap(ref, 1, 2)) {
-		if (*ref == 0) {
-			return CLI_ERR_INVAL;
-		}
-	}
+	cli_io_enter_critical();
+	(*ref)++;
 	status = push_back(v, data, size);
-	__sync_fetch_and_sub(ref, 1);
+	(*ref)--;
+	cli_io_exit_critical();
 	if (status == false) {
 		return CLI_ERR_FIFO_FULL;
 	} else {
@@ -69,11 +76,8 @@ static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
 	}
-	while (!__sync_bool_compare_and_swap(ref, 1, 2)) {
-		if (*ref == 0) {
-			return CLI_ERR_INVAL;
-		}
-	}
+	cli_io_enter_critical();
+	(*ref)++;
 	int remain_to_pop = size;
 	while (remain_to_pop) {
 		_u8 front;
@@ -86,7 +90,8 @@ static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 		remain_to_pop--;
 	}
 _cli_io_pop_exit:
-	__sync_fetch_and_sub(ref, 1);
+	(*ref)--;
+	cli_io_exit_critical();
 	return CLI_OK;
 }
 
@@ -117,26 +122,18 @@ int cli_out_pop(_u8 *data, int size)
 int cli_get_in_size(void)
 {
 	int size;
-	while (!__sync_bool_compare_and_swap(&_cli_io.in_ref, 1, 2)) {
-		if (_cli_io.in_ref == 0) {
-			return 0;
-		}
-	}
+	cli_io_enter_critical();
 	size = _cli_io.in.size;
-	__sync_fetch_and_sub(&_cli_io.in_ref, 1);
+	cli_io_exit_critical();
 	return size;
 }
 
 int cli_get_out_size(void)
 {
 	int size;
-	while (!__sync_bool_compare_and_swap(&_cli_io.out_ref, 1, 2)) {
-		if (_cli_io.out_ref == 0) {
-			return 0;
-		}
-	}
+	cli_io_enter_critical();
 	size = _cli_io.out.size;
-	__sync_fetch_and_sub(&_cli_io.out_ref, 1);
+	cli_io_exit_critical();
 	return size;
 }
 
