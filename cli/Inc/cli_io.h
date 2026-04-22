@@ -82,6 +82,8 @@
 extern char log_level[3];
 extern _u8 cli_in_push_lock;
 
+int cli_printk(const char *fmt, ...);
+
 #define pr_emerg(fmt, ...) cli_printk(KERN_EMERG fmt, ##__VA_ARGS__)
 #define pr_alert(fmt, ...) cli_printk(KERN_ALERT fmt, ##__VA_ARGS__)
 #define pr_crit(fmt, ...) cli_printk(KERN_CRIT fmt, ##__VA_ARGS__)
@@ -98,13 +100,11 @@ extern _u8 cli_in_push_lock;
 
 struct cli_io {
 	struct vector in;
-	_u8 in_push_ref;
-	_u8 in_pop_ref;
+	_u8 in_ref;
 	char in_buf[CLI_IO_SIZE];
 
 	struct vector out;
-	_u8 out_push_ref;
-	_u8 out_pop_ref;
+	_u8 out_ref;
 	char out_buf[CLI_IO_SIZE];
 };
 
@@ -113,11 +113,10 @@ extern struct cli_io _cli_io;
 static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	bool status;
-	if (*ref > 2) {
-		return -(*ref);
-	}
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
+	}
+	while (*ref > 1) {
 	}
 	(*ref)++;
 	status = push_back(v, data, size);
@@ -131,25 +130,24 @@ static inline int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 
 static inline int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
-	if (*ref > 2) {
-		return -(*ref);
-	}
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
+	}
+	while (*ref > 1) {
 	}
 	(*ref)++;
 	int remain_to_pop = size;
 	while (remain_to_pop) {
 		_u8 front;
 		if (at(v, 0, &front) == false) {
-			(*ref)--;
-			return CLI_ERR_FIFO_EMPTY;
+			goto _cli_io_pop_exit;
 		}
 		int idx = size - remain_to_pop;
 		*(data + idx) = front;
 		pop_front(v, 1);
 		remain_to_pop--;
 	}
+_cli_io_pop_exit:
 	(*ref)--;
 	return CLI_OK;
 }
@@ -159,24 +157,23 @@ static inline int cli_in_push(_u8 *data, int size)
 	if (cli_in_push_lock) {
 		return CLI_ERR_FIFO_FULL;
 	} else {
-		return _cli_io_push(&_cli_io.in, data, size,
-				    &_cli_io.in_push_ref);
+		return _cli_io_push(&_cli_io.in, data, size, &_cli_io.in_ref);
 	}
 }
 
 static inline int cli_out_push(_u8 *data, int size)
 {
-	return _cli_io_push(&_cli_io.out, data, size, &_cli_io.out_push_ref);
+	return _cli_io_push(&_cli_io.out, data, size, &_cli_io.out_ref);
 }
 
 static inline int cli_in_pop(_u8 *data, int size)
 {
-	return _cli_io_pop(&_cli_io.in, data, size, &_cli_io.in_pop_ref);
+	return _cli_io_pop(&_cli_io.in, data, size, &_cli_io.in_ref);
 }
 
 static inline int cli_out_pop(_u8 *data, int size)
 {
-	return _cli_io_pop(&_cli_io.out, data, size, &_cli_io.out_pop_ref);
+	return _cli_io_pop(&_cli_io.out, data, size, &_cli_io.out_ref);
 }
 
 static inline int cli_get_in_size(void)
@@ -191,7 +188,6 @@ static inline int cli_get_out_size(void)
 
 void cli_io_init(void);
 int cli_out_sync(void);
-int cli_printk(const char *fmt, ...);
 int cli_in_clear(void);
 void set_cli_in_push_lock(void);
 void reset_cli_in_push_lock(void);

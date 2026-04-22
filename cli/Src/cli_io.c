@@ -26,20 +26,16 @@ char log_level[3] = "8";
 _u8 cli_in_push_lock = 1;
 
 struct cli_io _cli_io = {
-	.in_push_ref = 0,
-	.in_pop_ref = 0,
-	.out_push_ref = 0,
-	.out_pop_ref = 0,
+	.in_ref = 0,
+	.out_ref = 0,
 };
 
 void cli_io_init(void)
 {
 	vectorInit(&_cli_io.in, (_u8 *)_cli_io.in_buf, CLI_IO_SIZE);
 	vectorInit(&_cli_io.out, (_u8 *)_cli_io.out_buf, CLI_IO_SIZE);
-	_cli_io.in_push_ref = 1;
-	_cli_io.in_pop_ref = 1;
-	_cli_io.out_push_ref = 1;
-	_cli_io.out_pop_ref = 1;
+	_cli_io.in_ref = 1;
+	_cli_io.out_ref = 1;
 }
 
 //移植的时候实现
