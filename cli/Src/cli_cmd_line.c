@@ -176,8 +176,10 @@ static void complete_command_name(const char *prefix, int prefix_len)
 	const cli_command_t *cmd;
 	char *lcp = cli_mpool_alloc();
 
-	if (!lcp)
+	if (!lcp) {
+		pr_err("out of memory\r\n");
 		return;
+	}
 
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
@@ -321,8 +323,10 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 static void replace_long_option(const char *long_opt, int long_len)
 {
 	char *new_buf = cli_mpool_alloc();
-	if (!new_buf)
+	if (!new_buf) {
+		pr_err("out of memory\r\n");
 		return;
+	}
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	new_buf[tok_start] = '-';
@@ -340,8 +344,10 @@ static void replace_long_option(const char *long_opt, int long_len)
 static void replace_short_option(char c)
 {
 	char *new_buf = cli_mpool_alloc();
-	if (!new_buf)
+	if (!new_buf) {
+		pr_err("out of memory\r\n");
 		return;
+	}
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	new_buf[tok_start] = '-';
@@ -411,8 +417,10 @@ static void complete_long_option(const cli_command_t *cmd,
 	} else if (match_cnt > 1) {
 		int lcp_len = (int)strlen(match->long_opt);
 		lcp = cli_mpool_alloc();
-		if (!lcp)
+		if (!lcp) {
+			pr_err("out of memory\r\n");
 			goto out;
+		}
 		memcpy(lcp, match->long_opt, lcp_len);
 
 		for (size_t i = 0; i < cmd->option_count; i++) {

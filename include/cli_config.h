@@ -18,7 +18,7 @@
 
 /* 内存池配置 */
 #ifndef CLI_MPOOL_COUNT
-#define CLI_MPOOL_COUNT 4
+#define CLI_MPOOL_COUNT 6
 #endif
 
 #ifndef CLI_MPOOL_SIZE
