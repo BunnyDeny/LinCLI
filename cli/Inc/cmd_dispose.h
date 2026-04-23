@@ -268,13 +268,12 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		__attribute__((used, section(_section))) =                     \
 			&_cli_cmd_def_##_obj
 
+#include "cli_config.h"
+
 /* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
  * 由于 CLI 解析与执行在单一线程中串行完成，不会产生并发冲突。
  * 若用户结构体超过此大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
-#ifndef CLI_CMD_BUF_SIZE
-#define CLI_CMD_BUF_SIZE 128
-#endif
 extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 
 #define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)  \
