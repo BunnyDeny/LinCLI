@@ -42,8 +42,7 @@ struct dispose_ctx {
 #define CLI_HELP_DEP_MARK_SIZE 32
 #define CLI_MAX_ARGV 64
 
-static char cli_help_req_mark[CLI_HELP_REQ_MARK_SIZE];
-static char cli_help_dep_mark[CLI_HELP_DEP_MARK_SIZE];
+
 
 /**
  * @brief 在链接脚本段中按名称查找已注册的命令。
@@ -519,8 +518,22 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
  */
 static void cli_print_help(const cli_command_t *cmd)
 {
+	char *cli_help_req_mark = NULL;
+	char *cli_help_dep_mark = NULL;
+
 	if (!cmd)
 		return;
+
+	cli_help_req_mark = cli_mpool_alloc();
+	cli_help_dep_mark = cli_mpool_alloc();
+	if (!cli_help_req_mark || !cli_help_dep_mark) {
+		if (cli_help_req_mark)
+			cli_mpool_free(cli_help_req_mark);
+		if (cli_help_dep_mark)
+			cli_mpool_free(cli_help_dep_mark);
+		return;
+	}
+
 	cli_printk(" command     : %s\r\n", cmd->name);
 	cli_printk(" description : %s\r\n", cmd->doc);
 	cli_printk(" option      :\r\n");
@@ -547,6 +560,8 @@ static void cli_print_help(const cli_command_t *cmd)
 			   opt->help ? opt->help : "", cli_help_req_mark,
 			   cli_help_dep_mark);
 	}
+	cli_mpool_free(cli_help_req_mark);
+	cli_mpool_free(cli_help_dep_mark);
 }
 
 /**

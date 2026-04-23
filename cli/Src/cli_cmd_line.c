@@ -19,6 +19,7 @@
 #include "cli_cmd_line.h"
 #include "cli_errno.h"
 #include "cli_io.h"
+#include "cli_mpool.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
 #include "stateM.h"
@@ -26,9 +27,6 @@
 
 extern struct tState *const _cli_cmd_line_start[];
 extern struct tState *const _cli_cmd_line_end[];
-
-char lcp[CMD_LINE_BUF_SIZE];
-char new_buf[CMD_LINE_BUF_SIZE];
 
 static bool is_valid_char(char c);
 
@@ -176,6 +174,10 @@ static void complete_command_name(const char *prefix, int prefix_len)
 	const cli_command_t *match = NULL;
 	int match_cnt = 0;
 	const cli_command_t *cmd;
+	char *lcp = cli_mpool_alloc();
+
+	if (!lcp)
+		return;
 
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
@@ -242,6 +244,8 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
 	}
+
+	cli_mpool_free(lcp);
 }
 
 static void list_all_options(const cli_command_t *cmd)
@@ -316,6 +320,9 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 
 static void replace_long_option(const char *long_opt, int long_len)
 {
+	char *new_buf = cli_mpool_alloc();
+	if (!new_buf)
+		return;
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	new_buf[tok_start] = '-';
@@ -327,10 +334,14 @@ static void replace_long_option(const char *long_opt, int long_len)
 		new_size++;
 	}
 	cmd_line_replace(new_buf, new_size);
+	cli_mpool_free(new_buf);
 }
 
 static void replace_short_option(char c)
 {
+	char *new_buf = cli_mpool_alloc();
+	if (!new_buf)
+		return;
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	new_buf[tok_start] = '-';
@@ -341,6 +352,7 @@ static void replace_short_option(char c)
 		new_size++;
 	}
 	cmd_line_replace(new_buf, new_size);
+	cli_mpool_free(new_buf);
 }
 
 static bool is_last_full_token_the_only_option(const cli_command_t *cmd)
@@ -382,6 +394,7 @@ static void complete_long_option(const cli_command_t *cmd,
 {
 	const cli_option_t *match = NULL;
 	int match_cnt = 0;
+	char *lcp = NULL;
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
@@ -397,7 +410,9 @@ static void complete_long_option(const cli_command_t *cmd,
 				    (int)strlen(match->long_opt));
 	} else if (match_cnt > 1) {
 		int lcp_len = (int)strlen(match->long_opt);
-		char lcp[CMD_LINE_BUF_SIZE];
+		lcp = cli_mpool_alloc();
+		if (!lcp)
+			goto out;
 		memcpy(lcp, match->long_opt, lcp_len);
 
 		for (size_t i = 0; i < cmd->option_count; i++) {
@@ -421,6 +436,9 @@ static void complete_long_option(const cli_command_t *cmd,
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
 	}
+out:
+	if (lcp)
+		cli_mpool_free(lcp);
 }
 
 static void complete_option(const cli_command_t *cmd, const char *prefix,
