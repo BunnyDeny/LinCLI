@@ -218,6 +218,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 			cmd_line_replace(lcp, lcp_len);
 		} else {
 			cli_out_push((_u8 *)"\a\r\n", 3);
+			cli_out_push((_u8 *)"\033[2K", 4);
 			_FOR_EACH_CLI_COMMAND(_cli_commands_start,
 					      _cli_commands_end, cmd)
 			{
