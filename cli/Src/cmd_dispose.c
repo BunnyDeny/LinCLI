@@ -627,6 +627,7 @@ static int dispose_start_task(void *arg)
 	char *argv[CLI_MAX_ARGV];
 	int argc = tokenize(ctx->cmd, argv, CLI_MAX_ARGV);
 	cli_printk("\r\n");
+	cli_printk("\033[K");
 
 	const cli_command_t *cmd_def =
 		prepare_cmd_def(argc, argv, ctx->cmd_ret);
