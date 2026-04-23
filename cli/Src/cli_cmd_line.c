@@ -28,6 +28,7 @@ extern struct tState *const _cli_cmd_line_start[];
 extern struct tState *const _cli_cmd_line_end[];
 
 char lcp[CMD_LINE_BUF_SIZE];
+char new_buf[CMD_LINE_BUF_SIZE];
 
 static bool is_valid_char(char c);
 
@@ -315,7 +316,6 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 
 static void replace_long_option(const char *long_opt, int long_len)
 {
-	char new_buf[CMD_LINE_BUF_SIZE];
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	new_buf[tok_start] = '-';
@@ -331,7 +331,6 @@ static void replace_long_option(const char *long_opt, int long_len)
 
 static void replace_short_option(char c)
 {
-	char new_buf[CMD_LINE_BUF_SIZE];
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	new_buf[tok_start] = '-';
