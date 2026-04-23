@@ -188,12 +188,13 @@ static int find_cmd_match(const char *prefix, int prefix_len,
 	return match_cnt;
 }
 
-static void replace_cmdline_token(const char *replacement, int repl_len)
+static void replace_cmdline_token(const char *replacement, int repl_len,
+				    int append_space)
 {
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	int new_size = tok_start + repl_len;
 
-	if (new_size < CMD_LINE_BUF_SIZE - 1)
+	if (append_space && new_size < CMD_LINE_BUF_SIZE - 1)
 		new_size++;
 	if (new_size > CMD_LINE_BUF_SIZE)
 		new_size = CMD_LINE_BUF_SIZE;
@@ -205,7 +206,7 @@ static void replace_cmdline_token(const char *replacement, int repl_len)
 	}
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	memcpy(new_buf + tok_start, replacement, repl_len);
-	if (tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
+	if (append_space && tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
 		new_buf[tok_start + repl_len] = ' ';
 	cmd_line_replace(new_buf, new_size);
 	cli_mpool_free(new_buf);
@@ -213,7 +214,7 @@ static void replace_cmdline_token(const char *replacement, int repl_len)
 
 static void complete_unique_cmd(const cli_command_t *match)
 {
-	replace_cmdline_token(match->name, (int)strlen(match->name));
+	replace_cmdline_token(match->name, (int)strlen(match->name), 1);
 }
 
 static int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
@@ -267,7 +268,7 @@ static void complete_multi_cmd(const cli_command_t *first_match,
 	int lcp_len = compute_cmd_lcp(lcp_buf, CMD_LINE_BUF_SIZE,
 				      first_match, prefix, prefix_len);
 	if (lcp_len > prefix_len) {
-		replace_cmdline_token(lcp_buf, lcp_len);
+		replace_cmdline_token(lcp_buf, lcp_len, 0);
 	} else {
 		list_cmd_candidates(prefix, prefix_len);
 	}
