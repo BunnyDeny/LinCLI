@@ -246,6 +246,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 static void list_all_options(const cli_command_t *cmd)
 {
 	cli_out_push((_u8 *)"\a\r\n", 3);
+	cli_out_push((_u8 *)"\033[2K", 4);
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->short_opt) {
@@ -259,8 +260,10 @@ static void list_all_options(const cli_command_t *cmd)
 			cli_out_push((_u8 *)"  ", 2);
 		}
 	}
-	cli_out_push((_u8 *)"\r\n", 2);
 	cli_out_sync();
+	cli_out_push((_u8 *)"\033[1A", 4);
+	cli_out_sync();
+
 	cmd_line_redraw();
 }
 
@@ -292,6 +295,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 					int name_prefix_len)
 {
 	cli_out_push((_u8 *)"\a\r\n", 3);
+	cli_out_push((_u8 *)"\033[2K", 4);
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
@@ -302,8 +306,10 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 			cli_out_push((_u8 *)"  ", 2);
 		}
 	}
-	cli_out_push((_u8 *)"\r\n", 2);
 	cli_out_sync();
+	cli_out_push((_u8 *)"\033[1A", 4);
+	cli_out_sync();
+
 	cmd_line_redraw();
 }
 
