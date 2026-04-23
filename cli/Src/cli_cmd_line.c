@@ -27,6 +27,8 @@
 extern struct tState *const _cli_cmd_line_start[];
 extern struct tState *const _cli_cmd_line_end[];
 
+char lcp[CMD_LINE_BUF_SIZE];
+
 static bool is_valid_char(char c);
 
 struct cmd_line {
@@ -197,7 +199,6 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		}
 	} else if (match_cnt > 1) {
 		int lcp_len = (int)strlen(match->name);
-		char lcp[CMD_LINE_BUF_SIZE];
 		memcpy(lcp, match->name, lcp_len);
 
 		const cli_command_t *cmd2;
