@@ -799,7 +799,8 @@ int tab_complete_task(void *pch)
 		first_word_end++;
 
 	if (cmd_line.size == 0 ||
-	    (tok_start >= cmd_start && tok_start < first_word_end)) {
+	    (tok_start >= cmd_start && tok_start < first_word_end) ||
+	    cmd_start >= cmd_line.size) {
 		complete_command_name(prefix, prefix_len);
 	} else {
 		char cmd_name[CMD_LINE_BUF_SIZE];
