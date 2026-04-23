@@ -95,6 +95,7 @@ static void cmd_line_replace(const char *new_buf, int new_size)
 		return;
 
 	void cli_prompt_print(void);
+	cli_printk("\033[K");
 	cli_prompt_print();
 
 	if (new_size > 0) {
@@ -132,6 +133,7 @@ static void cmd_line_redraw(void)
 	if (cli_out_sync())
 		return;
 	void cli_prompt_print(void);
+	cli_printk("\033[K");
 	cli_prompt_print();
 	if (cmd_line.size > 0) {
 		status = cli_out_push((_u8 *)cmd_line.buf, cmd_line.size);
@@ -170,7 +172,7 @@ static const cli_command_t *find_cmd_by_name(const char *name)
 }
 
 static int find_cmd_match(const char *prefix, int prefix_len,
-			    const cli_command_t **first_match)
+			  const cli_command_t **first_match)
 {
 	int match_cnt = 0;
 	const cli_command_t *cmd;
@@ -189,7 +191,7 @@ static int find_cmd_match(const char *prefix, int prefix_len,
 }
 
 static void replace_cmdline_token(const char *replacement, int repl_len,
-				    int append_space)
+				  int append_space)
 {
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	int new_size = tok_start + repl_len;
@@ -218,8 +220,8 @@ static void complete_unique_cmd(const cli_command_t *match)
 }
 
 static int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
-			   const cli_command_t *first_match,
-			   const char *prefix, int prefix_len)
+			   const cli_command_t *first_match, const char *prefix,
+			   int prefix_len)
 {
 	int lcp_len = (int)strlen(first_match->name);
 	if (lcp_len > lcp_buf_size)
@@ -265,8 +267,8 @@ static void complete_multi_cmd(const cli_command_t *first_match,
 			       const char *prefix, int prefix_len,
 			       char *lcp_buf)
 {
-	int lcp_len = compute_cmd_lcp(lcp_buf, CMD_LINE_BUF_SIZE,
-				      first_match, prefix, prefix_len);
+	int lcp_len = compute_cmd_lcp(lcp_buf, CMD_LINE_BUF_SIZE, first_match,
+				      prefix, prefix_len);
 	if (lcp_len > prefix_len) {
 		replace_cmdline_token(lcp_buf, lcp_len, 0);
 	} else {
@@ -926,6 +928,7 @@ int clear_handler(void *arg)
 		return status;
 	}
 	void cli_prompt_print(void);
+	cli_printk("\033[K");
 	cli_prompt_print();
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
