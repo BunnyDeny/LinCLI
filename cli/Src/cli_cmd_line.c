@@ -192,16 +192,28 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		}
 	}
 
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+
 	if (match_cnt == 1) {
-		int new_size = strlen(match->name);
-		cmd_line_replace(match->name, new_size);
-		if (cmd_line.size < CMD_LINE_BUF_SIZE - 1) {
-			cmd_line.buf[cmd_line.size] = ' ';
-			cmd_line.size++;
-			cmd_line.pos++;
-			cli_out_push((_u8 *)" ", 1);
-			cli_out_sync();
+		int name_len = strlen(match->name);
+		int new_size = tok_start + name_len;
+		if (new_size < CMD_LINE_BUF_SIZE - 1)
+			new_size++;
+		if (new_size > CMD_LINE_BUF_SIZE)
+			new_size = CMD_LINE_BUF_SIZE;
+
+		char *new_buf = cli_mpool_alloc();
+		if (!new_buf) {
+			pr_err("out of memory\r\n");
+			cli_mpool_free(lcp);
+			return;
 		}
+		memcpy(new_buf, cmd_line.buf, tok_start);
+		memcpy(new_buf + tok_start, match->name, name_len);
+		if (tok_start + name_len < CMD_LINE_BUF_SIZE - 1)
+			new_buf[tok_start + name_len] = ' ';
+		cmd_line_replace(new_buf, new_size);
+		cli_mpool_free(new_buf);
 	} else if (match_cnt > 1) {
 		int lcp_len = (int)strlen(match->name);
 		memcpy(lcp, match->name, lcp_len);
@@ -220,7 +232,20 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		}
 
 		if (lcp_len > prefix_len) {
-			cmd_line_replace(lcp, lcp_len);
+			int new_size = tok_start + lcp_len;
+			if (new_size > CMD_LINE_BUF_SIZE)
+				new_size = CMD_LINE_BUF_SIZE;
+
+			char *new_buf = cli_mpool_alloc();
+			if (!new_buf) {
+				pr_err("out of memory\r\n");
+				cli_mpool_free(lcp);
+				return;
+			}
+			memcpy(new_buf, cmd_line.buf, tok_start);
+			memcpy(new_buf + tok_start, lcp, lcp_len);
+			cmd_line_replace(new_buf, new_size);
+			cli_mpool_free(new_buf);
 		} else {
 			cli_out_push((_u8 *)"\a\r\n", 3);
 			cli_out_push((_u8 *)"\033[2K", 4);
@@ -726,6 +751,19 @@ int history_down_task(void *pch)
 _EXPORT_STATE_SYMBOL(history_down, NULL, history_down_task, NULL,
 		     ".cli_cmd_line");
 
+static int get_current_segment_start(const char *buf, int size)
+{
+	int start = 0;
+	for (int i = 0; i < size - 1; i++) {
+		if (buf[i] == '&' && buf[i + 1] == '&') {
+			start = i + 2;
+			while (start < size && buf[start] == ' ')
+				start++;
+		}
+	}
+	return start;
+}
+
 int tab_complete_task(void *pch)
 {
 	int status;
@@ -733,7 +771,7 @@ int tab_complete_task(void *pch)
 	int prefix_len = cmd_line.size - tok_start;
 	const char *prefix = &cmd_line.buf[tok_start];
 
-	int cmd_start = 0;
+	int cmd_start = get_current_segment_start(cmd_line.buf, cmd_line.size);
 	while (cmd_start < cmd_line.size && cmd_line.buf[cmd_start] == ' ')
 		cmd_start++;
 	int first_word_end = cmd_start;
