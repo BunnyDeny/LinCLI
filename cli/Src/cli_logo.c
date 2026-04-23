@@ -18,6 +18,7 @@
 
 #include "cli_io.h"
 #include "init_d.h"
+#include "cmd_dispose.h"
 
 void pr_logo(void *arg)
 {
@@ -31,3 +32,14 @@ void pr_logo(void *arg)
 }
 
 _EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);
+
+extern void pr_license(void *);
+
+void logo_handler(void *arg)
+{
+	pr_logo(NULL);
+	pr_license(NULL);
+}
+
+CLI_COMMAND(logo, "logo", "show logo and license", logo_handler, NULL,
+	    END_OPTIONS);
