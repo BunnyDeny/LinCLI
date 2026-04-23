@@ -270,11 +270,9 @@ extern struct alias_cmd *const _alias_cmd_end[];
 
 #include "cli_config.h"
 
-/* 全局共享命令参数缓冲区，所有使用 CLI_COMMAND 注册的命令串行复用该内存。
- * 由于 CLI 解析与执行在单一线程中串行完成，不会产生并发冲突。
- * 若用户结构体超过此大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
+/* 使用 CLI_COMMAND 注册的命令在运行时通过内存池动态分配参数缓冲区。
+ * 若用户结构体超过内存池单块大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
-extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 
 #define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)  \
 	/* 前向声明参数结构体类型 */                                        \
@@ -283,12 +281,12 @@ extern char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 	/* 定义选项数组（放在全局区） */                                    \
 	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };         \
                                                                             \
-	/* 通过链接脚本段收集注册，使用全局共享缓冲区 */                    \
+	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */    \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                         \
 		name, cmd_str, doc_str, sizeof(_cli_struct_##name),         \
 		_cli_options_##name,                                        \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),       \
-		(int (*)(void *))parse_cb, g_cli_cmd_buf, CLI_CMD_BUF_SIZE, \
+		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,          \
 		".cli_commands")
 
 #define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \

@@ -21,6 +21,7 @@
 #include "stateM.h"
 #include "cli_io.h"
 #include "cli_cmd_line.h"
+#include "cli_mpool.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
@@ -30,7 +31,6 @@ struct tStateEngine dispose_mec;
 extern struct tState *const _dispose_start[];
 extern struct tState *const _dispose_end[];
 
-char g_cli_cmd_buf[CLI_CMD_BUF_SIZE];
 char chain_buf[CMD_LINE_BUF_SIZE];
 char alias_buf[CMD_LINE_BUF_SIZE];
 
@@ -566,6 +566,8 @@ static bool has_help_flag(int argc, char **argv)
 /**
  * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
  */
+static cli_command_t cmd_runtime;
+
 static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 {
 	if (argc < 1) {
@@ -584,10 +586,15 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 		return NULL;
 	}
 	if (!cmd_def->arg_buf) {
-		pr_err("command %s no argument buffer allocated\r\n",
-		       cmd_def->name);
-		*cmd_ret = -1;
-		return NULL;
+		/* CLI_COMMAND 注册的命令：从内存池动态申请缓冲区 */
+		memcpy(&cmd_runtime, cmd_def, sizeof(cli_command_t));
+		cmd_runtime.arg_buf = cli_mpool_alloc();
+		if (!cmd_runtime.arg_buf) {
+			pr_err("command %s out of memory\r\n", cmd_def->name);
+			*cmd_ret = -1;
+			return NULL;
+		}
+		cmd_def = &cmd_runtime;
 	}
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
 		pr_err("command %s struct size %zu bytes, "
@@ -641,12 +648,14 @@ static int dispose_start_task(void *arg)
 		pr_err("command parsing failed: %s\r\n", argv[0]);
 		cli_print_help(cmd_def);
 		*ctx->cmd_ret = -1;
-		return dispose_exit;
+	} else {
+		run_cmd_validator(cmd_def, ctx->cmd_ret);
 	}
 
-	if (run_cmd_validator(cmd_def, ctx->cmd_ret) < 0)
-		return dispose_exit;
-
+	if (cmd_def == &cmd_runtime && cmd_runtime.arg_buf) {
+		cli_mpool_free(cmd_runtime.arg_buf);
+		cmd_runtime.arg_buf = NULL;
+	}
 	return dispose_exit;
 }
 _EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start_task, NULL, ".dispose");
