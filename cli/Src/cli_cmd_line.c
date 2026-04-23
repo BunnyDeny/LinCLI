@@ -230,8 +230,10 @@ static void complete_command_name(const char *prefix, int prefix_len)
 					cli_out_push((_u8 *)"  ", 2);
 				}
 			}
-			cli_out_push((_u8 *)"\r\n", 2);
 			cli_out_sync();
+			cli_out_push((_u8 *)"\033[1A", 4);
+			cli_out_sync();
+
 			cmd_line_redraw();
 		}
 	} else {
