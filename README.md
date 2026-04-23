@@ -1,6 +1,9 @@
 
 
-https://github.com/user-attachments/assets/205a4c8e-cd7d-4e33-8ad9-728898dd1b27
+
+https://github.com/user-attachments/assets/8986da7a-ab7a-4236-bb4c-73b00fdc9420
+
+
 
 # LinCLI
 
