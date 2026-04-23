@@ -22,17 +22,18 @@
 #include <unistd.h>
 #include <termios.h>
 #include "cli_io.h"
+#include "cli_critical.h"
 
 /* PC模拟层：用原子自旋锁模拟MCU的关中断/开中断 */
 static volatile int cli_io_spinlock = 0;
 
-void cli_io_enter_critical(void)
+void cli_enter_critical(void)
 {
 	while (__sync_lock_test_and_set(&cli_io_spinlock, 1)) {
 	}
 }
 
-void cli_io_exit_critical(void)
+void cli_exit_critical(void)
 {
 	__sync_lock_release(&cli_io_spinlock);
 }

@@ -17,6 +17,7 @@
  */
 
 #include "cli_io.h"
+#include "cli_critical.h"
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -43,26 +44,17 @@ __attribute__((weak)) void cli_putc(char ch)
 {
 }
 
-/* 平台相关的临界区保护钩子，默认空实现 */
-__attribute__((weak)) void cli_io_enter_critical(void)
-{
-}
-
-__attribute__((weak)) void cli_io_exit_critical(void)
-{
-}
-
 static int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
 {
 	bool status;
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
 	}
-	cli_io_enter_critical();
+	cli_enter_critical();
 	(*ref)++;
 	status = push_back(v, data, size);
 	(*ref)--;
-	cli_io_exit_critical();
+	cli_exit_critical();
 	if (status == false) {
 		return CLI_ERR_FIFO_FULL;
 	} else {
@@ -75,7 +67,7 @@ static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
 	}
-	cli_io_enter_critical();
+	cli_enter_critical();
 	(*ref)++;
 	int remain_to_pop = size;
 	while (remain_to_pop) {
@@ -90,7 +82,7 @@ static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 	}
 _cli_io_pop_exit:
 	(*ref)--;
-	cli_io_exit_critical();
+	cli_exit_critical();
 	return CLI_OK;
 }
 
@@ -121,18 +113,18 @@ int cli_out_pop(_u8 *data, int size)
 int cli_get_in_size(void)
 {
 	int size;
-	cli_io_enter_critical();
+	cli_enter_critical();
 	size = _cli_io.in.size;
-	cli_io_exit_critical();
+	cli_exit_critical();
 	return size;
 }
 
 int cli_get_out_size(void)
 {
 	int size;
-	cli_io_enter_critical();
+	cli_enter_critical();
 	size = _cli_io.out.size;
-	cli_io_exit_critical();
+	cli_exit_critical();
 	return size;
 }
 

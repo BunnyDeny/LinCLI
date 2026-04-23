@@ -340,13 +340,13 @@ int main(void)
 }
 ```
 
-### 3. 实现临界区保护 —— 覆盖 `cli_io_enter_critical` / `cli_io_exit_critical`
+### 3. 实现临界区保护 —— 覆盖 `cli_enter_critical` / `cli_exit_critical`
 
 框架在 `cli_io.c` 中定义了一对 **weak** 的空函数作为临界区钩子：
 
 ```c
-__attribute__((weak)) void cli_io_enter_critical(void) {}
-__attribute__((weak)) void cli_io_exit_critical(void)  {}
+__attribute__((weak)) void cli_enter_critical(void) {}
+__attribute__((weak)) void cli_exit_critical(void)  {}
 ```
 
 所有对 `cli_io.in` / `cli_io.out` 缓冲区的访问（`cli_in_push`、`cli_in_pop`、`cli_get_in_size` 等）都会调用这两个钩子。在 PC 模拟中，我们在 `init/main.c` 里用原子自旋锁实现：
@@ -355,13 +355,13 @@ __attribute__((weak)) void cli_io_exit_critical(void)  {}
 /* PC 模拟层：用原子自旋锁模拟 MCU 的关中断/开中断 */
 static volatile int cli_io_spinlock = 0;
 
-void cli_io_enter_critical(void)
+void cli_enter_critical(void)
 {
     while (__sync_lock_test_and_set(&cli_io_spinlock, 1)) {
     }
 }
 
-void cli_io_exit_critical(void)
+void cli_exit_critical(void)
 {
     __sync_lock_release(&cli_io_spinlock);
 }
@@ -373,13 +373,13 @@ void cli_io_exit_critical(void)
 // 在你的 MCU 项目中实现（如 main.c 或专门的移植层文件）
 static uint32_t g_primask_save;
 
-void cli_io_enter_critical(void)
+void cli_enter_critical(void)
 {
     g_primask_save = __get_PRIMASK();
     __disable_irq();
 }
 
-void cli_io_exit_critical(void)
+void cli_exit_critical(void)
 {
     __set_PRIMASK(g_primask_save);
 }
