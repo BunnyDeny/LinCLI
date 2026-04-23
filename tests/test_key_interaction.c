@@ -47,6 +47,7 @@ static int key_handler(void *_args)
 	int status, size;
 	char ch;
 	reset_cli_in_push_lock();
+	pr_info("test_key_interaction, press ctrl+d or ctrl+w to exit.\r\n");
 	while (1) {
 		size = cli_get_in_size();
 		if (size) {
