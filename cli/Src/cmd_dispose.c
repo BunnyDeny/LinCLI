@@ -31,8 +31,7 @@ struct tStateEngine dispose_mec;
 extern struct tState *const _dispose_start[];
 extern struct tState *const _dispose_end[];
 
-char chain_buf[CMD_LINE_BUF_SIZE];
-char alias_buf[CMD_LINE_BUF_SIZE];
+
 
 struct dispose_ctx {
 	char *cmd;
@@ -739,7 +738,7 @@ static bool is_prefix(char *pre, char *str)
 	return true;
 }
 
-static char *alias_replace(char *cmd)
+static char *alias_replace(char *cmd, char *buf, size_t buf_size)
 {
 	struct alias_cmd *alias_cmd;
 	char *p = cmd;
@@ -749,13 +748,13 @@ static char *alias_replace(char *cmd)
 	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
 	{
 		if (is_prefix(alias_cmd->alias_name, cmd)) {
-			memset(alias_buf, 0, CMD_LINE_BUF_SIZE);
-			memcpy(alias_buf, alias_cmd->original_name,
+			memset(buf, 0, buf_size);
+			memcpy(buf, alias_cmd->original_name,
 			       strlen(alias_cmd->original_name));
 			if ((*p)) {
-				strcat(alias_buf, p);
+				strncat(buf, p, buf_size - strlen(buf) - 1);
 			}
-			return alias_buf;
+			return buf;
 		}
 	}
 	return cmd;
@@ -769,7 +768,12 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 		       cli_strerror(status), status);
 		return status;
 	}
-	cmd = alias_replace(cmd);
+	char *alias_buf = cli_mpool_alloc();
+	if (!alias_buf) {
+		pr_err("out of memory\r\n");
+		return CLI_ERR_NULL;
+	}
+	cmd = alias_replace(cmd, alias_buf, CLI_MPOOL_SIZE);
 	struct dispose_ctx ctx = { cmd, cmd_ret };
 	*cmd_ret = 0;
 	while (1) {
@@ -778,8 +782,10 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 			pr_err("dispose state machine exception, "
 			       "error code: %d\r\n",
 			       status);
+			cli_mpool_free(alias_buf);
 			return status;
 		} else if (status == dispose_exit) {
+			cli_mpool_free(alias_buf);
 			return CLI_OK;
 		}
 	}
@@ -791,12 +797,23 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 int dispose_task(char *cmd, int *cmd_ret)
 {
 	int _local_ret = 0;
+	int ret = dispose_exit;
+	char *chain_buf = NULL;
+
 	if (!cmd_ret)
 		cmd_ret = &_local_ret;
 	if (!cmd || !cmd[0]) {
 		*cmd_ret = 0;
-		return dispose_exit;
+		goto out;
 	}
+
+	chain_buf = cli_mpool_alloc();
+	if (!chain_buf) {
+		pr_err("out of memory\r\n");
+		*cmd_ret = -1;
+		goto out;
+	}
+
 	int len = strlen(cmd);
 	if (len >= CMD_LINE_BUF_SIZE)
 		len = CMD_LINE_BUF_SIZE - 1;
@@ -808,14 +825,19 @@ int dispose_task(char *cmd, int *cmd_ret)
 		if (!cmds[i] || cmds[i][0] == '\0') {
 			pr_err("empty command\r\n");
 			*cmd_ret = 0;
-			return dispose_exit;
+			goto out;
 		}
 		int status = run_dispose_once(cmds[i], cmd_ret);
-		if (status < 0)
-			return status;
-
+		if (status < 0) {
+			ret = status;
+			goto out;
+		}
 		if (*cmd_ret < 0)
-			return dispose_exit;
+			goto out;
 	}
-	return dispose_exit;
+
+out:
+	if (chain_buf)
+		cli_mpool_free(chain_buf);
+	return ret;
 }
