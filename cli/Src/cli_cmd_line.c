@@ -353,6 +353,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		}
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
+		cmd_line_redraw();
 	}
 }
 
