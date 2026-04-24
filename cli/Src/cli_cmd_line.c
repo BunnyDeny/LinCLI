@@ -600,8 +600,9 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 				cli_out_push((_u8 *)"\a", 1);
 				cli_out_sync();
 			} else if (opt->long_opt) {
-				replace_long_option(opt->long_opt,
-						    (int)strlen(opt->long_opt));
+				replace_long_option_only(
+					opt->long_opt,
+					(int)strlen(opt->long_opt));
 			} else if (opt->short_opt) {
 				replace_short_option(opt->short_opt);
 			} else {
