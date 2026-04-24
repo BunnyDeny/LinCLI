@@ -1,0 +1,41 @@
+; *************************************************************
+; *** Scatter-Loading Description File for MDK (with CLI)   ***
+; *************************************************************
+LR_IROM1 0x08000000 0x00010000  {    ; load region size_region
+  ER_IROM1 0x08000000  {
+    *.o (RESET, +First)
+    *(InRoot$$Sections)
+  }
+
+  ; -----------------------------------------------------------
+  ; 自定义段区域：等价于 cli.ld 中的 KEEP(*(.xxx))
+  ; 作为独立 Execution Region 紧跟在 ER_IROM1 之后，
+  ; 以便 ARM 链接器为每个段生成独立的 Base/Limit 符号。
+  ; 顺序必须位于 .ANY (+RO) 之前，否则会被 .ANY 优先吸收。
+  ; -----------------------------------------------------------
+  ER_CLI_COMMANDS +0 {
+    *(.cli_commands)
+  }
+  ER_CLI_CMD_LINE +0 {
+    *(.cli_cmd_line)
+  }
+  ER_SCHEDULER +0 {
+    *(.scheduler)
+  }
+  ER_INIT_D +0 {
+    *(.my_init_d)
+  }
+  ER_DISPOSE +0 {
+    *(.dispose)
+  }
+  ER_ALIAS_CMD +0 {
+    *(.alias_cmd)
+  }
+  ER_RO_REST +0 {
+    .ANY (+RO)
+    .ANY (+XO)
+  }
+  RW_IRAM1 0x20000000 0x00005000  {  ; RW data
+    .ANY (+RW +ZI)
+  }
+}

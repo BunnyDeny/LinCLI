@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <getopt.h>
+//#include <getopt.h>
 #include <assert.h>
 
 #define dispose_exit 1
@@ -274,19 +274,19 @@ extern struct alias_cmd *const _alias_cmd_end[];
  * 若用户结构体超过内存池单块大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
 
-#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)  \
-	/* 前向声明参数结构体类型 */                                        \
-	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                 \
-                                                                            \
-	/* 定义选项数组（放在全局区） */                                    \
-	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };         \
-                                                                            \
-	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */    \
-	_EXPORT_CLI_COMMAND_SYMBOL(                                         \
-		name, cmd_str, doc_str, sizeof(_cli_struct_##name),         \
-		_cli_options_##name,                                        \
-		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),       \
-		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,          \
+#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...) \
+	/* 前向声明参数结构体类型 */                                       \
+	typedef typeof(*arg_struct_ptr) _cli_struct_##name;                \
+                                                                           \
+	/* 定义选项数组（放在全局区） */                                   \
+	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };        \
+                                                                           \
+	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */   \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
+		name, cmd_str, doc_str, sizeof(_cli_struct_##name),        \
+		_cli_options_##name,                                       \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
+		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,         \
 		".cli_commands")
 
 #define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \

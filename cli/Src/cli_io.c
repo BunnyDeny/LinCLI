@@ -20,7 +20,7 @@
 #include "cli_critical.h"
 #include <stdarg.h>
 #include <string.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 char log_level[3] = "8";
 
