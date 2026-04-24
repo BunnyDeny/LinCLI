@@ -119,7 +119,7 @@ struct tState {
 #define _FOR_EACH_STATE(_start, _end, _state)             \
 	for (struct tState *const *_pp = (_start);        \
 	     _pp < (struct tState *const *)(_end); _pp++) \
-		if (((_state) = *_pp))
+		if (((_state) = *_pp) != NULL)
 
 struct tStateEngine {
 	struct tState *from;

@@ -27,7 +27,7 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
 	struct rb_node *right = node->rb_right;
 	struct rb_node *parent = rb_parent(node);
 
-	if ((node->rb_right = right->rb_left))
+	if ((node->rb_right = right->rb_left) != NULL)
 		rb_set_parent(right->rb_left, node);
 	right->rb_left = node;
 
@@ -48,7 +48,7 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
 	struct rb_node *left = node->rb_left;
 	struct rb_node *parent = rb_parent(node);
 
-	if ((node->rb_left = left->rb_right))
+	if ((node->rb_left = left->rb_right) != NULL)
 		rb_set_parent(left->rb_right, node);
 	left->rb_right = node;
 

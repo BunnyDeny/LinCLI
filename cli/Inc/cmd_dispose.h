@@ -85,7 +85,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd)               \
 	for (const cli_command_t *const *_pp = (_start);        \
 	     _pp < (const cli_command_t *const *)(_end); _pp++) \
-		if (((_cmd) = *_pp))
+		if (((_cmd) = *_pp) != NULL)
 
 /* ============================================================
  * 宏工具：计算偏移量
@@ -319,7 +319,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
 	for (struct alias_cmd *const *_pp = (_start);        \
 	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
-		if (((alias_cmd) = *_pp))
+		if (((alias_cmd) = *_pp) != NULL)
 
 int dispose_init(void);
 int dispose_task(char *cmd, int *cmd_ret);
