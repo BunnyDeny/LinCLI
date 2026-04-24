@@ -11,6 +11,9 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
+/*命令历史记录条目数量（嵌入式环境不建议太大）*/
+#define HISTORY_MAX 4
+
 /*tab补全显示的候选列表的最大列数
  如果你的终端软件窗口宽度小于这个
  数值，那么tab补全的信息可能会异常
