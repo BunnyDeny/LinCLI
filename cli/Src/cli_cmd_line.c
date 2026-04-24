@@ -25,6 +25,9 @@
 #include "stateM.h"
 #include <string.h>
 
+uint8_t rows_to_clear_count = 1;
+#define DISPLAY_MAX_COWS 50
+
 extern struct tState *const _cli_cmd_line_start[];
 extern struct tState *const _cli_cmd_line_end[];
 
@@ -216,6 +219,15 @@ static void replace_cmdline_token(const char *replacement, int repl_len,
 
 static void complete_unique_cmd(const cli_command_t *match)
 {
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\a\r\n", 3);
+		cli_out_push((_u8 *)"\033[2K", 4); //清除当前行的所有内容
+		cli_out_sync();
+	}
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
+		cli_out_sync();
+	}
 	replace_cmdline_token(match->name, (int)strlen(match->name), 1);
 }
 
@@ -241,9 +253,6 @@ static int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
 	}
 	return lcp_len;
 }
-
-uint8_t rows_to_clear_count = 1;
-#define DISPLAY_MAX_COWS 50
 
 static void display_candidates(const char *prefix, int prefix_len,
 			       int display_max_cows)
@@ -284,7 +293,7 @@ static void display_candidates(const char *prefix, int prefix_len,
 	cli_out_sync();
 }
 
-static void clear_candidates_list(void)
+static void list_cmd_candidates(const char *prefix, int prefix_len)
 {
 	for (int i = 0; i < rows_to_clear_count; i++) {
 		cli_out_push((_u8 *)"\a\r\n", 3);
@@ -295,11 +304,6 @@ static void clear_candidates_list(void)
 		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
 		cli_out_sync();
 	}
-}
-
-static void list_cmd_candidates(const char *prefix, int prefix_len)
-{
-	clear_candidates_list();
 	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS);
 	for (int i = 0; i < rows_to_clear_count; i++) {
 		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
@@ -337,6 +341,16 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		complete_multi_cmd(match, prefix, prefix_len, lcp);
 		cli_mpool_free(lcp);
 	} else {
+		for (int i = 0; i < rows_to_clear_count; i++) {
+			cli_out_push((_u8 *)"\a\r\n", 3);
+			cli_out_push((_u8 *)"\033[2K",
+				     4); //清除当前行的所有内容
+			cli_out_sync();
+		}
+		for (int i = 0; i < rows_to_clear_count; i++) {
+			cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
+			cli_out_sync();
+		}
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
 	}
