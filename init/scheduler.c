@@ -68,7 +68,6 @@ void scheduler_get_char_entry(void *private)
 		pr_err("failed to clear input buffer\r\n");
 	}
 	cli_printk("\r\n");
-	cli_printk("\033[K");
 	cli_prompt_print();
 	reset_cli_in_push_lock();
 }

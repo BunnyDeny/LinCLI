@@ -32,6 +32,7 @@ extern struct tState *const _cli_cmd_line_start[];
 extern struct tState *const _cli_cmd_line_end[];
 
 static bool is_valid_char(char c);
+void cli_prompt_print(void);
 
 struct cmd_line {
 	_u8 pos;
@@ -96,8 +97,6 @@ static void cmd_line_replace(const char *new_buf, int new_size)
 		return;
 	if (cli_out_sync())
 		return;
-
-	void cli_prompt_print(void);
 	cli_printk("\033[K");
 	cli_prompt_print();
 
@@ -135,7 +134,6 @@ static void cmd_line_redraw(void)
 		return;
 	if (cli_out_sync())
 		return;
-	void cli_prompt_print(void);
 	cli_printk("\033[K");
 	cli_prompt_print();
 	if (cmd_line.size > 0) {
@@ -1027,7 +1025,6 @@ int clear_handler(void *arg)
 	if (status < 0) {
 		return status;
 	}
-	void cli_prompt_print(void);
 	cli_printk("\033[K");
 	cli_prompt_print();
 	status = state_switch(&cmd_line_mec, "exit_handler");
@@ -1108,6 +1105,15 @@ int cli_cmd_line_task(char ch)
 			return status;
 		}
 		if (status == cmd_line_enter_press) {
+			for (int i = 0; i < rows_to_clear_count; i++) {
+				cli_out_push((_u8 *)"\r\n", 3);
+				cli_out_push((_u8 *)"\033[2K", 4);
+				cli_out_sync();
+			}
+			for (int i = 0; i < rows_to_clear_count; i++) {
+				cli_out_push((_u8 *)"\033[1A", 4);
+				cli_out_sync();
+			}
 			return status;
 		}
 	}
