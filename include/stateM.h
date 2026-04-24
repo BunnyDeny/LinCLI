@@ -115,7 +115,7 @@ struct tState {
 		.state_exit = exit,                            \
 	};                                                     \
 	static struct tState *const _state_ptr_##obj           \
-		__attribute__((used, section(_section))) = &state_##obj
+		__attribute__((used, section(_section ".1"))) = &state_##obj
 #define _FOR_EACH_STATE(_start, _end, _state)             \
 	for (struct tState *const *_pp = (_start);        \
 	     _pp < (struct tState *const *)(_end); _pp++) \

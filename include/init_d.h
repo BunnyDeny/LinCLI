@@ -36,7 +36,7 @@ struct init_d {
 		._init_entry = init_entry,                       \
 	};                                                       \
 	static struct init_d *const _init_d_ptr_##obj            \
-		__attribute__((used, section(".my_init_d"))) = &init_d_##obj
+		__attribute__((used, section(".my_init_d.1"))) = &init_d_##obj
 
 extern struct init_d *const _init_d_start[];
 extern struct init_d *const _init_d_end[];

@@ -265,7 +265,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		.arg_buf_size = _buf_size,                                     \
 	};                                                                     \
 	static const cli_command_t *const _cli_cmd_ptr_##_obj                  \
-		__attribute__((used, section(_section))) =                     \
+		__attribute__((used, section(_section ".1"))) =                \
 			&_cli_cmd_def_##_obj
 
 #include "cli_config.h"
@@ -316,7 +316,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		.original_name = origin,                       \
 	};                                                     \
 	static struct alias_cmd *const alias_cmd_ptr##new      \
-		__attribute__((used, section(".alias_cmd"))) = \
+		__attribute__((used, section(".alias_cmd.1"))) = \
 			&alias_cmd##new;                       \
 	_EXPORT_CLI_COMMAND_SYMBOL(                            \
 		cmd_alias##new, #new, NULL, 0,                 \

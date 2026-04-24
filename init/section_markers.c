@@ -12,36 +12,36 @@
 
 /* .cli_commands */
 const cli_command_t *const _cli_commands_start[1]
-	__attribute__((used, section(".cli_commands.start"))) = { NULL };
+	__attribute__((used, section(".cli_commands.0.start"))) = { NULL };
 const cli_command_t *const _cli_commands_end[1]
-	__attribute__((used, section(".cli_commands.end"))) = { NULL };
+	__attribute__((used, section(".cli_commands.1.end"))) = { NULL };
 
 /* .cli_cmd_line */
 struct tState *const _cli_cmd_line_start[1]
-	__attribute__((used, section(".cli_cmd_line.start"))) = { NULL };
+	__attribute__((used, section(".cli_cmd_line.0.start"))) = { NULL };
 struct tState *const _cli_cmd_line_end[1]
-	__attribute__((used, section(".cli_cmd_line.end"))) = { NULL };
+	__attribute__((used, section(".cli_cmd_line.1.end"))) = { NULL };
 
 /* .scheduler */
 struct tState *const _scheduler_start[1]
-	__attribute__((used, section(".scheduler.start"))) = { NULL };
+	__attribute__((used, section(".scheduler.0.start"))) = { NULL };
 struct tState *const _scheduler_end[1]
-	__attribute__((used, section(".scheduler.end"))) = { NULL };
+	__attribute__((used, section(".scheduler.1.end"))) = { NULL };
 
 /* .my_init_d */
 struct init_d *const _init_d_start[1]
-	__attribute__((used, section(".my_init_d.start"))) = { NULL };
+	__attribute__((used, section(".my_init_d.0.start"))) = { NULL };
 struct init_d *const _init_d_end[1]
-	__attribute__((used, section(".my_init_d.end"))) = { NULL };
+	__attribute__((used, section(".my_init_d.1.end"))) = { NULL };
 
 /* .dispose */
 struct tState *const _dispose_start[1]
-	__attribute__((used, section(".dispose.start"))) = { NULL };
+	__attribute__((used, section(".dispose.0.start"))) = { NULL };
 struct tState *const _dispose_end[1]
-	__attribute__((used, section(".dispose.end"))) = { NULL };
+	__attribute__((used, section(".dispose.1.end"))) = { NULL };
 
 /* .alias_cmd */
 struct alias_cmd *const _alias_cmd_start[1]
-	__attribute__((used, section(".alias_cmd.start"))) = { NULL };
+	__attribute__((used, section(".alias_cmd.0.start"))) = { NULL };
 struct alias_cmd *const _alias_cmd_end[1]
-	__attribute__((used, section(".alias_cmd.end"))) = { NULL };
+	__attribute__((used, section(".alias_cmd.1.end"))) = { NULL };

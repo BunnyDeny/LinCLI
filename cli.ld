@@ -1,30 +1,30 @@
   .cli_commands : {
-    KEEP(*(.cli_commands.start))
-    KEEP(*(.cli_commands))
-    KEEP(*(.cli_commands.end))
+    KEEP(*(.cli_commands.0.start))
+    KEEP(*(.cli_commands.1))
+    KEEP(*(.cli_commands.1.end))
   }
   .cli_cmd_line : {
-    KEEP(*(.cli_cmd_line.start))
-    KEEP(*(.cli_cmd_line))
-    KEEP(*(.cli_cmd_line.end))
+    KEEP(*(.cli_cmd_line.0.start))
+    KEEP(*(.cli_cmd_line.1))
+    KEEP(*(.cli_cmd_line.1.end))
   }
   .scheduler : {
-    KEEP(*(.scheduler.start))
-    KEEP(*(.scheduler))
-    KEEP(*(.scheduler.end))
+    KEEP(*(.scheduler.0.start))
+    KEEP(*(.scheduler.1))
+    KEEP(*(.scheduler.1.end))
   }
   .my_init_d : {
-    KEEP(*(.my_init_d.start))
-    KEEP(*(.my_init_d))
-    KEEP(*(.my_init_d.end))
+    KEEP(*(.my_init_d.0.start))
+    KEEP(*(.my_init_d.1))
+    KEEP(*(.my_init_d.1.end))
   }
   .dispose : {
-    KEEP(*(.dispose.start))
-    KEEP(*(.dispose))
-    KEEP(*(.dispose.end))
+    KEEP(*(.dispose.0.start))
+    KEEP(*(.dispose.1))
+    KEEP(*(.dispose.1.end))
   }
   .alias_cmd : {
-    KEEP(*(.alias_cmd.start))
-    KEEP(*(.alias_cmd))
-    KEEP(*(.alias_cmd.end))
+    KEEP(*(.alias_cmd.0.start))
+    KEEP(*(.alias_cmd.1))
+    KEEP(*(.alias_cmd.1.end))
   }
