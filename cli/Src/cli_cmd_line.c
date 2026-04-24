@@ -444,7 +444,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 	cmd_line_redraw();
 }
 
-static void replace_long_option(const char *long_opt, int long_len)
+static void replace_long_option_only(const char *long_opt, int long_len)
 {
 	char *new_buf = cli_mpool_alloc();
 	if (!new_buf) {
@@ -461,6 +461,23 @@ static void replace_long_option(const char *long_opt, int long_len)
 		new_buf[new_size] = ' ';
 		new_size++;
 	}
+	cmd_line_replace(new_buf, new_size);
+	cli_mpool_free(new_buf);
+}
+
+static void replace_long_option(const char *long_opt, int long_len)
+{
+	char *new_buf = cli_mpool_alloc();
+	if (!new_buf) {
+		pr_err("out of memory\r\n");
+		return;
+	}
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	memcpy(new_buf, cmd_line.buf, tok_start);
+	new_buf[tok_start] = '-';
+	new_buf[tok_start + 1] = '-';
+	memcpy(new_buf + tok_start + 2, long_opt, long_len);
+	int new_size = tok_start + 2 + long_len;
 	cmd_line_replace(new_buf, new_size);
 	cli_mpool_free(new_buf);
 }
@@ -536,8 +553,8 @@ static void complete_long_option(const cli_command_t *cmd,
 	}
 
 	if (match_cnt == 1) {
-		replace_long_option(match->long_opt,
-				    (int)strlen(match->long_opt));
+		replace_long_option_only(match->long_opt,
+					 (int)strlen(match->long_opt));
 	} else if (match_cnt > 1) {
 		int lcp_len = (int)strlen(match->long_opt);
 		lcp = cli_mpool_alloc();

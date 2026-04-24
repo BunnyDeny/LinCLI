@@ -46,6 +46,8 @@ struct log_args {
 	char *file;
 	int level;
 	bool verbose;
+	bool verbose2;
+	bool verbose3;
 	int *tags;
 	size_t tags_count;
 };
@@ -75,6 +77,10 @@ CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
 		   true),
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct log_args,
 		   verbose),
+	    OPTION('a', "verbose12", BOOL, "Enable verbose12", struct log_args,
+		   verbose2),
+	    OPTION('b', "verbose13", BOOL, "Enable verbose13", struct log_args,
+		   verbose3),
 	    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8,
 		   "!verbose"),
 	    END_OPTIONS);
