@@ -1,30 +1,30 @@
   .cli_commands : {
-    _cli_commands_start = .;
+    KEEP(*(.cli_commands.start))
     KEEP(*(.cli_commands))
-    _cli_commands_end = .;
+    KEEP(*(.cli_commands.end))
   }
   .cli_cmd_line : {
-    _cli_cmd_line_start = .;
+    KEEP(*(.cli_cmd_line.start))
     KEEP(*(.cli_cmd_line))
-    _cli_cmd_line_end = .;
+    KEEP(*(.cli_cmd_line.end))
   }
   .scheduler : {
-    _scheduler_start = .;
+    KEEP(*(.scheduler.start))
     KEEP(*(.scheduler))
-    _scheduler_end = .;
+    KEEP(*(.scheduler.end))
   }
   .my_init_d : {
-    _init_d_start = .;
+    KEEP(*(.my_init_d.start))
     KEEP(*(.my_init_d))
-    _init_d_end = .;
+    KEEP(*(.my_init_d.end))
   }
   .dispose : {
-    _dispose_start = .;
+    KEEP(*(.dispose.start))
     KEEP(*(.dispose))
-    _dispose_end = .;
+    KEEP(*(.dispose.end))
   }
   .alias_cmd : {
-    _alias_cmd_start = .;
+    KEEP(*(.alias_cmd.start))
     KEEP(*(.alias_cmd))
-    _alias_cmd_end = .;
+    KEEP(*(.alias_cmd.end))
   }

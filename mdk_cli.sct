@@ -14,22 +14,34 @@ LR_IROM1 0x08000000 0x00010000  {    ; load region size_region
   ; 顺序必须位于 .ANY (+RO) 之前，否则会被 .ANY 优先吸收。
   ; -----------------------------------------------------------
   ER_CLI_COMMANDS +0 {
+    *(.cli_commands.start)
     *(.cli_commands)
+    *(.cli_commands.end)
   }
   ER_CLI_CMD_LINE +0 {
+    *(.cli_cmd_line.start)
     *(.cli_cmd_line)
+    *(.cli_cmd_line.end)
   }
   ER_SCHEDULER +0 {
+    *(.scheduler.start)
     *(.scheduler)
+    *(.scheduler.end)
   }
   ER_INIT_D +0 {
+    *(.my_init_d.start)
     *(.my_init_d)
+    *(.my_init_d.end)
   }
   ER_DISPOSE +0 {
+    *(.dispose.start)
     *(.dispose)
+    *(.dispose.end)
   }
   ER_ALIAS_CMD +0 {
+    *(.alias_cmd.start)
     *(.alias_cmd)
+    *(.alias_cmd.end)
   }
   ER_RO_REST +0 {
     .ANY (+RO)
