@@ -20,7 +20,7 @@
 #include "cli_io.h"
 #include "cmd_dispose.h"
 
-void pr_license(void *)
+void pr_license(void *arg)
 {
 	cli_printk("LinCLI  Copyright (C) 2026  bunnydeny\r\n");
 	cli_printk(

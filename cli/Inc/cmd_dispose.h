@@ -301,6 +301,13 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
 		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
 
+/* 无参数结构体、无选项的命令（arg_struct_size 为 0，缓冲区从内存池申请） */
+#define CLI_COMMAND_NO_STRUCT(name, cmd_str, doc_str, parse_cb)          \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
+		name, cmd_str, doc_str, 0,                                     \
+		NULL, 0, (int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,    \
+		".cli_commands")
+
 #define END_OPTIONS /* 结束标记，实际为空 */
 
 #define CMD_ALIAS(new, origin)                                 \

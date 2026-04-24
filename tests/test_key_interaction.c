@@ -72,4 +72,4 @@ static int key_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(key, "key", "Test key", key_handler, NULL, END_OPTIONS);
+CLI_COMMAND_NO_STRUCT(key, "key", "Test key", key_handler);
