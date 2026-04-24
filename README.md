@@ -1071,21 +1071,36 @@ tb  tc  tcf  td  ti  ta  tr  ts  tw
 
 在命令名后按空格再按 `Tab`：
 
-- **若该命令只有一个选项**：直接补全该选项的长选项（或短选项），并追加空格：
+- **若该命令只有一个选项**：直接补全该选项的长选项（或短选项），并追加空格
 
 
-- **若该命令有多个选项**：列出所有选项：
+- **若该命令有多个选项**：列出所有选项(长选项与短选项)：
 
-  ```bash
-  lin@linCli> log 
-  -f --file  -l --level  -v --verbose  -t --tags  
-  ```
+```bash
+lin@linCli> log 
+-f --file  
+-l --level  
+-v --verbose  
+-t --tags  
+```
+
+输入 `-`后按`Tab`，列出所有的选项（长选项与短选项）：
+```bash
+lin@linCli> log -
+-f --file  
+-l --level  
+-v --verbose  
+-t --tags  
+```
 
 输入 `--` 后按 `Tab`，只列出**长选项**（单选项命令则直接补全）：
 
 ```bash
 lin@linCli> log --
---file  --level  --verbose  --tags  
+--file  
+--level  
+--verbose  
+--tags  
 ```
 
 输入长选项前缀后按 `Tab`，可前缀补全（与命令名补全逻辑相同，支持歧义前缀的 LCP 填充）：
