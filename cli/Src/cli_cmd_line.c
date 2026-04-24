@@ -622,21 +622,7 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 	cli_out_sync();
 }
 
-/* ============================================================
- * 状态机函数
- * ============================================================ */
-
-int cli_cmd_line_init(void)
-{
-	int status = engine_init(&cmd_line_mec, "cmd_line_start",
-				 _cli_cmd_line_start, _cli_cmd_line_end);
-	if (status < 0) {
-		return status;
-	}
-	return CLI_OK;
-}
-
-int cmd_line_start_task(void *pch)
+static int cmd_line_start_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
@@ -656,7 +642,7 @@ int cmd_line_start_task(void *pch)
 _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 		     ".cli_cmd_line");
 
-int valid_char_task(void *pch)
+static int valid_char_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
@@ -708,7 +694,7 @@ label_cmd_line_exit:
 }
 _EXPORT_STATE_SYMBOL(valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
 
-int invalid_char_task(void *pch)
+static int invalid_char_task(void *pch)
 {
 	char ch = *((char *)pch);
 	char *next_state;
@@ -743,7 +729,7 @@ int invalid_char_task(void *pch)
 _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
 		     ".cli_cmd_line");
 
-int ESC_handler(void *pch)
+static int ESC_handler(void *pch)
 {
 	int status, esc_params_count = 2;
 	char esc_params[2], ch;
@@ -804,7 +790,7 @@ int ESC_handler(void *pch)
 }
 _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
 
-int history_up_task(void *pch)
+static int history_up_task(void *pch)
 {
 	int status;
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
@@ -822,7 +808,7 @@ int history_up_task(void *pch)
 }
 _EXPORT_STATE_SYMBOL(history_up, NULL, history_up_task, NULL, ".cli_cmd_line");
 
-int history_down_task(void *pch)
+static int history_down_task(void *pch)
 {
 	int status;
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
@@ -857,7 +843,7 @@ static int get_current_segment_start(const char *buf, int size)
 	return start;
 }
 
-int tab_complete_task(void *pch)
+static int tab_complete_task(void *pch)
 {
 	int status;
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
@@ -904,7 +890,7 @@ int tab_complete_task(void *pch)
 _EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 		     ".cli_cmd_line");
 
-int delete(void *pch)
+static int delete(void *pch)
 {
 	int status;
 	if (cmd_line.pos == cmd_line.size) {
@@ -944,7 +930,7 @@ delete_exit:
 }
 _EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
 
-int backspace_handler(void *pch)
+static int backspace_handler(void *pch)
 {
 	int status;
 	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
@@ -996,7 +982,7 @@ label_exit2:
 _EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
 		     ".cli_cmd_line");
 
-int clear_handler(void *arg)
+static int clear_handler(void *arg)
 {
 	int status;
 	status = cli_out_push((_u8 *)"\x1b[H\x1b[2J", sizeof("\x1b[H\x1b[2J"));
@@ -1013,11 +999,11 @@ int clear_handler(void *arg)
 }
 _EXPORT_STATE_SYMBOL(clear, NULL, clear_handler, NULL, ".cli_cmd_line");
 
-void enter_entry(void *pch)
+static void enter_entry(void *pch)
 {
 	memset(origin_cmd.buf, 0, CMD_LINE_BUF_SIZE);
 }
-int enter_press(void *pch)
+static int enter_press(void *pch)
 {
 	// int status;
 	origin_cmd.size = cmd_line.size;
@@ -1034,7 +1020,7 @@ int enter_press(void *pch)
 }
 _EXPORT_STATE_SYMBOL(enter, enter_entry, enter_press, NULL, ".cli_cmd_line");
 
-int cmd_line_exit_handler(void *pch)
+static int cmd_line_exit_handler(void *pch)
 {
 	int status = state_switch(&cmd_line_mec, "cmd_line_start");
 	if (status < 0) {
@@ -1070,6 +1056,16 @@ __attribute__((used)) static bool is_valid_char(char c)
 		['<'] = 1, ['>'] = 1,  ['/'] = 1, ['?'] = 1,
 	};
 	return char_table[(unsigned char)c];
+}
+
+int cli_cmd_line_init(void)
+{
+	int status = engine_init(&cmd_line_mec, "cmd_line_start",
+				 _cli_cmd_line_start, _cli_cmd_line_end);
+	if (status < 0) {
+		return status;
+	}
+	return CLI_OK;
 }
 
 int cli_cmd_line_task(char ch)

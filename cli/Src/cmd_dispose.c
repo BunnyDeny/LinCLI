@@ -31,8 +31,6 @@ struct tStateEngine dispose_mec;
 extern struct tState *const _dispose_start[];
 extern struct tState *const _dispose_end[];
 
-
-
 struct dispose_ctx {
 	char *cmd;
 	int *cmd_ret;
@@ -41,8 +39,6 @@ struct dispose_ctx {
 #define CLI_HELP_REQ_MARK_SIZE 16
 #define CLI_HELP_DEP_MARK_SIZE 32
 #define CLI_MAX_ARGV 64
-
-
 
 /**
  * @brief 在链接脚本段中按名称查找已注册的命令。
@@ -674,23 +670,6 @@ static int dispose_start_task(void *arg)
 }
 _EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start_task, NULL, ".dispose");
 
-/**
- * @brief 初始化 dispose 状态机引擎。
- */
-int dispose_init(void)
-{
-	int status = engine_init(&dispose_mec, "dispose_start", _dispose_start,
-				 _dispose_end);
-	if (status < 0) {
-		return status;
-	}
-	return CLI_OK;
-}
-
-/* ============================================================
- *  命令链（&&）支持
- * ============================================================ */
-
 #define CMD_CHAIN_MAX 8
 
 static int split_cmd_chain(char *buf, char **cmds, int max_cmds)
@@ -806,9 +785,16 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 	}
 }
 
-/**
- * @brief 运行 dispose 状态机，支持 && 命令链。
- */
+int dispose_init(void)
+{
+	int status = engine_init(&dispose_mec, "dispose_start", _dispose_start,
+				 _dispose_end);
+	if (status < 0) {
+		return status;
+	}
+	return CLI_OK;
+}
+
 int dispose_task(char *cmd, int *cmd_ret)
 {
 	int _local_ret = 0;
