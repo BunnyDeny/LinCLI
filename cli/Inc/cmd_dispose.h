@@ -274,13 +274,16 @@ extern struct alias_cmd *const _alias_cmd_end[];
  * 若用户结构体超过内存池单块大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
 
+#define _CLI_SIZEOF_POINTEE(ptr)                                       \
+	((size_t)(((char *)((ptr) + 1)) - ((char *)(ptr))))
+
 #define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...) \
 	/* 定义选项数组（放在全局区） */                                   \
 	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };        \
                                                                            \
 	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */   \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
-		name, cmd_str, doc_str, sizeof(*arg_struct_ptr),           \
+		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr), \
 		_cli_options_##name,                                       \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
 		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,         \
@@ -293,7 +296,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
                                                                                \
 	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */                     \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
-		name, cmd_str, doc_str, sizeof(*arg_struct_ptr),               \
+		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr),   \
 		_cli_options_##name,                                           \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
 		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
