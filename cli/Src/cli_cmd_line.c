@@ -901,12 +901,17 @@ int tab_complete_task(void *pch)
 	    cmd_start >= cmd_line.size) {
 		complete_command_name(prefix, prefix_len);
 	} else {
-		char cmd_name[CMD_LINE_BUF_SIZE];
+		char *cmd_name = cli_mpool_alloc();
+		if (cmd_name == NULL) {
+			pr_err("out of memory\r\n");
+			return CLI_ERR_NULL;
+		}
 		memcpy(cmd_name, cmd_line.buf + cmd_start,
 		       first_word_end - cmd_start);
 		cmd_name[first_word_end - cmd_start] = '\0';
 
 		const cli_command_t *cmd = find_cmd_by_name(cmd_name);
+		cli_mpool_free(cmd_name);
 		if (!cmd) {
 			cli_out_push((_u8 *)"\a", 1);
 			cli_out_sync();
