@@ -71,6 +71,8 @@ build/
 *.scvd
 *.iex
 *.lst
+*.dbgconf
+RTE_Components.h
 
 # 自动生成的工程目录 (假设你设置了输出目录)
 Objects/
