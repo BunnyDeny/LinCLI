@@ -343,12 +343,11 @@ static void complete_command_name(const char *prefix, int prefix_len)
 	} else {
 		for (int i = 0; i < rows_to_clear_count; i++) {
 			cli_out_push((_u8 *)"\a\r\n", 3);
-			cli_out_push((_u8 *)"\033[2K",
-				     4); //清除当前行的所有内容
+			cli_out_push((_u8 *)"\033[2K", 4);
 			cli_out_sync();
 		}
 		for (int i = 0; i < rows_to_clear_count; i++) {
-			cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
+			cli_out_push((_u8 *)"\033[1A", 4);
 			cli_out_sync();
 		}
 		cli_out_push((_u8 *)"\a", 1);
