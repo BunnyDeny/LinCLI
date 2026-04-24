@@ -54,3 +54,35 @@ dkms.conf
 # debug information files
 *.dwo
 build/
+
+# Keil5 编译中间文件和输出文件
+*.o
+*.d
+*.crf
+*.lnp
+*.axf
+*.htm
+*.map
+*.dep
+*.uvoptx
+*.uvguix.*
+*.uvprojx.bak
+*.uvoptx.bak
+*.scvd
+*.iex
+*.lst
+
+# 自动生成的工程目录 (假设你设置了输出目录)
+Objects/
+Listings/
+Objects/*.htm
+Objects/*.lnp
+Objects/*.axf
+Objects/*.map
+Objects/*.o
+Objects/*.d
+
+# 调试文件和用户信息
+*.uvguix.*
+*.uvoptx
+*.uvopt
