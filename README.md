@@ -115,20 +115,27 @@ cli/
 │   └── scheduler.c   # 基于状态机的任务调度器
 ├── lib/              # 基础库：状态机、向量、红黑树
 ├── tests/            # 测试用例（全部链接到单个 a.out）
-├── default.ld        # 自定义链接脚本：段自动收集核心
+├── cli.ld            # 自定义段收集规则
+├── default.ld        # PC 端 GCC 默认链接脚本（通过 INCLUDE cli.ld 引入段收集）
 └── CMakeLists.txt    # 顶层构建配置
 ```
 
 ### 链接脚本段自动注册
 
-`default.ld` 中定义了若干自定义段：
+`cli.ld` 中定义了若干自定义段：
 
 - `.cli_commands` — 存放所有注册的命令定义
 - `.cli_cmd_line` — 存放命令行状态机的状态节点
 - `.scheduler`    — 存放调度器任务
 - `.my_init_d`    — 存放初始化函数
+- `.dispose`      — 存放 dispose 状态机
+- `.alias_cmd`    — 存放命令别名
 
-通过 GCC 的 `__attribute__((section(...), used))`，每个命令或状态在定义时自动被放入对应段，链接阶段由链接脚本收集成连续数组。框架运行时使用段起始/结束符号（如 `_cli_commands_start` / `_cli_commands_end`）遍历，**无需手动维护注册表**。
+每个自定义段内部采用**三段式布局**（`.0.start`、`.1`、`.1.end`）：
+- `.0.start` 与 `.1.end` 是 `init/section_markers.c` 中定义的标记数组，值为 `NULL`，分别位于段的首尾；
+- `.1` 是各 C 文件通过宏注册的实际内容指针数组。
+
+链接阶段由链接脚本按 `*.0.start` → `*.1` → `*.1.end` 的顺序收集成连续数组。框架运行时使用段起始/结束符号（如 `_cli_commands_start` / `_cli_commands_end`）遍历，遍历时遇到 `NULL` 会自动跳过，**无需手动维护注册表**。
 
 ### `CLI_COMMAND` 宏 —— 一行代码注册一个命令
 
@@ -425,7 +432,13 @@ void cli_putc(char ch)
 
 ### 5. 链接脚本适配
 
-LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_commands`、`.scheduler` 等）聚合成连续的符号数组。由于不同平台的链接脚本语法和内存模型不同，需要对 `cli.ld` 做少量适配。
+LinCLI 依赖链接器将分散在各个目标文件中的自定义段聚合成连续的符号数组。由于不同平台的链接脚本语法和内存模型不同，需要对 `cli.ld` 做少量适配。
+
+> **重要：段收集语法已更新**
+>
+> 早期版本在链接脚本中通过 `_xxx_start = .; KEEP(*(.xxx)); _xxx_end = .;` 的方式收集段。当前版本已改为**三段式收集**：每个段由 `.0.start`（起始标记）、`.1`（实际内容）、`.1.end`（结束标记）三个子段组成，起始/结束符号 `_xxx_start[]` / `_xxx_end[]` 是在 `init/section_markers.c` 中定义的 C 数组，链接器只需按顺序收集这三个子段即可。
+>
+> 如果你曾经参考过旧文档或旧版本代码，请务必以本章节为准。
 
 #### 适配原理：为什么 MCU 需要 `>FLASH`，而 x86/Linux 不需要？
 
@@ -436,40 +449,54 @@ LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_c
 
 简言之，`>FLASH` 是**嵌入式链接器脚本显式管理物理存储映射**的语法；在 x86/Linux 上，物理地址由操作系统运行时决定，链接阶段只需关心虚拟地址空间中的排布顺序即可。
 
-#### MCU 适配示例
+#### 参考示例工程（强烈推荐）
 
-在 MCU 工程中，修改 `cli.ld`，为每个自定义段追加 `>FLASH`：
+**如果你不确定如何在具体工具链中完成链接脚本适配，请直接参考本项目提供的示例工程：**
+
+```
+example_project/LinCLI_1_0_stm32f103c8t6_keil5_mdk_examply_project/
+```
+
+该工程是一个基于 **STM32F103C8T6 + Keil MDK (AC6)** 的完整移植示例，展示了：
+- `mdk_cli.sct` — 分散加载文件中自定义段的收集规则；
+- `Core/Src/main.c` — `cli_enter_critical` / `cli_exit_critical` / `cli_putc`、UART 中断输入（`HAL_UARTEx_RxEventCallback`）以及主循环调度（`scheduler_init` / `scheduler_task`）的完整实现。
+
+你可以将此工程作为模板，替换为目标芯片对应的 HAL 库和启动文件即可快速上手。
+
+#### GCC (LD) 工具链适配示例
+
+在 GCC 环境下（如 STM32CubeIDE、PlatformIO），修改 `cli.ld` 或将其内容直接复制到 MCU 的链接脚本中。每个自定义段需按 `.0.start` → `.1` → `.1.end` 的顺序收集，并指定 `>FLASH`：
 
 ```ld
   .cli_commands : {
-    _cli_commands_start = .;
-    KEEP(*(.cli_commands))
-    _cli_commands_end = .;
+    KEEP(*(.cli_commands.0.start))
+    KEEP(*(.cli_commands.1))
+    KEEP(*(.cli_commands.1.end))
   } >FLASH
   .cli_cmd_line : {
-    _cli_cmd_line_start = .;
-    KEEP(*(.cli_cmd_line))
-    _cli_cmd_line_end = .;
+    KEEP(*(.cli_cmd_line.0.start))
+    KEEP(*(.cli_cmd_line.1))
+    KEEP(*(.cli_cmd_line.1.end))
   } >FLASH
   .scheduler : {
-    _scheduler_start = .;
-    KEEP(*(.scheduler))
-    _scheduler_end = .;
+    KEEP(*(.scheduler.0.start))
+    KEEP(*(.scheduler.1))
+    KEEP(*(.scheduler.1.end))
   } >FLASH
   .my_init_d : {
-    _init_d_start = .;
-    KEEP(*(.my_init_d))
-    _init_d_end = .;
+    KEEP(*(.my_init_d.0.start))
+    KEEP(*(.my_init_d.1))
+    KEEP(*(.my_init_d.1.end))
   } >FLASH
   .dispose : {
-    _dispose_start = .;
-    KEEP(*(.dispose))
-    _dispose_end = .;
+    KEEP(*(.dispose.0.start))
+    KEEP(*(.dispose.1))
+    KEEP(*(.dispose.1.end))
   } >FLASH
   .alias_cmd : {
-    _alias_cmd_start = .;
-    KEEP(*(.alias_cmd))
-    _alias_cmd_end = .;
+    KEEP(*(.alias_cmd.0.start))
+    KEEP(*(.alias_cmd.1))
+    KEEP(*(.alias_cmd.1.end))
   } >FLASH
 ```
 
@@ -509,9 +536,56 @@ LinCLI 依赖链接器将分散在各个目标文件中的自定义段（`.cli_c
   ...
 ```
 
-> **不要畏惧 `default.ld` 的篇幅**：它看起来很长，但其实只是在 GCC 为 x86_64 Linux 平台生成的**默认链接脚本**基础上，增加了寥寥几行段收集代码而已。你真正需要关心的，就是本文档中提到的这几个自定义段及其起始/结束符号。
->
-> 如果你使用的是 Keil MDK（ARMCC/AC6 工具链），对应的链接脚本格式是 `.sct`（分散加载文件）。迁移逻辑同样直接——核心思路仍然是「把同一 section 名的内容收集到连续区域，并导出该区域的起始和结束符号」。具体语法细节请自行搜索 "MDK SCT scatter file collect section start end symbol" 等关键词。
+> **不要畏惧 `default.ld` 的篇幅**：它看起来很长，但其实只是在 GCC 为 x86_64 Linux 平台生成的**默认链接脚本**基础上，通过 `INCLUDE cli.ld` 引入段收集规则而已。你真正需要关心的，就是本文档中提到的这几个自定义段及其子段顺序。
+
+#### Keil MDK (AC6 / ARMCC) 适配示例
+
+Keil MDK 使用 `.sct`（分散加载文件）作为链接脚本。核心思路同样是「按顺序收集三个子段，确保标记数组位于首尾」。以下示例直接取自本项目的 STM32 示例工程：
+
+```sct
+  ; -----------------------------------------------------------
+  ; 自定义段区域：等价于 cli.ld 中的 KEEP(*(.xxx))
+  ; 作为独立 Execution Region 紧跟在 ER_IROM1 之后，
+  ; 以便 ARM 链接器为每个段生成独立的 Base/Limit 符号。
+  ; 顺序必须位于 .ANY (+RO) 之前，否则会被 .ANY 优先吸收。
+  ; -----------------------------------------------------------
+  ER_CLI_COMMANDS +0 {
+    *(.cli_commands.0.start)
+    *(.cli_commands.1)
+    *(.cli_commands.1.end)
+  }
+  ER_CLI_CMD_LINE +0 {
+    *(.cli_cmd_line.0.start)
+    *(.cli_cmd_line.1)
+    *(.cli_cmd_line.1.end)
+  }
+  ER_SCHEDULER +0 {
+    *(.scheduler.0.start)
+    *(.scheduler.1)
+    *(.scheduler.1.end)
+  }
+  ER_INIT_D +0 {
+    *(.my_init_d.0.start)
+    *(.my_init_d.1)
+    *(.my_init_d.1.end)
+  }
+  ER_DISPOSE +0 {
+    *(.dispose.0.start)
+    *(.dispose.1)
+    *(.dispose.1.end)
+  }
+  ER_ALIAS_CMD +0 {
+    *(.alias_cmd.0.start)
+    *(.alias_cmd.1)
+    *(.alias_cmd.1.end)
+  }
+  ER_RO_REST +0 {
+    .ANY (+RO)
+    .ANY (+XO)
+  }
+```
+
+各段之间使用 `+0` 表示紧跟前一个区域排布，无需额外填充。放置顺序**必须在** `.ANY (+RO)` 之前，否则普通目标文件中的段会被 `.ANY` 优先吸收，导致自定义段分散到不同位置甚至丢失。
 
 ### 6. 选择串口终端工具
 
