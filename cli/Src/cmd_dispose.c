@@ -799,6 +799,9 @@ int dispose_task(char *cmd, int *cmd_ret)
 	int _local_ret = 0;
 	int ret = dispose_exit;
 	char *chain_buf = NULL;
+	int len;
+	int cnt;
+	char *cmds[CMD_CHAIN_MAX];
 
 	if (!cmd_ret)
 		cmd_ret = &_local_ret;
@@ -814,13 +817,12 @@ int dispose_task(char *cmd, int *cmd_ret)
 		goto out;
 	}
 
-	int len = strlen(cmd);
+	len = strlen(cmd);
 	if (len >= CMD_LINE_BUF_SIZE)
 		len = CMD_LINE_BUF_SIZE - 1;
 	memcpy(chain_buf, cmd, len);
 	chain_buf[len] = '\0';
-	char *cmds[CMD_CHAIN_MAX];
-	int cnt = split_cmd_chain(chain_buf, cmds, CMD_CHAIN_MAX);
+	cnt = split_cmd_chain(chain_buf, cmds, CMD_CHAIN_MAX);
 	for (int i = 0; i < cnt; i++) {
 		if (!cmds[i] || cmds[i][0] == '\0') {
 			pr_err("empty command\r\n");

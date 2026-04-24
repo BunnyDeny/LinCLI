@@ -69,7 +69,6 @@ static int key_handler(void *_args)
 				   (ch >= 32 && ch <= 126) ? ch : ' ', (int)ch);
 		}
 	}
-	return 0;
 }
 
 CLI_COMMAND_NO_STRUCT(key, "key", "Test key", key_handler);

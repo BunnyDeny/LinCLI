@@ -68,7 +68,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
 {
 	struct rb_node *parent, *gparent;
 
-	while ((parent = rb_parent(node)) && rb_is_red(parent)) {
+	while ((parent = rb_parent(node)) != NULL && rb_is_red(parent)) {
 		gparent = rb_parent(parent);
 
 		if (parent == gparent->rb_left) {
@@ -376,7 +376,7 @@ struct rb_node *rb_next(const struct rb_node *node)
 	   ancestor is a right-hand child of its parent, keep going
 	   up. First time it's a left-hand child of its parent, said
 	   parent is our 'next' node. */
-	while ((parent = rb_parent(node)) && node == parent->rb_right)
+	while ((parent = rb_parent(node)) != NULL && node == parent->rb_right)
 		node = parent;
 
 	return parent;
@@ -400,7 +400,7 @@ struct rb_node *rb_prev(const struct rb_node *node)
 
 	/* No left-hand children. Go up till we find an ancestor which
 	   is a right-hand child of its parent */
-	while ((parent = rb_parent(node)) && node == parent->rb_left)
+	while ((parent = rb_parent(node)) != NULL && node == parent->rb_left)
 		node = parent;
 
 	return parent;
