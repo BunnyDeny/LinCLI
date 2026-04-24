@@ -833,6 +833,16 @@ _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
 int history_up_task(void *pch)
 {
 	int status;
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\r\n", 3);
+		cli_out_push((_u8 *)"\033[2K", 4);
+		cli_out_sync();
+	}
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
+	}
+	cmd_line_redraw();
 	if (history.index < history.count) {
 		history.index++;
 		cmd_line_replace(history.buf[history.index - 1],
@@ -849,6 +859,16 @@ _EXPORT_STATE_SYMBOL(history_up, NULL, history_up_task, NULL, ".cli_cmd_line");
 int history_down_task(void *pch)
 {
 	int status;
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\r\n", 3);
+		cli_out_push((_u8 *)"\033[2K", 4);
+		cli_out_sync();
+	}
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
+	}
+	cmd_line_redraw();
 	if (history.index > 1) {
 		history.index--;
 		cmd_line_replace(history.buf[history.index - 1],
