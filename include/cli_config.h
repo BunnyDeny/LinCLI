@@ -11,7 +11,16 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
-/* 命令参数全局共享缓冲区大小 */
+/*tab补全显示的候选列表的最大列数
+ 如果你的终端软件窗口宽度小于这个
+ 数值，那么tab补全的信息可能会异常
+ 缺失一部分，此时请调大这个宏到合适
+ 值
+*/
+#define DISPLAY_MAX_COWS 50
+
+/* 命令参数全局共享缓冲区大小，如果
+  报错显示命令参数缺少字节，增加这个宏 */
 #ifndef CLI_CMD_BUF_SIZE
 #define CLI_CMD_BUF_SIZE 128
 #endif

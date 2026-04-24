@@ -26,7 +26,6 @@
 #include <string.h>
 
 uint8_t rows_to_clear_count = 1;
-#define DISPLAY_MAX_COWS 50
 
 extern struct tState *const _cli_cmd_line_start[];
 extern struct tState *const _cli_cmd_line_end[];
