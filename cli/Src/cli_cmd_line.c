@@ -242,24 +242,69 @@ static int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
 	return lcp_len;
 }
 
-static void list_cmd_candidates(const char *prefix, int prefix_len)
-{
-	cli_out_push((_u8 *)"\a\r\n", 3);
-	cli_out_push((_u8 *)"\033[2K", 4);
+uint8_t rows_to_clear_count = 1;
+#define DISPLAY_MAX_COWS 50
 
+static void display_candidates(const char *prefix, int prefix_len,
+			       int display_max_cows)
+{
 	const cli_command_t *cmd;
+	int max_len = 0, cnt = 0;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd->name)
+			continue;
+		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
+			max_len = max_len > strlen(cmd->name) ?
+					  max_len :
+					  strlen(cmd->name);
+			cnt++;
+		}
+	}
+	max_len += 3;
+	int cows = display_max_cows / max_len, cur_cow = 0;
+	rows_to_clear_count = (cnt + cows - 1) / cows;
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd->name)
 			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
 			cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
-			cli_out_push((_u8 *)"  ", 2);
+			int space_count = max_len - strlen(cmd->name);
+			while (space_count--) {
+				cli_out_push((_u8 *)" ", 1);
+			}
+			cur_cow++;
+			if (cur_cow >= cows) {
+				cli_out_push((_u8 *)"\r\n", 2);
+				cur_cow = 0;
+			}
 		}
 	}
 	cli_out_sync();
-	cli_out_push((_u8 *)"\033[1A", 4);
-	cli_out_sync();
+}
+
+static void clear_candidates_list(void)
+{
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\a\r\n", 3);
+		cli_out_push((_u8 *)"\033[2K", 4); //清除当前行的所有内容
+		cli_out_sync();
+	}
+	for (int i = 0; i < rows_to_clear_count - 1; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
+		cli_out_sync();
+	}
+}
+
+static void list_cmd_candidates(const char *prefix, int prefix_len)
+{
+	clear_candidates_list();
+	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS);
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
+		cli_out_sync();
+	}
 	cmd_line_redraw();
 }
 
