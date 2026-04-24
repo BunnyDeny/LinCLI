@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make clean:*)",
+      "Bash(make)",
+      "Bash(nm /home/bunnydeny/programming/cli/build/a.out)",
+      "Bash(gcc -fsyntax-only -I cli/Inc cli/Src/cli_io.c)",
+      "Bash(gcc -fsyntax-only -I include -I cli/Inc cli/Src/cli_io.c)",
+      "Bash(timeout 2 ./build/a.out)",
+      "WebSearch",
+      "Bash(mkdir -p build)",
+      "Bash(cmake ..)",
+      "Bash(rm -rf build)",
+      "Bash(make -C build)",
+      "Bash(make -C .)",
+      "Bash(cmake -S /home/bunnydeny/programming/cli -B /home/bunnydeny/programming/cli/build)",
+      "Bash(make -C /home/bunnydeny/programming/cli/build)",
+      "Bash(ls /home/bunnydeny/programming/cli/*.ld)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git add:*)",
+      "Bash(rm /home/bunnydeny/programming/cli/cli_project.ld)",
+      "Bash(git commit:*)",
+      "Bash(ls /home/bunnydeny/programming/cli/init/*.c /home/bunnydeny/programming/cli/cli/Src/*.c /home/bunnydeny/programming/cli/lib/*.c)",
+      "Bash(git branch:*)",
+      "Bash(/home/bunnydeny/programming/cli/build/bin/cli_init)",
+      "Bash(/bin/pwd)",
+      "Bash(cmake -S . -B build)",
+      "Bash(echo \"CMake failed with exit code: $?\")",
+      "Bash(cmake -S . -B build --verbose)",
+      "Bash(arm-none-eabi-objdump -t /home/bunnydeny/programming/cli/build/cli/CMakeFiles/cli_core.dir/Src/cmd_dispose.c.o)",
+      "Bash(objdump -h /home/bunnydeny/programming/cli/build/bin/a.out)",
+      "Bash(objdump -t /home/bunnydeny/programming/cli/build/bin/a.out)",
+      "Bash(objdump -t /home/bunnydeny/programming/cli/build/cli/CMakeFiles/cli_core.dir/Src/cmd_dispose.c.o)",
+      "Bash(objdump -t /home/bunnydeny/programming/cli/build/lib/CMakeFiles/cli_lib.dir/stateM.c.o)",
+      "Bash(nm /home/bunnydeny/programming/cli/build/bin/a.out)",
+      "Bash(cmake)",
+      "Bash(cmake /home/bunnydeny/programming/cli -B /home/bunnydeny/programming/cli/build)",
+      "Bash(mkdir build:*)"
+    ]
+  }
+}
