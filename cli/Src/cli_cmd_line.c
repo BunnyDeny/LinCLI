@@ -413,8 +413,16 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 					const char *name_prefix,
 					int name_prefix_len)
 {
-	cli_out_push((_u8 *)"\a\r\n", 3);
-	cli_out_push((_u8 *)"\033[2K", 4);
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\a\r\n", 3);
+		cli_out_push((_u8 *)"\033[2K", 4);
+		cli_out_sync();
+	}
+	for (int i = 0; i < rows_to_clear_count - 1; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
+	}
+	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
@@ -422,12 +430,16 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 			cli_out_push((_u8 *)"--", 2);
 			cli_out_push((_u8 *)opt->long_opt,
 				     strlen(opt->long_opt));
-			cli_out_push((_u8 *)"  ", 2);
+			cli_out_push((_u8 *)"  \r\n", 4);
+			cows++;
 		}
 	}
+	rows_to_clear_count = cows + 1;
 	cli_out_sync();
-	cli_out_push((_u8 *)"\033[1A", 4);
-	cli_out_sync();
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
+	}
 
 	cmd_line_redraw();
 }
