@@ -1,17 +1,21 @@
 # 项目结构与核心机制
-
-cli/
+```
+.
 ├── cli/              # CLI 核心：命令行编辑、状态机、命令分发
 │   ├── Inc/          # 头文件
 │   └── Src/          # 源文件
+├── include/          # 公共头文件（cli_config.h、cmd_dispose.h 等）
 ├── init/             # 初始化与线程入口（PC 模拟）
 │   ├── main.c        # 主线程 + 双 pthread 模拟输入/调度
 │   └── scheduler.c   # 基于状态机的任务调度器
 ├── lib/              # 基础库：状态机、向量、红黑树
 ├── tests/            # 测试用例（全部链接到单个 a.out）
+├── example_project/  # MCU 移植示例工程（STM32F103 + Keil MDK）
+├── Documentation/    # 文档（移植指南、测试用例说明等）
 ├── cli.ld            # 自定义段收集规则
-├── default.ld        # PC 端 GCC 默认链接脚本（通过 INCLUDE cli.ld 引入段收集）
-└── CMakeLists.txt    # 顶层构建配置
+├── default.ld        # PC 端 GCC 默认链接脚本
+├── CMakeLists.txt    # 顶层构建配置
+└── Makefile          # 顶层 Makefile
 ```
 
 ### 链接脚本段自动注册
