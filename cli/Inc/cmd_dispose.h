@@ -97,16 +97,87 @@ extern struct alias_cmd *const _alias_cmd_end[];
  * OPTION 宏定义（统一 10 参数）
  * ============================================================
  *
+ * 注册一个命令选项。所有类型（BOOL / STRING / INT / DOUBLE / CALLBACK / INT_ARRAY）
  * 所有选项统一使用 10 个参数。
- * _dep   : 依赖列表（空格分隔，NULL 表示无依赖）
- * _con   : 互斥列表（空格分隔，NULL 表示无互斥）
- * _req   : true / false
  *
- * 使用示例：
- *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, 0, NULL, NULL, false)
- *   OPTION('f', "file", STRING, "Log file", struct my_args, file, 0, NULL, NULL, true)
- *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", NULL, false)
- *   OPTION('o', "on", BOOL, "Turn on", struct my_args, on, 0, NULL, "off", false)
+ * ------------------------------------------------------------------
+ * 参数详解
+ * ------------------------------------------------------------------
+ *
+ *   1. _sopt  (char)
+ *      短选项字符。终端输入 -o 时匹配。若不需要短选项，填 0。
+ *
+ *   2. _lopt  (const char *)
+ *      长选项名字符串。终端输入 --on 时匹配。框架同时支持短选项
+ *      和长选项，用户可任选其一输入。
+ *
+ *   3. _type  (标识符)
+ *      选项类型。可选：
+ *        BOOL      - 开关型，无参数，出现即置 true
+ *        STRING    - 字符串参数
+ *        INT       - 单个整数参数
+ *        DOUBLE    - 浮点数参数
+ *        CALLBACK  - 自定义回调，原始字符串透传给 handler
+ *        INT_ARRAY - 整数数组，可接收多个整数参数
+ *
+ *   4. _help  (const char *)
+ *      帮助文本。执行 <命令> --help 时显示在该选项后方。
+ *
+ *   5. _stype (类型名)
+ *      参数结构体类型。必须与 CLI_COMMAND 第 5 个参数推导出的
+ *      类型一致，例如 struct led_args。
+ *
+ *   6. _field (标识符)
+ *      该选项对应结构体中的字段名。框架解析成功后，结果会自动
+ *      写入 args->_field。
+ *      对于 INT_ARRAY，该字段必须是 int * 类型；框架会自动寻找
+ *      同名的 _count 字段（如 nums → nums_count）存放实际解析到
+ *      的元素个数。
+ *
+ *   7. _max   (size_t)
+ *      最大参数个数。
+ *      - 仅 INT_ARRAY 有意义：表示该数组选项最多接收多少个整数，
+ *        同时框架会在 arg_buf 尾部静态预留 _max * sizeof(int) 字节
+ *        的连续空间。
+ *      - 对于非数组类型，该字段不会被使用，固定填 0。
+ *
+ *   8. _dep   (const char *)
+ *      依赖列表。空格分隔的多个长选项名字符串。表示：只有当列表
+ *      中列出的所有选项都出现时，本选项才是合法的。不需要依赖时
+ *      填 NULL。
+ *      示例："verbose debug" 表示本选项依赖 --verbose 和 --debug
+ *      同时出现。
+ *
+ *   9. _con   (const char *)
+ *      互斥列表。空格分隔的多个长选项名字符串。表示：列表中列出
+ *      的任一选项出现时，本选项不能出现。不需要互斥时填 NULL。
+ *
+ *      【设计原则】互斥是单向声明的。如果 -a 与 -b 互斥，只需在
+ *      -a 的 _con 中写 "b"，或在 -b 的 _con 中写 "a"，即可覆盖
+ *      整个互斥关系。框架会在该选项被输入时，检查其互斥列表中的
+ *      目标是否出现；若出现则报错。
+ *      当然，如果你愿意在双方的 _con 中都写上对方，也是完全合法
+ *      的，效果等价。
+ *      示例："off reset" 表示本选项与 --off 和 --reset 互斥。
+ *
+ *  10. _req   (bool)
+ *      是否为必需选项。true 表示用户必须提供该选项，否则框架报
+ *      "缺少必需选项"错误。
+ *
+ * ------------------------------------------------------------------
+ * 使用示例
+ * ------------------------------------------------------------------
+ *
+ *   OPTION('o', "on",  BOOL, "Turn LED on",
+ *          struct led_args, on, 0, "brightness", "off", false)
+ *   OPTION('f', "off", BOOL, "Turn LED off",
+ *          struct led_args, off, 0, NULL, "on", false)
+ *   OPTION('b', "brightness", INT, "Brightness 0-100",
+ *          struct led_args, brightness, 0, "on", NULL, false)
+ *   OPTION('t', "tags", INT_ARRAY, "Tag list",
+ *          struct log_args, tags, 8, "verbose", NULL, false)
+ *   OPTION('f', "file", STRING, "Log file path",
+ *          struct log_args, file, 0, NULL, NULL, true)
  */
 
 #define OPTION(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _con, _req) \

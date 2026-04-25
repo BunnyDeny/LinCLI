@@ -162,9 +162,9 @@ static int conflicts_handler(void *_args)
 CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
             conflicts_handler, (struct conflicts_args *)0,
             OPTION('v', "verbose", BOOL, "Enable verbose",
-                   struct conflicts_args, verbose),
+                   struct conflicts_args, verbose, 0, NULL, NULL, false),
             OPTION('n', "nums", INT_ARRAY, "Number list",
-                   struct conflicts_args, nums, 8, "!verbose"),
+                   struct conflicts_args, nums, 8, NULL, "verbose", false),
             END_OPTIONS);
 ```
 
@@ -434,11 +434,9 @@ void cli_putc(char ch)
 
 LinCLI 依赖链接器将分散在各个目标文件中的自定义段聚合成连续的符号数组。由于不同平台的链接脚本语法和内存模型不同，需要对 `cli.ld` 做少量适配。
 
-> **重要：段收集语法已更新**
+> **段收集采用三段式布局**
 >
-> 早期版本在链接脚本中通过 `_xxx_start = .; KEEP(*(.xxx)); _xxx_end = .;` 的方式收集段。当前版本已改为**三段式收集**：每个段由 `.0.start`（起始标记）、`.1`（实际内容）、`.1.end`（结束标记）三个子段组成，起始/结束符号 `_xxx_start[]` / `_xxx_end[]` 是在 `init/section_markers.c` 中定义的 C 数组，链接器只需按顺序收集这三个子段即可。
->
-> 如果你曾经参考过旧文档或旧版本代码，请务必以本章节为准。
+> 每个自定义段由 `.0.start`（起始标记）、`.1`（实际内容）、`.1.end`（结束标记）三个子段组成。起始/结束符号 `_xxx_start[]` / `_xxx_end[]` 是在 `init/section_markers.c` 中定义的 C 数组，链接器只需按顺序收集这三个子段即可。
 
 #### 适配原理：为什么 MCU 需要 `>FLASH`，而 x86/Linux 不需要？
 
@@ -671,10 +669,10 @@ static int log_handler(void *_args)
 
 ```c
 CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
-    OPTION('f', "file", STRING, "Log file path", struct log_args, file, true),
-    OPTION('l', "level", INT, "Log level", struct log_args, level, true),
-    OPTION('v', "verbose", BOOL, "Enable verbose", struct log_args, verbose),
-    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose"),
+    OPTION('f', "file", STRING, "Log file path", struct log_args, file, 0, NULL, NULL, true),
+    OPTION('l', "level", INT, "Log level", struct log_args, level, 0, NULL, NULL, true),
+    OPTION('v', "verbose", BOOL, "Enable verbose", struct log_args, verbose, 0, NULL, NULL, false),
+    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, NULL, "verbose", false),
     END_OPTIONS);
 ```
 
@@ -691,42 +689,32 @@ CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
 | `arg_struct_ptr` | **类型推导指针**。通常写 `(struct log_args *)0`，宏内部用 `typeof(*arg_struct_ptr)` 推导结构体类型和大小。**不能写 `NULL`**。 |
 | `...` | **选项列表**。由若干 `OPTION(...)` 组成，最后以 `END_OPTIONS` 结尾。 |
 
-#### `OPTION` 的重载特性
+#### `OPTION` 各参数含义
 
-`OPTION` 是一个**统一入口宏**，它会根据你传入的参数个数**自动重载**到对应的底层实现。你不需要记忆 `OPTION_6`、`OPTION_7` 等名字，直接数清楚你要传几个参数，按格式写即可：
-
-| 参数个数 | 底层宏 | 适用场景 |
-|----------|--------|----------|
-| 6 | `OPTION_6` | 基础类型：`BOOL` / `STRING` / `INT` / `DOUBLE` / `CALLBACK` |
-| 7 | `OPTION_7` | 基础类型 + `required`（是否必需） |
-| 8 | `OPTION_8` | `INT_ARRAY` + `max_args`（最大元素个数）+ `depends`（依赖或互斥） |
-| 9 | `OPTION_9` | `INT_ARRAY` + `max_args` + `depends` + `required` |
-
-#### `OPTION` 各参数含义（以最多 9 个参数的 `OPTION_9` 为例）
+`OPTION` 是固定 10 参数宏，所有选项类型统一使用同一套接口。
 
 ```c
-OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose", true)
+OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, NULL, "verbose", false)
 ```
 
 | 位置 | 参数 | 说明 |
 |------|------|------|
-| 1 | `'t'` | **短选项字符**。终端可输入 `-t`。 |
+| 1 | `'t'` | **短选项字符**。终端可输入 `-t`。不需要时填 `0`。 |
 | 2 | `"tags"` | **长选项名字符串**。终端可输入 `--tags`。 |
 | 3 | `INT_ARRAY` | **选项类型**。框架内置类型，不需要加引号。可选：`BOOL`、`STRING`、`INT`、`DOUBLE`、`CALLBACK`、`INT_ARRAY`。 |
-| 4 | `"Tag list"` | **帮助文本**。`log --help` 时显示在该选项后面。 |
+| 4 | `"Tag list"` | **帮助文本**。执行 `<命令> --help` 时显示在该选项后面。 |
 | 5 | `struct log_args` | **参数结构体类型**。必须与 `CLI_COMMAND` 第 5 个参数推导出的类型一致。 |
-| 6 | `tags` | **结构体字段名**。解析成功后，结果会写入 `args->tags`。对于 `INT_ARRAY`，该字段必须是 `int *` 类型。框架会自动寻找同名的 `_count` 字段（如 `tags` → `tags_count`）来存放实际解析到的元素个数。前文提到，框架保证参数结构体成员（也就是结构体字段）默认值为0,如果位置9是false,则此选项对应的结构体字段一定为0, 在实现响应函数的时候要格外注意这一点 |
-| 7 | `8` | **最大参数个数**（仅 `INT_ARRAY` 有效）。表示该数组选项最多接收 8 个整数，同时框架也会在 `arg_buf` 尾部静态预留 `8 × sizeof(int)` 字节的连续空间用于存放解析结果。如果 `arg_buf` 尾部剩余空间不足，解析会直接失败。 |
-| 8 | `"!verbose"` | **依赖/互斥字符串**。<br>• 普通字符串（如 `"verbose"`）→ **依赖**：表示该选项只有在 `-v`/`--verbose` 也出现时才合法。<br>• 以 `!` 开头的字符串（如 `"!verbose"`）→ **互斥**：表示该选项与 `-v`/`--verbose` **不能同时出现**。 |
-| 9 | `true` | **是否必需**（`required`）。`true` 表示用户必须提供该选项，否则报错。 |
+| 6 | `tags` | **结构体字段名**。解析成功后，结果会写入 `args->tags`。对于 `INT_ARRAY`，该字段必须是 `int *` 类型。框架会自动寻找同名的 `_count` 字段（如 `tags` → `tags_count`）来存放实际解析到的元素个数。前文提到，框架保证参数结构体成员默认值为 0，非必需选项对应的字段在未提供时一定为 0，在实现响应函数时需格外注意。 |
+| 7 | `8` | **最大参数个数**（仅 `INT_ARRAY` 有效）。表示该数组选项最多接收 8 个整数，同时框架会在 `arg_buf` 尾部静态预留 `8 × sizeof(int)` 字节的连续空间。对于非数组类型，该字段不会被使用，固定填 `0`。 |
+| 8 | `NULL` | **依赖列表**。空格分隔的多个长选项名字符串。表示：只有当列表中所有选项都出现时，本选项才是合法的。不需要依赖时填 `NULL`。示例：`"verbose debug"` 表示本选项依赖 `--verbose` 和 `--debug` 同时出现。 |
+| 9 | `"verbose"` | **互斥列表**。空格分隔的多个长选项名字符串。表示：列表中任一选项出现时，本选项不能出现。不需要互斥时填 `NULL`。<br><br>【设计原则】互斥是**单向声明**的。如果 `-a` 与 `-b` 互斥，只需在 `-a` 的互斥列表中写 `"b"`，或在 `-b` 的互斥列表中写 `"a"`，即可覆盖整个互斥关系。当然，双方都写也完全合法，效果等价。<br>示例：`"off reset"` 表示本选项与 `--off` 和 `--reset` 互斥。 |
+| 10 | `false` | **是否必需**（`required`）。`true` 表示用户必须提供该选项，否则报错。 |
 
 > **INT_ARRAY 使用约束**
 >
 > 1. **字段名配对**：若 `INT_ARRAY` 的字段名为 `xxx`，则结构体中**必须存在**名为 `xxx_count` 的字段（类型通常为 `size_t`），用于存放实际解析到的数组长度。该字段在结构体中的位置没有强制要求。
 > 2. **初始化为 `NULL`**：`int *xxx` 字段在解析前必须保证为 `NULL`（框架会在 `cli_auto_parse` 开始时 `memset(arg_struct, 0, ...)` 清零，因此默认即可满足）。如果用户手动将其设为某个非 `NULL` 指针，框架会直接把解析结果写入该地址，**不再进行任何边界检查**，可能导致越界。
 > 3. **静态缓冲区上限**：`max_args` 同时决定了"允许用户输入的最大个数"和"框架静态预留的连续空间大小"。如果尾部剩余空间不足，即使只输入 1 个整数也会直接报错"缓冲区不足"。
-
-对于参数较少的重载，后面的参数依次省略即可。例如上面的 `OPTION('f', "file", STRING, "Log file path", struct log_args, file, true)` 是 **7 参数**形式，最后一个 `true` 表示 `required`；而 `OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, "!verbose")` 是 **8 参数**形式，`required` 缺省为 `false`。
 
 ### 第 4 步：编译并运行
 
@@ -776,7 +764,7 @@ lin@linCli>
 
 ## 内置帮助信息
 
-LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `doc_str` 以及每个选项的 `help`、`required`、`depends` 等元数据，拼接成帮助文本并打印。
+LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `doc_str` 以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
 
 以 `tests/test_log.c` 中注册的 `log` 命令为例：
 
@@ -814,7 +802,7 @@ static int string_handler(void *_args)
 
 CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
 	    (struct string_args *)0,
-	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg),
+	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg, 0, NULL, NULL, false),
 	    END_OPTIONS);
 CMD_ALIAS(echo, "ts --msg");
 ```
@@ -983,7 +971,7 @@ lin@linCli>
 
 ### 8. `tcf` — CONFLICTS 互斥选项测试
 
-**命令描述**：测试选项互斥（`!` 前缀）。  
+**命令描述**：测试选项互斥（`conflicts` 字段）。  
 **选项**：
 - `-v, --verbose`         （BOOL）
 - `-n, --nums <list>`     （INT_ARRAY，与 `verbose` **互斥**）
