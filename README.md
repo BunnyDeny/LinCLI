@@ -174,6 +174,18 @@ lin@linCli> led --on --off
 lin@linCli>
 ```
 
+> **💡 简化提示**
+>
+> 上面的 `led` 示例把「开灯」和「亮度」拆成了两个选项（`--on` + `--brightness`），主要是为了演示 `depends` 和 `conflicts` 的用法。在真实项目中，这两个字段完全可以合并成一个 `INT` 类型的选项：
+>
+> ```c
+> OPTION(0, "on", INT, "Turn LED on with brightness", struct led_args, brightness, 0, NULL, "off", false)
+> ```
+>
+> 这样用户只需输入 `led --on 80` 即可同时完成「开灯」和「设置亮度为 80」两个语义。`INT` 类型选项的完整用法可参考 `tests/test_int.c`。
+>
+> 此外，框架支持的选项类型远不止 `BOOL` 和 `INT`。同一个参数结构体中可以自由混用 **`STRING`**（字符串）、**`DOUBLE`**（浮点数）、**`INT_ARRAY`**（整数数组）等类型，同一个类型也可以定义多个不同名字的字段，彼此之间完全独立。欲了解各类型的详细用法和约束，请参考 [进阶指南](#进阶指南) 相关章节，或者直接查看 `tests/` 目录下的测试用例（如 `test_string.c`、`test_double.c`、`test_int_array.c` 等）。
+
 ## 内置帮助信息
 
 LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `doc_str` 以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
