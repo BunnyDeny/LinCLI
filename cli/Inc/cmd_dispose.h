@@ -112,8 +112,6 @@ extern struct alias_cmd *const _alias_cmd_end[];
 /**
  * @brief 基础类型选项，无额外属性（6 个参数）。
  *
- * 适用类型：BOOL / STRING / INT / DOUBLE / CALLBACK
- *
  * @param _sopt    短选项字符，例如 'v'
  * @param _lopt    长选项字符串，例如 "verbose"
  * @param _type    选项类型标识，例如 BOOL、STRING、INT
@@ -140,8 +138,6 @@ extern struct alias_cmd *const _alias_cmd_end[];
 /**
  * @brief 基础类型选项，带 required 开关（7 个参数）。
  *
- * 适用类型：BOOL / STRING / INT / DOUBLE / CALLBACK
- *
  * @param _sopt    短选项字符
  * @param _lopt    长选项字符串
  * @param _type    选项类型标识
@@ -167,9 +163,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	}
 
 /**
- * @brief 数组类型选项，带最大参数个数和依赖项（8 个参数）。
- *
- * 适用类型：INT_ARRAY
+ * @brief 选项，带最大参数个数和依赖项（8 个参数）。
  *
  * @param _sopt    短选项字符
  * @param _lopt    长选项字符串
@@ -199,9 +193,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	}
 
 /**
- * @brief 数组类型选项，带最大参数个数、依赖项和 required 开关（9 个参数）。
- *
- * 适用类型：INT_ARRAY
+ * @brief 选项，带最大参数个数、依赖项和 required 开关（9 个参数）。
  *
  * @param _sopt    短选项字符
  * @param _lopt    长选项字符串
@@ -274,19 +266,19 @@ extern struct alias_cmd *const _alias_cmd_end[];
  * 若用户结构体超过内存池单块大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
 
-#define _CLI_SIZEOF_POINTEE(ptr)                                       \
+#define _CLI_SIZEOF_POINTEE(ptr) \
 	((size_t)(((char *)((ptr) + 1)) - ((char *)(ptr))))
 
-#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...) \
-	/* 定义选项数组（放在全局区） */                                   \
-	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };        \
-                                                                           \
-	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */   \
-	_EXPORT_CLI_COMMAND_SYMBOL(                                        \
+#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)   \
+	/* 定义选项数组（放在全局区） */                                     \
+	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
+                                                                             \
+	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */     \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                          \
 		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr), \
-		_cli_options_##name,                                       \
-		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),      \
-		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,         \
+		_cli_options_##name,                                         \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),        \
+		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,           \
 		".cli_commands")
 
 #define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \
@@ -302,26 +294,24 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
 
 /* 无参数结构体、无选项的命令（arg_struct_size 为 0，缓冲区从内存池申请） */
-#define CLI_COMMAND_NO_STRUCT(name, cmd_str, doc_str, parse_cb)          \
-	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
-		name, cmd_str, doc_str, 0,                                     \
-		NULL, 0, (int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,    \
-		".cli_commands")
+#define CLI_COMMAND_NO_STRUCT(name, cmd_str, doc_str, parse_cb)        \
+	_EXPORT_CLI_COMMAND_SYMBOL(name, cmd_str, doc_str, 0, NULL, 0, \
+				   (int (*)(void *))parse_cb, NULL,    \
+				   CLI_CMD_BUF_SIZE, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
-#define CMD_ALIAS(new, origin)                                 \
-	struct alias_cmd alias_cmd##new = {                    \
-		.alias_name = #new,                            \
-		.original_name = origin,                       \
-	};                                                     \
-	static struct alias_cmd *const alias_cmd_ptr##new      \
-		__attribute__((used, section(".alias_cmd.1"))) = \
-			&alias_cmd##new;                       \
-	_EXPORT_CLI_COMMAND_SYMBOL(                            \
-		cmd_alias##new, #new, NULL, 0,                 \
-		NULL, 0, (int (*)(void *))NULL, NULL, 0,       \
-		".cli_commands")
+#define CMD_ALIAS(new, origin)                                             \
+	struct alias_cmd alias_cmd##new = {                                \
+		.alias_name = #new,                                        \
+		.original_name = origin,                                   \
+	};                                                                 \
+	static struct alias_cmd *const alias_cmd_ptr##new                  \
+		__attribute__((used, section(".alias_cmd.1"))) =           \
+			&alias_cmd##new;                                   \
+	_EXPORT_CLI_COMMAND_SYMBOL(cmd_alias##new, #new, NULL, 0, NULL, 0, \
+				   (int (*)(void *))NULL, NULL, 0,         \
+				   ".cli_commands")
 
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
 	for (struct alias_cmd *const *_pp = (_start);        \
