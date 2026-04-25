@@ -229,8 +229,11 @@ CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
 	    END_OPTIONS);
 CMD_ALIAS(echo, "ts --msg");
 ```
-首先通过`CLI_COMMAND宏`注册了一个`ts`命令，这个命令可以通过`ts --msg hello world`向终端打印`hello world`字符串
-可以通过下面的方式将`ts --msg`这个较复杂的命令重命名为echo这样的简短命令：
+> **位置无关提示**
+>
+> `CMD_ALIAS` 和 `CLI_COMMAND` 一样，也是通过链接脚本段自动收集的。因此你**不需要**把它和被重命名的命令写在同一个文件里，甚至不需要放在该命令的注册语句后面——它可以定义在项目的任何 `.c` 文件中，链接器会自动汇总。
+
+首先通过 `CLI_COMMAND` 宏注册了一个 `ts` 命令，这个命令可以通过 `ts --msg hello world` 向终端打印 `hello world` 字符串。可以通过下面的方式将 `ts --msg` 这个较复杂的命令重命名为 `echo` 这样的简短命令：
 ```c
 CMD_ALIAS(echo, "ts --msg");
 ```
