@@ -24,13 +24,13 @@
  * 命令描述：Control LED
  *
  * 选项列表：
- *   -o, --on         BOOL    Turn LED on
- *   -f, --off        BOOL    Turn LED off
+ *   --on             BOOL    Turn LED on
+ *   --off            BOOL    Turn LED off
  *   -b, --brightness INT     Brightness 0-100 (depends on --on)
  *
  * 使用示例：
- *   led -o -b 80
- *   led -o
+ *   led --on -b 80
+ *   led --off
  *   led --help
  */
 
