@@ -112,26 +112,20 @@ cp default.ld /path/to/LinCLI/default.ld
 
 ## 编译与运行
 
-### 1. 进入项目目录
+项目根目录提供了 `Makefile` 封装，你可以直接用以下命令：
+
+| 命令 | 作用 |
+|------|------|
+| `make` | 编译项目（自动创建 `build/` 目录、调用 CMake、生成 `build/bin/a.out`） |
+| `make run` | 先编译（如需要），然后直接运行 `build/bin/a.out` |
+| `make clean` | 删除 `build/` 目录，清理所有编译产物 |
+| `make ag` | 等价于 `make clean && make`，完整重建 |
+
+进入项目目录后，最简单的上手方式是：
 
 ```bash
 cd /path/to/LinCLI
-```
-
-### 2. 创建构建目录并编译
-
-```bash
-mkdir build && cd build
-cmake ..
-make
-```
-
-编译成功后，可执行文件位于 `build/bin/a.out`。
-
-### 3. 运行 PC 模拟程序
-
-```bash
-./bin/a.out
+make run
 ```
 
 程序启动后，终端进入 **raw 模式**（禁用行缓冲和回显），每按一个键都会立即被框架处理。你可以直接输入测试命令进行交互。
