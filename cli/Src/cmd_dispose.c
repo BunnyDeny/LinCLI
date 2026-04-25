@@ -37,7 +37,7 @@ struct dispose_ctx {
 };
 
 #define CLI_HELP_REQ_MARK_SIZE 16
-#define CLI_HELP_DEP_MARK_SIZE 32
+#define CLI_HELP_DEP_MARK_SIZE 128
 #define CLI_MAX_ARGV 64
 
 /**
@@ -334,44 +334,68 @@ static bool find_target_opt(const cli_command_t *cmd, const bool *opt_seen,
 	return false;
 }
 
-static int validate_depends_and_conflicts(const cli_command_t *cmd,
-					  const bool *opt_seen)
+static int check_name_list(const cli_command_t *cmd, const bool *opt_seen,
+			   size_t opt_idx, const char *list,
+			   bool expect_present, int err_code)
+{
+	const cli_option_t *opt = &cmd->options[opt_idx];
+	char name_buf[32];
+	int idx;
+	const char *p;
+
+	p = list;
+	while (*p) {
+		while (*p == ' ' || *p == '\t')
+			p++;
+		if (!*p)
+			break;
+		idx = 0;
+		while (*p && *p != ' ' && *p != '\t' &&
+		       idx < (int)sizeof(name_buf) - 1) {
+			name_buf[idx++] = *p++;
+		}
+		name_buf[idx] = '\0';
+		bool found = find_target_opt(cmd, opt_seen, name_buf);
+		if (expect_present && !found) {
+			pr_err("option -%c/--%s depends on %s but not provided\r\n",
+			       opt->short_opt ? opt->short_opt : ' ',
+			       opt->long_opt ? opt->long_opt : "", name_buf);
+			return err_code;
+		}
+		if (!expect_present && found) {
+			pr_err("option -%c/--%s conflicts with %s, cannot be used together\r\n",
+			       opt->short_opt ? opt->short_opt : ' ',
+			       opt->long_opt ? opt->long_opt : "", name_buf);
+			return err_code;
+		}
+	}
+	return 0;
+}
+
+static int validate_depends(const cli_command_t *cmd, const bool *opt_seen)
 {
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (!opt_seen[i] || !cmd->options[i].depends)
 			continue;
+		int ret = check_name_list(cmd, opt_seen, i,
+					  cmd->options[i].depends, true,
+					  CLI_ERR_DEP_MISSING);
+		if (ret < 0)
+			return ret;
+	}
+	return 0;
+}
 
-		const char *dep_str = cmd->options[i].depends;
-		bool is_conflict = (dep_str[0] == '!');
-		const char *target_name = is_conflict ? (dep_str + 1) : dep_str;
-		bool target_found = find_target_opt(cmd, opt_seen, target_name);
-
-		if (is_conflict) {
-			if (target_found) {
-				pr_err("option -%c/--%s conflicts with %s,"
-				       "cannot be used together\r\n",
-				       cmd->options[i].short_opt ?
-					       cmd->options[i].short_opt :
-					       ' ',
-				       cmd->options[i].long_opt ?
-					       cmd->options[i].long_opt :
-					       "",
-				       target_name);
-				return CLI_ERR_CONFLICT;
-			}
-		} else {
-			if (!target_found) {
-				pr_err("option -%c/--%s depends on %s but not provided\r\n",
-				       cmd->options[i].short_opt ?
-					       cmd->options[i].short_opt :
-					       ' ',
-				       cmd->options[i].long_opt ?
-					       cmd->options[i].long_opt :
-					       "",
-				       target_name);
-				return CLI_ERR_DEP_MISSING;
-			}
-		}
+static int validate_conflicts(const cli_command_t *cmd, const bool *opt_seen)
+{
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		if (!opt_seen[i] || !cmd->options[i].conflicts)
+			continue;
+		int ret = check_name_list(cmd, opt_seen, i,
+					  cmd->options[i].conflicts, false,
+					  CLI_ERR_CONFLICT);
+		if (ret < 0)
+			return ret;
 	}
 	return 0;
 }
@@ -427,7 +451,10 @@ static int validate_parsed_result(const cli_command_t *cmd,
 	ret = validate_required(cmd, opt_seen);
 	if (ret < 0)
 		return ret;
-	ret = validate_depends_and_conflicts(cmd, opt_seen);
+	ret = validate_depends(cmd, opt_seen);
+	if (ret < 0)
+		return ret;
+	ret = validate_conflicts(cmd, opt_seen);
 	if (ret < 0)
 		return ret;
 	return CLI_OK;
@@ -540,15 +567,17 @@ static void cli_print_help(const cli_command_t *cmd)
 		if (opt->required)
 			snprintf(cli_help_req_mark, CLI_HELP_REQ_MARK_SIZE,
 				 " [required]");
-		if (opt->depends) {
-			if (opt->depends[0] == '!')
-				snprintf(cli_help_dep_mark,
-					 CLI_HELP_DEP_MARK_SIZE,
-					 " [conflicts:%s]", opt->depends + 1);
-			else
-				snprintf(cli_help_dep_mark,
-					 CLI_HELP_DEP_MARK_SIZE,
-					 " [depends:%s]", opt->depends);
+		if (opt->depends && opt->depends[0]) {
+			snprintf(cli_help_dep_mark, CLI_HELP_DEP_MARK_SIZE,
+				 " [depends:%s]", opt->depends);
+		}
+		if (opt->conflicts && opt->conflicts[0]) {
+			size_t len = strlen(cli_help_dep_mark);
+			if (len < CLI_HELP_DEP_MARK_SIZE - 1) {
+				snprintf(cli_help_dep_mark + len,
+					 CLI_HELP_DEP_MARK_SIZE - len,
+					 " [conflicts:%s]", opt->conflicts);
+			}
 		}
 		cli_printk("  -%c, --%-16s %s%s%s\r\n",
 			   opt->short_opt ? opt->short_opt : ' ',

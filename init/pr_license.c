@@ -77,6 +77,6 @@ static int show_handler(void *_args)
 
 CLI_COMMAND(show, "show", "Show warranty or copying conditions", show_handler,
 	    (struct show_args *)0,
-	    OPTION('w', "warranty", BOOL, "Show warranty disclaimer", struct show_args, warranty, 0, NULL, false),
-	    OPTION('c', "conditions", BOOL, "Show copying conditions", struct show_args, conditions, 0, NULL, false),
+	    OPTION('w', "warranty", BOOL, "Show warranty disclaimer", struct show_args, warranty, 0, NULL, NULL, false),
+	    OPTION('c', "conditions", BOOL, "Show copying conditions", struct show_args, conditions, 0, NULL, NULL, false),
 	    END_OPTIONS);

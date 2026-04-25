@@ -51,5 +51,5 @@ static int bool_handler(void *_args)
 }
 
 CLI_COMMAND(tb, "tb", "Test BOOL option", bool_handler, (struct bool_args *)0,
-	    OPTION('v', "verbose", BOOL, "Enable verbose", struct bool_args, verbose, 0, NULL, false),
+	    OPTION('v', "verbose", BOOL, "Enable verbose", struct bool_args, verbose, 0, NULL, NULL, false),
 	    END_OPTIONS);

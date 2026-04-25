@@ -51,8 +51,8 @@ typedef struct cli_option {
 	size_t offset_count; // 数组长度的偏移量（仅用于数组类型）
 	size_t max_args; // 最大参数个数（数组类型用）
 	bool required; // 是否必需
-	const char *depends; // 依赖的选项（字符串形式）。
-	// 若以 '!' 开头，则表示与后续选项名互斥。
+	const char *depends; // 依赖列表（空格分隔的长选项名）
+	const char *conflicts; // 互斥列表（空格分隔的长选项名）
 } cli_option_t;
 
 typedef struct cli_command {
@@ -94,30 +94,33 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define CLI_OFFSETOF(type, field) offsetof(type, field)
 
 /* ============================================================
- * OPTION 宏定义（统一 9 参数）
+ * OPTION 宏定义（统一 10 参数）
  * ============================================================
  *
- * 所有选项统一使用 9 个参数，不再做参数计数重载。
- * 对于非 INT_ARRAY 类型，_max 传 0（不会实际使用），
- * _dep 传 NULL，_req 传 true/false。
+ * 所有选项统一使用 10 个参数。
+ * _dep   : 依赖列表（空格分隔，NULL 表示无依赖）
+ * _con   : 互斥列表（空格分隔，NULL 表示无互斥）
+ * _req   : true / false
  *
  * 使用示例：
- *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, 0, NULL, false)
- *   OPTION('f', "file", STRING, "Log file", struct my_args, file, 0, NULL, true)
- *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", false)
+ *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, 0, NULL, NULL, false)
+ *   OPTION('f', "file", STRING, "Log file", struct my_args, file, 0, NULL, NULL, true)
+ *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", NULL, false)
+ *   OPTION('o', "on", BOOL, "Turn on", struct my_args, on, 0, NULL, "off", false)
  */
 
-#define OPTION(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _req) \
-	{                                                                    \
-		.short_opt = _sopt,                                          \
-		.long_opt = _lopt,                                           \
-		.type = CLI_TYPE_##_type,                                    \
-		.help = _help,                                               \
-		.offset = CLI_OFFSETOF(_stype, _field),                      \
-		.offset_count = _OPTION_COUNT_##_type(_stype, _field),       \
-		.max_args = _max,                                            \
-		.required = _req,                                            \
-		.depends = _dep,                                             \
+#define OPTION(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _con, _req) \
+	{                                                                      \
+		.short_opt = _sopt,                                            \
+		.long_opt = _lopt,                                             \
+		.type = CLI_TYPE_##_type,                                      \
+		.help = _help,                                                 \
+		.offset = CLI_OFFSETOF(_stype, _field),                        \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field),         \
+		.max_args = _max,                                              \
+		.required = _req,                                              \
+		.depends = _dep,                                               \
+		.conflicts = _con,                                             \
 	}
 
 /* 各类型的 offset_count 计算 */

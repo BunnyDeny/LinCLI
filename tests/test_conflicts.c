@@ -59,6 +59,6 @@ static int conflicts_handler(void *_args)
 
 CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
 	    conflicts_handler, (struct conflicts_args *)0,
-	    OPTION('v', "verbose", BOOL, "Enable verbose", struct conflicts_args, verbose, 0, NULL, false),
-	    OPTION('n', "nums", INT_ARRAY, "Number list", struct conflicts_args, nums, 8, "!verbose", false),
+	    OPTION('v', "verbose", BOOL, "Enable verbose", struct conflicts_args, verbose, 0, NULL, NULL, false),
+	    OPTION('n', "nums", INT_ARRAY, "Number list", struct conflicts_args, nums, 8, NULL, "verbose", false),
 	    END_OPTIONS);
