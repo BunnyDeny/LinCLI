@@ -669,8 +669,8 @@ static int run_cmd_validator(const cli_command_t *cmd_def, int *cmd_ret)
 
 static int dispose_start_task(void *arg)
 {
+	static char *argv[CLI_MAX_ARGV];
 	struct dispose_ctx *ctx = (struct dispose_ctx *)arg;
-	char *argv[CLI_MAX_ARGV];
 	int argc = tokenize(ctx->cmd, argv, CLI_MAX_ARGV);
 	cli_printk("\r\n");
 	cli_printk("\033[K");
