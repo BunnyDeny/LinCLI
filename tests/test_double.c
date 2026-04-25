@@ -55,6 +55,5 @@ static int double_handler(void *_args)
 
 CLI_COMMAND(td, "td", "Test DOUBLE option", double_handler,
 	    (struct double_args *)0,
-	    OPTION('f', "factor", DOUBLE, "Float value", struct double_args,
-		   factor),
+	    OPTION('f', "factor", DOUBLE, "Float value", struct double_args, factor, 0, NULL, false),
 	    END_OPTIONS);

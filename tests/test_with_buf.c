@@ -69,8 +69,6 @@ static int tw_handler(void *_args)
 
 CLI_COMMAND_WITH_BUF(tw, "tw", "Test CLI_COMMAND_WITH_BUF with INT_ARRAY",
 		     tw_handler, (struct tw_args *)0, tw_buf, sizeof(tw_buf),
-		     OPTION('v', "verbose", BOOL, "Enable verbose",
-			    struct tw_args, verbose),
-		     OPTION('n', "nums", INT_ARRAY, "Number list",
-			    struct tw_args, nums, 16, NULL),
+		     OPTION('v', "verbose", BOOL, "Enable verbose", struct tw_args, verbose, 0, NULL, false),
+		     OPTION('n', "nums", INT_ARRAY, "Number list", struct tw_args, nums, 16, NULL, false),
 		     END_OPTIONS);

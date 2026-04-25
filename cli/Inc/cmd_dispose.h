@@ -94,131 +94,30 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define CLI_OFFSETOF(type, field) offsetof(type, field)
 
 /* ============================================================
- * OPTION 宏定义（统一入口）
+ * OPTION 宏定义（统一 9 参数）
  * ============================================================
  *
- * 统一注册一个命令选项。该宏根据传入的参数数量自动分派到对应的
- * OPTION_x 实现（x = 6~9），用户无需手动选择底层宏名。
- *
- * 使用方式：数一下你需要的参数个数，直接按对应格式填写即可。
- */
-
-#define _GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, NAME, ...) NAME
-
-#define OPTION(...)                                           \
-	_GET_MACRO(__VA_ARGS__, OPTION_9, OPTION_8, OPTION_7, \
-		   OPTION_6)(__VA_ARGS__)
-
-/**
- * @brief 基础类型选项，无额外属性（6 个参数）。
- *
- * @param _sopt    短选项字符，例如 'v'
- * @param _lopt    长选项字符串，例如 "verbose"
- * @param _type    选项类型标识，例如 BOOL、STRING、INT
- * @param _help    帮助说明文本
- * @param _stype   用户定义参数结构体类型，例如 struct my_args
- * @param _field   该选项对应结构体中的字段名
+ * 所有选项统一使用 9 个参数，不再做参数计数重载。
+ * 对于非 INT_ARRAY 类型，_max 传 0（不会实际使用），
+ * _dep 传 NULL，_req 传 true/false。
  *
  * 使用示例：
- *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose)
+ *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, 0, NULL, false)
+ *   OPTION('f', "file", STRING, "Log file", struct my_args, file, 0, NULL, true)
+ *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", false)
  */
-#define OPTION_6(_sopt, _lopt, _type, _help, _stype, _field)           \
-	{                                                              \
-		.short_opt = _sopt,                                    \
-		.long_opt = _lopt,                                     \
-		.type = CLI_TYPE_##_type,                              \
-		.help = _help,                                         \
-		.offset = CLI_OFFSETOF(_stype, _field),                \
-		.offset_count = _OPTION_COUNT_##_type(_stype, _field), \
-		.max_args = 1,                                         \
-		.required = false,                                     \
-		.depends = NULL,                                       \
-	}
 
-/**
- * @brief 基础类型选项，带 required 开关（7 个参数）。
- *
- * @param _sopt    短选项字符
- * @param _lopt    长选项字符串
- * @param _type    选项类型标识
- * @param _help    帮助说明文本
- * @param _stype   用户定义参数结构体类型
- * @param _field   该选项对应结构体中的字段名
- * @param _req     是否为必需选项，填 true 或 false
- *
- * 使用示例：
- *   OPTION('v', "verbose", BOOL, "Enable verbose", struct my_args, verbose, true)
- */
-#define OPTION_7(_sopt, _lopt, _type, _help, _stype, _field, _req)     \
-	{                                                              \
-		.short_opt = _sopt,                                    \
-		.long_opt = _lopt,                                     \
-		.type = CLI_TYPE_##_type,                              \
-		.help = _help,                                         \
-		.offset = CLI_OFFSETOF(_stype, _field),                \
-		.offset_count = _OPTION_COUNT_##_type(_stype, _field), \
-		.max_args = 1,                                         \
-		.required = _req,                                      \
-		.depends = NULL,                                       \
-	}
-
-/**
- * @brief 选项，带最大参数个数和依赖项（8 个参数）。
- *
- * @param _sopt    短选项字符
- * @param _lopt    长选项字符串
- * @param _type    选项类型标识，此处固定为 INT_ARRAY
- * @param _help    帮助说明文本
- * @param _stype   用户定义参数结构体类型
- * @param _field   该选项对应结构体中的字段名（数组指针）
- * @param _max     该数组选项允许接收的最大参数个数
- * @param _dep     依赖的另一个选项名字符串（例如 "verbose"），
- *                 若无需依赖项，请显式填 NULL。
- *
- * 使用示例：
- *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, NULL)
- *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose")
- */
-#define OPTION_8(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep) \
-	{                                                                \
-		.short_opt = _sopt,                                      \
-		.long_opt = _lopt,                                       \
-		.type = CLI_TYPE_##_type,                                \
-		.help = _help,                                           \
-		.offset = CLI_OFFSETOF(_stype, _field),                  \
-		.offset_count = _OPTION_COUNT_##_type(_stype, _field),   \
-		.max_args = _max,                                        \
-		.required = false,                                       \
-		.depends = _dep,                                         \
-	}
-
-/**
- * @brief 选项，带最大参数个数、依赖项和 required 开关（9 个参数）。
- *
- * @param _sopt    短选项字符
- * @param _lopt    长选项字符串
- * @param _type    选项类型标识，此处固定为 INT_ARRAY
- * @param _help    帮助说明文本
- * @param _stype   用户定义参数结构体类型
- * @param _field   该选项对应结构体中的字段名（数组指针）
- * @param _max     该数组选项允许接收的最大参数个数
- * @param _dep     依赖的另一个选项名字符串，若无需依赖项请填 NULL
- * @param _req     是否为必需选项，填 true 或 false
- *
- * 使用示例：
- *   OPTION('n', "nums", INT_ARRAY, "Number list", struct my_args, nums, 8, "verbose", true)
- */
-#define OPTION_9(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _req) \
-	{                                                                      \
-		.short_opt = _sopt,                                            \
-		.long_opt = _lopt,                                             \
-		.type = CLI_TYPE_##_type,                                      \
-		.help = _help,                                                 \
-		.offset = CLI_OFFSETOF(_stype, _field),                        \
-		.offset_count = _OPTION_COUNT_##_type(_stype, _field),         \
-		.max_args = _max,                                              \
-		.required = _req,                                              \
-		.depends = _dep,                                               \
+#define OPTION(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _req) \
+	{                                                                    \
+		.short_opt = _sopt,                                          \
+		.long_opt = _lopt,                                           \
+		.type = CLI_TYPE_##_type,                                    \
+		.help = _help,                                               \
+		.offset = CLI_OFFSETOF(_stype, _field),                      \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field),       \
+		.max_args = _max,                                            \
+		.required = _req,                                            \
+		.depends = _dep,                                             \
 	}
 
 /* 各类型的 offset_count 计算 */

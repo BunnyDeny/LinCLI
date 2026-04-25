@@ -25,7 +25,8 @@
  *
  * 选项列表：
  *   -o, --on         BOOL    Turn LED on
- *   -b, --brightness INT     Brightness 0-100
+ *   -f, --off        BOOL    Turn LED off
+ *   -b, --brightness INT     Brightness 0-100 (depends on --on)
  *
  * 使用示例：
  *   led -o -b 80
@@ -45,17 +46,25 @@ struct led_args {
 static int led_handler(void *_args)
 {
 	struct led_args *args = _args;
-	if (args->on)
-		cli_printk("LED ON, brightness=%d\r\n", args->brightness);
-	else
+
+	if (!args->on && !args->off) {
+		pr_err("please specify --on or --off\r\n");
+		return -1;
+	}
+
+	if (args->on) {
+		cli_printk("LED ON");
+		if (args->brightness > 0)
+			cli_printk(", brightness=%d", args->brightness);
+		cli_printk("\r\n");
+	} else {
 		cli_printk("LED OFF\r\n");
+	}
 	return 0;
 }
 
 CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
-	    OPTION('f', "off", BOOL, "Turn LED off", struct led_args, off),
-	    OPTION('o', "on", BOOL, "Turn LED on", struct led_args, on, 0,
-		   "!off"),
-	    OPTION('b', "brightness", INT, "Brightness 0-100", struct led_args,
-		   brightness, 0, "on"),
+	    OPTION('f', "off", BOOL, "Turn LED off", struct led_args, off, 0, NULL, false),
+	    OPTION('o', "on", BOOL, "Turn LED on", struct led_args, on, 0, "!off", false),
+	    OPTION('b', "brightness", INT, "Brightness 0-100", struct led_args, brightness, 0, "on", false),
 	    END_OPTIONS);

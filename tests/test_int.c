@@ -50,5 +50,5 @@ static int int_handler(void *_args)
 }
 
 CLI_COMMAND(ti, "ti", "Test INT option", int_handler, (struct int_args *)0,
-	    OPTION('n', "num", INT, "Integer value", struct int_args, num),
+	    OPTION('n', "num", INT, "Integer value", struct int_args, num, 0, NULL, false),
 	    END_OPTIONS);
