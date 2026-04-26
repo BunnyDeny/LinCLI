@@ -42,7 +42,8 @@ static int show_handler(void *_args)
 	struct show_args *args = _args;
 
 	if (args->warranty == false && args->conditions == false) {
-		pr_err("please input the option for command show\r\n");
+		pr_err("please input the option -c/--conditions or "
+		       "-w/--warranty for command \'show\'\r\n");
 		return -1;
 	}
 

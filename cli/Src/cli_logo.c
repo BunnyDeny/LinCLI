@@ -21,8 +21,6 @@
 #include "cmd_dispose.h"
 #include "cli_config.h"
 
-#if COMMAND_LOGO_EN
-
 void pr_logo(void *arg)
 {
 	cli_printk(" _     _        ____ _     ___ \r\n");
@@ -35,6 +33,8 @@ void pr_logo(void *arg)
 }
 
 _EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);
+
+#if COMMAND_LOGO_EN
 
 extern void pr_license(void *);
 

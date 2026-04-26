@@ -731,6 +731,7 @@ static int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	return cnt;
 }
 
+#if ALIAS_EN
 static int alias_handler(void *_args)
 {
 	struct alias_cmd *alias_cmd;
@@ -746,9 +747,8 @@ static int alias_handler(void *_args)
 		"------------------------------------------------------------\r\n");
 	return 0;
 }
-#if ALIAS_EN
+
 CLI_COMMAND_NO_STRUCT(alias, "alias", "list all the alias cmds", alias_handler);
-#endif
 
 static bool is_prefix(char *pre, char *str)
 {
@@ -783,6 +783,7 @@ static char *alias_replace(char *cmd, char *buf, size_t buf_size)
 	}
 	return cmd;
 }
+#endif
 
 static int run_dispose_once(char *cmd, int *cmd_ret)
 {
@@ -797,7 +798,9 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 		pr_err("out of memory\r\n");
 		return CLI_ERR_NULL;
 	}
+#if ALIAS_EN
 	cmd = alias_replace(cmd, alias_buf, CLI_MPOOL_SIZE);
+#endif
 	struct dispose_ctx ctx = { cmd, cmd_ret };
 	*cmd_ret = 0;
 	while (1) {
