@@ -746,7 +746,9 @@ static int alias_handler(void *_args)
 		"------------------------------------------------------------\r\n");
 	return 0;
 }
+#if ALIAS_EN
 CLI_COMMAND_NO_STRUCT(alias, "alias", "list all the alias cmds", alias_handler);
+#endif
 
 static bool is_prefix(char *pre, char *str)
 {

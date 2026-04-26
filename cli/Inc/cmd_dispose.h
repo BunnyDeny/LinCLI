@@ -180,18 +180,19 @@ extern struct alias_cmd *const _alias_cmd_end[];
  *          struct log_args, file, 0, NULL, NULL, true)
  */
 
-#define OPTION(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _con, _req) \
-	{                                                                      \
-		.short_opt = _sopt,                                            \
-		.long_opt = _lopt,                                             \
-		.type = CLI_TYPE_##_type,                                      \
-		.help = _help,                                                 \
-		.offset = CLI_OFFSETOF(_stype, _field),                        \
-		.offset_count = _OPTION_COUNT_##_type(_stype, _field),         \
-		.max_args = _max,                                              \
-		.required = _req,                                              \
-		.depends = _dep,                                               \
-		.conflicts = _con,                                             \
+#define OPTION(_sopt, _lopt, _type, _help, _stype, _field, _max, _dep, _con, \
+	       _req)                                                         \
+	{                                                                    \
+		.short_opt = _sopt,                                          \
+		.long_opt = _lopt,                                           \
+		.type = CLI_TYPE_##_type,                                    \
+		.help = _help,                                               \
+		.offset = CLI_OFFSETOF(_stype, _field),                      \
+		.offset_count = _OPTION_COUNT_##_type(_stype, _field),       \
+		.max_args = _max,                                            \
+		.required = _req,                                            \
+		.depends = _dep,                                             \
+		.conflicts = _con,                                           \
 	}
 
 /* 各类型的 offset_count 计算 */
@@ -274,6 +275,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
+#if ALIAS_EN
 #define CMD_ALIAS(new, origin)                                             \
 	struct alias_cmd alias_cmd##new = {                                \
 		.alias_name = #new,                                        \
@@ -290,6 +292,10 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	for (struct alias_cmd *const *_pp = (_start);        \
 	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
 		if (((alias_cmd) = *_pp) != NULL)
+#else
+#define CMD_ALIAS(new, origin)
+#define FOR_EACH_ALIAS(_start, _end, alias_cmd)
+#endif
 
 int dispose_init(void);
 int dispose_task(char *cmd, int *cmd_ret);

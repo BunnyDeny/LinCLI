@@ -11,10 +11,11 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
-/* 是否编译 tests 文件夹下的测试命令，设为 0 可禁用 */
-#ifndef CLI_ENABLE_TESTS
+/*是否启用命令重命名功能*/
+#define ALIAS_EN 0
+
+/* 是否编译 tests 文件夹下的测试命令 */
 #define CLI_ENABLE_TESTS 0
-#endif
 
 /*命令历史记录条目数量（嵌入式环境不建议太大）*/
 #define HISTORY_MAX 4
@@ -29,21 +30,18 @@
 
 /* 命令参数全局共享缓冲区大小，如果
   报错显示命令参数缺少字节，增加这个宏 */
-#ifndef CLI_CMD_BUF_SIZE
 #define CLI_CMD_BUF_SIZE 128
-#endif
 
 /* 内存池配置 */
-#ifndef CLI_MPOOL_COUNT
 #define CLI_MPOOL_COUNT 6
-#endif
 
-#ifndef CLI_MPOOL_SIZE
 #define CLI_MPOOL_SIZE CLI_CMD_BUF_SIZE
-#endif
 
 #if CLI_MPOOL_COUNT > 32
 #error "CLI_MPOOL_COUNT must not exceed 32"
 #endif
+
+/*使能logo命令*/
+#define COMMAND_LOGO_EN 0
 
 #endif

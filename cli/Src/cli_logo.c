@@ -19,6 +19,9 @@
 #include "cli_io.h"
 #include "init_d.h"
 #include "cmd_dispose.h"
+#include "cli_config.h"
+
+#if COMMAND_LOGO_EN
 
 void pr_logo(void *arg)
 {
@@ -43,3 +46,4 @@ void logo_handler(void *arg)
 
 CLI_COMMAND(logo, "logo", "show logo and license", logo_handler, NULL,
 	    END_OPTIONS);
+#endif
