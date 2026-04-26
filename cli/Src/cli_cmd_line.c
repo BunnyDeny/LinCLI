@@ -287,7 +287,7 @@ static void display_candidates(const char *prefix, int prefix_len,
 				cli_out_push((_u8 *)" ", 1);
 			}
 			cur_cow++;
-			if (cur_cow >= cows) {
+			if (cur_cow > cows) {
 				cli_out_push((_u8 *)"\r\n", 2);
 				cur_cow = 0;
 			}
