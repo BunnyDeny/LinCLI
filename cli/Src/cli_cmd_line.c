@@ -281,6 +281,9 @@ static void display_candidates(const char *prefix, int prefix_len,
 		if (!cmd->name)
 			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
+			if (cur_cow == 0) {
+				cli_out_push((_u8 *)"\r\n", 2);
+			}
 			cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
 			int space_count = max_len - strlen(cmd->name);
 			while (space_count--) {
@@ -288,7 +291,6 @@ static void display_candidates(const char *prefix, int prefix_len,
 			}
 			cur_cow++;
 			if (cur_cow >= cows) {
-				cli_out_push((_u8 *)"\r\n", 2);
 				cur_cow = 0;
 			}
 			cli_out_sync();
@@ -298,7 +300,7 @@ static void display_candidates(const char *prefix, int prefix_len,
 
 static void list_cmd_candidates(const char *prefix, int prefix_len)
 {
-	clear_and_up(rows_to_clear_count, rows_to_clear_count - 1);
+	clear_and_up(rows_to_clear_count, rows_to_clear_count);
 	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS);
 	for (int i = 0; i < rows_to_clear_count; i++) {
 		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
