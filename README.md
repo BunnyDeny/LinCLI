@@ -59,6 +59,10 @@ static int led_handler(void *_args)
 {
 	struct led_args *args = _args;
 
+	if (!args->on && !args->off) {
+		pr_err("please specify --on or --off\r\n");
+		return -1;
+	}
 	if (args->on) {
 		cli_printk("LED ON");
 		if (args->brightness > 0)
