@@ -42,7 +42,7 @@
 
 #include "cli_config.h"
 
-#ifdef CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -72,8 +72,10 @@ static int tw_handler(void *_args)
 
 CLI_COMMAND_WITH_BUF(tw, "tw", "Test CLI_COMMAND_WITH_BUF with INT_ARRAY",
 		     tw_handler, (struct tw_args *)0, tw_buf, sizeof(tw_buf),
-		     OPTION('v', "verbose", BOOL, "Enable verbose", struct tw_args, verbose, 0, NULL, NULL, false),
-		     OPTION('n', "nums", INT_ARRAY, "Number list", struct tw_args, nums, 16, NULL, NULL, false),
+		     OPTION('v', "verbose", BOOL, "Enable verbose",
+			    struct tw_args, verbose, 0, NULL, NULL, false),
+		     OPTION('n', "nums", INT_ARRAY, "Number list",
+			    struct tw_args, nums, 16, NULL, NULL, false),
 		     END_OPTIONS);
 
 #endif /* CLI_ENABLE_TESTS */

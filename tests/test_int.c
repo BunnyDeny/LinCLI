@@ -36,7 +36,7 @@
 
 #include "cli_config.h"
 
-#ifdef CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -53,7 +53,8 @@ static int int_handler(void *_args)
 }
 
 CLI_COMMAND(ti, "ti", "Test INT option", int_handler, (struct int_args *)0,
-	    OPTION('n', "num", INT, "Integer value", struct int_args, num, 0, NULL, NULL, false),
+	    OPTION('n', "num", INT, "Integer value", struct int_args, num, 0,
+		   NULL, NULL, false),
 	    END_OPTIONS);
 
 #endif /* CLI_ENABLE_TESTS */

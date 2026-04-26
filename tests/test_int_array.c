@@ -38,7 +38,7 @@
 
 #include "cli_config.h"
 
-#ifdef CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -65,8 +65,10 @@ static int array_handler(void *_args)
 
 CLI_COMMAND(ta, "ta", "Test INT_ARRAY option with depends", array_handler,
 	    (struct array_args *)0,
-	    OPTION('v', "verbose", BOOL, "Enable verbose", struct array_args, verbose, 0, NULL, NULL, false),
-	    OPTION('n', "nums", INT_ARRAY, "Number list", struct array_args, nums, 8, "verbose", NULL, false),
+	    OPTION('v', "verbose", BOOL, "Enable verbose", struct array_args,
+		   verbose, 0, NULL, NULL, false),
+	    OPTION('n', "nums", INT_ARRAY, "Number list", struct array_args,
+		   nums, 8, "verbose", NULL, false),
 	    END_OPTIONS);
 
 #endif /* CLI_ENABLE_TESTS */

@@ -13,7 +13,7 @@
 
 #include "cli_config.h"
 
-#ifdef CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS
 #include "init_d.h"
 #include "cli_io.h"
 

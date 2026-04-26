@@ -12,7 +12,7 @@
 
 #include "cli_config.h"
 
-#ifdef CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS
 #include "cli_auto_cmd.h"
 
 #define CLI_AUTO_CMDS_TEST_EN 0

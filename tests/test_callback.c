@@ -36,7 +36,7 @@
 
 #include "cli_config.h"
 
-#ifdef CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -55,7 +55,8 @@ static int callback_handler(void *_args)
 
 CLI_COMMAND(tc, "tc", "Test CALLBACK option", callback_handler,
 	    (struct cb_args *)0,
-	    OPTION('c', "cfg", CALLBACK, "Raw config string", struct cb_args, raw, 0, NULL, NULL, false),
+	    OPTION('c', "cfg", CALLBACK, "Raw config string", struct cb_args,
+		   raw, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
 #endif /* CLI_ENABLE_TESTS */
