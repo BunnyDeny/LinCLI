@@ -579,7 +579,7 @@ static void cli_print_help(const cli_command_t *cmd)
 					 " [conflicts:%s]", opt->conflicts);
 			}
 		}
-		cli_printk("  -%c, --%-16s %s%s%s\r\n",
+		cli_printk("      -%c, --%-16s %s%s%s\r\n",
 			   opt->short_opt ? opt->short_opt : ' ',
 			   opt->long_opt ? opt->long_opt : "",
 			   opt->help ? opt->help : "", cli_help_req_mark,
