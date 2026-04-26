@@ -33,6 +33,7 @@
  *   tcf -v -n 1 2 3  -> 报错：选项 -n/--nums 与 verbose 互斥，不能同时使用
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -62,3 +63,5 @@ CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct conflicts_args, verbose, 0, NULL, NULL, false),
 	    OPTION('n', "nums", INT_ARRAY, "Number list", struct conflicts_args, nums, 8, NULL, "verbose", false),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

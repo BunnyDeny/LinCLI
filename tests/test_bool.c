@@ -34,6 +34,7 @@
  *     verbose = true
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -53,3 +54,5 @@ static int bool_handler(void *_args)
 CLI_COMMAND(tb, "tb", "Test BOOL option", bool_handler, (struct bool_args *)0,
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct bool_args, verbose, 0, NULL, NULL, false),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

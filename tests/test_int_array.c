@@ -36,6 +36,7 @@
  *     nums = 1 2 3
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -65,3 +66,5 @@ CLI_COMMAND(ta, "ta", "Test INT_ARRAY option with depends", array_handler,
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct array_args, verbose, 0, NULL, NULL, false),
 	    OPTION('n', "nums", INT_ARRAY, "Number list", struct array_args, nums, 8, "verbose", NULL, false),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

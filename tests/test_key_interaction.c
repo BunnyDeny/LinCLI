@@ -39,6 +39,7 @@
     
  *   [INFO] Key ctrl+d detected, exiting
  */
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -72,3 +73,5 @@ static int key_handler(void *_args)
 }
 
 CLI_COMMAND_NO_STRUCT(key, "key", "Test key", key_handler);
+
+#endif /* CLI_ENABLE_TESTS */

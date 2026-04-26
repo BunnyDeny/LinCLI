@@ -43,6 +43,7 @@
  *   ...
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -88,3 +89,5 @@ CLI_COMMAND_WITH_BUF(big2, "big2", "Test insufficient private buffer",
 		     sizeof(big2_buf),
 		     OPTION('x', "x", BOOL, "X", struct big2_args, padding, 0, NULL, NULL, false),
 		     END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

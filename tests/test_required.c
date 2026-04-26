@@ -31,6 +31,7 @@
  *   tr                     -> 报错：缺少必需选项
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -51,3 +52,5 @@ CLI_COMMAND(tr, "tr", "Test required option", required_handler,
 	    (struct required_args *)0,
 	    OPTION('f', "file", STRING, "Input file path", struct required_args, file, 0, NULL, NULL, true),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

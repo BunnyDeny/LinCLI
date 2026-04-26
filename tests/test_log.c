@@ -39,6 +39,7 @@
  *     tags  = 1 2 3
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -76,3 +77,5 @@ CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct log_args, verbose, 0, NULL, NULL, false),
 	    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8, NULL, "verbose", false),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

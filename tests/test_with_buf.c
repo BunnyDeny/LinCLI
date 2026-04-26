@@ -40,6 +40,7 @@
  *     nums = 10 20 30
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -72,3 +73,5 @@ CLI_COMMAND_WITH_BUF(tw, "tw", "Test CLI_COMMAND_WITH_BUF with INT_ARRAY",
 		     OPTION('v', "verbose", BOOL, "Enable verbose", struct tw_args, verbose, 0, NULL, NULL, false),
 		     OPTION('n', "nums", INT_ARRAY, "Number list", struct tw_args, nums, 16, NULL, NULL, false),
 		     END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

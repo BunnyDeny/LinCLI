@@ -10,6 +10,7 @@
  * 用于验证自动执行在遇到错误时会立即停止，不再执行后续命令。
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cli_auto_cmd.h"
 
 #define CLI_AUTO_CMDS_TEST_EN 0
@@ -27,3 +28,5 @@ const int cli_auto_cmds_count =
 	sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0]);
 
 #endif
+
+#endif /* CLI_ENABLE_TESTS */

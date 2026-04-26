@@ -11,6 +11,7 @@
  * 用于验证数字越小优先级越高，即按升序执行。
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "init_d.h"
 #include "cli_io.h"
 
@@ -47,3 +48,5 @@ static void test_init_10(void *arg)
 _EXPORT_INIT_SYMBOL(test_init_10, 10, NULL, test_init_10);
 
 #endif
+
+#endif /* CLI_ENABLE_TESTS */

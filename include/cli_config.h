@@ -11,6 +11,11 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
+/* 是否编译 tests 文件夹下的测试命令，设为 0 可禁用 */
+#ifndef CLI_ENABLE_TESTS
+#define CLI_ENABLE_TESTS 1
+#endif
+
 /*命令历史记录条目数量（嵌入式环境不建议太大）*/
 #define HISTORY_MAX 4
 

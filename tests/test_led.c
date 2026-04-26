@@ -34,6 +34,7 @@
  *   led --help
  */
 
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -71,3 +72,5 @@ CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
 	    OPTION('b', "brightness", INT, "Brightness 0-100", struct led_args,
 		   brightness, 0, "on", NULL, false),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */

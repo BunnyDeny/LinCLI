@@ -38,6 +38,7 @@
  * 选项，要么直接调试程序看factor对应的值是否和预期对应即
  * 可
  */
+#ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -57,3 +58,5 @@ CLI_COMMAND(td, "td", "Test DOUBLE option", double_handler,
 	    (struct double_args *)0,
 	    OPTION('f', "factor", DOUBLE, "Float value", struct double_args, factor, 0, NULL, NULL, false),
 	    END_OPTIONS);
+
+#endif /* CLI_ENABLE_TESTS */
