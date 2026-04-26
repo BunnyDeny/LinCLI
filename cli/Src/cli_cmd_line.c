@@ -360,9 +360,9 @@ static void list_all_options(const cli_command_t *cmd)
 			cli_out_push((_u8 *)"  \r\n", 4);
 			cows++;
 		}
+		cli_out_sync();
 	}
 	rows_to_clear_count = cows + 1;
-	cli_out_sync();
 	for (int i = 0; i < rows_to_clear_count; i++) {
 		cli_out_push((_u8 *)"\033[1A", 4);
 		cli_out_sync();
