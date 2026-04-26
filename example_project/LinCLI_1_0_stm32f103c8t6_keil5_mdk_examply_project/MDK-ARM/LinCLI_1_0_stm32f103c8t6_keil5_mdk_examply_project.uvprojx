@@ -643,6 +643,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\test_with_buf.c</FilePath>
             </File>
+            <File>
+              <FileName>test_led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\test_led.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
