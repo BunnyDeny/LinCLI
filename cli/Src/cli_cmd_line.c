@@ -291,9 +291,9 @@ static void display_candidates(const char *prefix, int prefix_len,
 				cli_out_push((_u8 *)"\r\n", 2);
 				cur_cow = 0;
 			}
+			cli_out_sync();
 		}
 	}
-	cli_out_sync();
 }
 
 static void list_cmd_candidates(const char *prefix, int prefix_len)
