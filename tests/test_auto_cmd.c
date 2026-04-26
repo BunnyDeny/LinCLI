@@ -10,6 +10,8 @@
  * 用于验证自动执行在遇到错误时会立即停止，不再执行后续命令。
  */
 
+#include "cli_config.h"
+
 #ifdef CLI_ENABLE_TESTS
 #include "cli_auto_cmd.h"
 

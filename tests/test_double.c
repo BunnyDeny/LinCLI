@@ -38,6 +38,8 @@
  * 选项，要么直接调试程序看factor对应的值是否和预期对应即
  * 可
  */
+#include "cli_config.h"
+
 #ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"

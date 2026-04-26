@@ -39,6 +39,8 @@
     
  *   [INFO] Key ctrl+d detected, exiting
  */
+#include "cli_config.h"
+
 #ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"

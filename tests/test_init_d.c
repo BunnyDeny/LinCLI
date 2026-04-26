@@ -11,6 +11,8 @@
  * 用于验证数字越小优先级越高，即按升序执行。
  */
 
+#include "cli_config.h"
+
 #ifdef CLI_ENABLE_TESTS
 #include "init_d.h"
 #include "cli_io.h"

@@ -33,6 +33,8 @@
  *   tcf -v -n 1 2 3  -> 报错：选项 -n/--nums 与 verbose 互斥，不能同时使用
  */
 
+#include "cli_config.h"
+
 #ifdef CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
