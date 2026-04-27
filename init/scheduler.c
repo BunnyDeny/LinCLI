@@ -210,6 +210,12 @@ int scheduler_auto_run_task(void *private)
 	(void)private;
 	int status;
 
+	/* 上一个自启动命令执行失败，停止后续执行 */
+	if (cmd_ctx.auto_run_idx > 0 && cmd_ctx.cmd_ret < 0) {
+		cmd_ctx.auto_run_idx = 0;
+		return state_switch(&scheduler_eng, "scheduler_get_char");
+	}
+
 	if (!cli_auto_cmds || cli_auto_cmds_count <= 0) {
 		return state_switch(&scheduler_eng, "scheduler_get_char");
 	}
@@ -311,6 +317,16 @@ int scheduler_dispose_task(void *arg)
 			split_cmd_chain(cmd_ctx.chain_buf, cmd_ctx.cmds,
 					SCHEDULER_CHAIN_MAX);
 		cmd_ctx.chain_idx = 0;
+	}
+
+	/* 上一个命令执行失败，中断命令链 */
+	if (cmd_ctx.chain_idx > 0 && cmd_ctx.cmd_ret < 0) {
+		if (cmd_ctx.chain_buf) {
+			cli_mpool_free(cmd_ctx.chain_buf);
+			cmd_ctx.chain_buf = NULL;
+		}
+		cmd_ctx.chain_cnt = 0;
+		return state_switch(&scheduler_eng, "scheduler_get_char");
 	}
 
 	/* 命令链已全部执行完毕 */

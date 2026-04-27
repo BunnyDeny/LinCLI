@@ -762,56 +762,6 @@ char *alias_replace(char *cmd, char *buf, size_t buf_size)
 }
 #endif
 
-/* ============================================================
- * 兼容旧接口：同步一次性执行命令
- * ============================================================ */
 
-static int run_dispose_once_sync(char *cmd, int *cmd_ret)
-{
-	const cli_command_t *cmd_def;
-	int status;
-	char *alias_buf = cli_mpool_alloc();
-	if (!alias_buf) {
-		pr_err("out of memory\r\n");
-		return CLI_ERR_NULL;
-	}
-
-#if ALIAS_EN
-	cmd = alias_replace(cmd, alias_buf, CLI_MPOOL_SIZE);
-#endif
-
-	status = cmd_parse_prepare(cmd, &cmd_def, cmd_ret);
-	if (status < 0) {
-		cli_mpool_free(alias_buf);
-		return status;
-	}
-	if (status == dispose_exit) {
-		cli_mpool_free(alias_buf);
-		return CLI_OK;
-	}
-
-	/* 执行命令：entry → task → exit */
-	if (cmd_def->cmd_entry)
-		cmd_def->cmd_entry(cmd_def->arg_buf);
-
-	if (cmd_def->cmd_task) {
-		/* 新接口：循环执行 task 直到非 CLI_CONTINUE */
-		int task_ret;
-		do {
-			task_ret = cmd_def->cmd_task(cmd_def->arg_buf);
-		} while (task_ret == CLI_CONTINUE);
-		*cmd_ret = task_ret;
-	} else if (cmd_def->validator) {
-		/* 旧接口：一次性执行 validator */
-		*cmd_ret = cmd_def->validator(cmd_def->arg_buf);
-	}
-
-	if (cmd_def->cmd_exit)
-		cmd_def->cmd_exit(cmd_def->arg_buf);
-
-	cmd_parse_cleanup(cmd_def);
-	cli_mpool_free(alias_buf);
-	return CLI_OK;
-}
 
 

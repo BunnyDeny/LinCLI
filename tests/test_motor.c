@@ -61,4 +61,14 @@ CLI_COMMAND_ASYNC(motor, "motor", "Ramp motor to target RPM", motor_entry,
 			 target_rpm, 0, NULL, NULL, true),
 		  END_OPTIONS);
 
+/* 测试命令链短路的失败命令 */
+static int fail_handler(void *_args)
+{
+	(void)_args;
+	cli_printk("FAIL command executed, returning -1\r\n");
+	return -1;
+}
+
+CLI_COMMAND_NO_STRUCT(fail, "fail", "Always return -1", fail_handler);
+
 #endif /* CLI_ENABLE_TESTS */
