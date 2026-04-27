@@ -23,9 +23,6 @@
 #include <string.h>
 //#include <unistd.h>
 
-extern int scheduler_is_in_get_char(void);
-extern void cli_cmd_line_redraw_prompt(void);
-
 char log_level[3] = "8";
 
 _u8 cli_in_push_lock = 1;
@@ -196,115 +193,20 @@ __attribute__((weak)) const char *pre_CONT_gen(void)
 	return COLOR_CYAN "[CONT] ";
 }
 
-static const char *prefix_gen(const char *level)
-{
-	char lv = level[0];
-	const char *prefix;
-	switch (lv) {
-	case '0':
-		prefix = pre_EMERG_gen();
-		break;
-	case '1':
-		prefix = pre_ALERT_gen();
-		break;
-	case '2':
-		prefix = pre_CRIT_gen();
-		break;
-	case '3':
-		prefix = pre_ERR_gen();
-		break;
-	case '4':
-		prefix = pre_WARNING_gen();
-		break;
-	case '5':
-		prefix = pre_NOTICE_gen();
-		break;
-	case '6':
-		prefix = pre_INFO_gen();
-		break;
-	case '7':
-		prefix = pre_DEBUG_gen();
-		break;
-	case 'c':
-		prefix = pre_CONT_gen();
-		break;
-	default:
-		prefix = pre_DEFAULT_gen();
-		break;
-	}
-	return prefix;
-}
-
-static inline int is_kern_level(char c)
-{
-	return (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
-		c == '5' || c == '6' || c == '7' || c == 'c');
-}
-
-static char buffer[CLI_PRINTK_BUF_SIZE];
-
 int all_printk(const char *fmt, ...)
 {
 	int status;
+	char buf[CLI_PRINTK_BUF_SIZE];
 	va_list args;
 	va_start(args, fmt);
-	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	int len = vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
-	status = cli_out_push((_u8 *)buffer, len);
+	status = cli_out_push((_u8 *)buf, len);
 	if (status < 0)
 		return status;
 	if (cli_out_sync())
 		return CLI_ERR_IO_SYNC;
 	return 0;
-}
-
-int cli_printk(const char *fmt, ...)
-{
-	int status;
-	va_list args;
-	va_start(args, fmt);
-	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
-	va_end(args);
-	char pre[2] = { buffer[0], '\0' };
-	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
-		if (pre[0] > log_level[0]) {
-			return 0;
-		}
-	}
-	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
-	    strcmp("8", log_level)) {
-		return 0;
-	}
-
-	int in_interactive = scheduler_is_in_get_char();
-	if (in_interactive) {
-		cli_out_push((_u8 *)"\r\033[K", 4);
-	}
-
-	const char *_pre = prefix_gen(pre);
-	if (is_kern_level(buffer[0])) {
-		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
-	}
-	int pre_len = strlen(_pre);
-	if (len > 0 && pre_len >= 0) {
-		memmove(buffer + pre_len, buffer, len + 1);
-		memcpy(buffer, _pre, pre_len);
-		strcat(buffer, COLOR_NONE);
-		if (cli_out_sync())
-			return CLI_ERR_IO_SYNC;
-		status = cli_out_push((_u8 *)buffer,
-				      pre_len + len + strlen(COLOR_NONE));
-		if (status < 0)
-			return status;
-		if (cli_out_sync())
-			return CLI_ERR_IO_SYNC;
-	}
-
-	if (in_interactive) {
-		cli_cmd_line_redraw_prompt();
-	}
-
-	return len;
 }
 
 int cli_in_clear(void)

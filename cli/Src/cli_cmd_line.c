@@ -23,6 +23,7 @@
 #include "cmd_dispose.h"
 #include "init_d.h"
 #include "stateM.h"
+#include <stdarg.h>
 #include <string.h>
 
 uint8_t rows_to_clear_count = 1;
@@ -101,8 +102,43 @@ static void clear_and_up(int clears, int ups)
 	rows_to_clear_count = 1;
 }
 
+/* ============================================================
+ *  候选列表状态管理（供 cli_printk 重绘使用）
+ * ============================================================ */
+
+struct candidate_ctx {
+	int active; /* 0=none, 1=cmd, 2=all_opts, 3=long_opts */
+	char prefix[CMD_LINE_BUF_SIZE];
+	int prefix_len;
+	const cli_command_t *cmd;
+};
+static struct candidate_ctx candidate_ctx = { 0 };
+
+static void candidate_ctx_save(int active, const char *prefix, int prefix_len,
+			       const cli_command_t *cmd)
+{
+	candidate_ctx.active = active;
+	if (prefix && prefix_len > 0) {
+		int n = prefix_len < CMD_LINE_BUF_SIZE ? prefix_len :
+							 CMD_LINE_BUF_SIZE - 1;
+		memcpy(candidate_ctx.prefix, prefix, n);
+		candidate_ctx.prefix[n] = '\0';
+		candidate_ctx.prefix_len = n;
+	} else {
+		candidate_ctx.prefix[0] = '\0';
+		candidate_ctx.prefix_len = 0;
+	}
+	candidate_ctx.cmd = cmd;
+}
+
+static void candidate_ctx_clear(void)
+{
+	candidate_ctx.active = 0;
+}
+
 static void cmd_line_replace(const char *new_buf, int new_size)
 {
+	candidate_ctx_clear();
 	int status;
 
 	status = cli_out_push((_u8 *)"\r\033[K", 4);
@@ -166,9 +202,66 @@ static void cmd_line_redraw(void)
 	}
 }
 
-void cli_cmd_line_redraw_prompt(void)
+/* ============================================================
+ *  cli_printk 辅助函数（从 cli_io.c 迁移而来）
+ * ============================================================ */
+
+static char buffer[CLI_PRINTK_BUF_SIZE];
+
+extern const char *pre_EMERG_gen(void);
+extern const char *pre_ALERT_gen(void);
+extern const char *pre_CRIT_gen(void);
+extern const char *pre_ERR_gen(void);
+extern const char *pre_WARNING_gen(void);
+extern const char *pre_NOTICE_gen(void);
+extern const char *pre_INFO_gen(void);
+extern const char *pre_DEBUG_gen(void);
+extern const char *pre_DEFAULT_gen(void);
+extern const char *pre_CONT_gen(void);
+
+static const char *prefix_gen(const char *level)
 {
-	cmd_line_redraw();
+	char lv = level[0];
+	const char *prefix;
+	switch (lv) {
+	case '0':
+		prefix = pre_EMERG_gen();
+		break;
+	case '1':
+		prefix = pre_ALERT_gen();
+		break;
+	case '2':
+		prefix = pre_CRIT_gen();
+		break;
+	case '3':
+		prefix = pre_ERR_gen();
+		break;
+	case '4':
+		prefix = pre_WARNING_gen();
+		break;
+	case '5':
+		prefix = pre_NOTICE_gen();
+		break;
+	case '6':
+		prefix = pre_INFO_gen();
+		break;
+	case '7':
+		prefix = pre_DEBUG_gen();
+		break;
+	case 'c':
+		prefix = pre_CONT_gen();
+		break;
+	default:
+		prefix = pre_DEFAULT_gen();
+		break;
+	}
+	return prefix;
+}
+
+static inline int is_kern_level(char c)
+{
+	return (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
+		c == '5' || c == '6' || c == '7' || c == 'c');
 }
 
 static int str_common_prefix_len(const char *a, const char *b)
@@ -305,6 +398,7 @@ static void display_candidates(const char *prefix, int prefix_len,
 
 static void list_cmd_candidates(const char *prefix, int prefix_len)
 {
+	candidate_ctx_save(1, prefix, prefix_len, NULL);
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
 	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS);
 	for (int i = 0; i < rows_to_clear_count; i++) {
@@ -343,6 +437,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		complete_multi_cmd(match, prefix, prefix_len, lcp);
 		cli_mpool_free(lcp);
 	} else {
+		candidate_ctx_clear();
 		clear_and_up(rows_to_clear_count, rows_to_clear_count);
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
@@ -352,6 +447,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 
 static void list_all_options(const cli_command_t *cmd)
 {
+	candidate_ctx_save(2, NULL, 0, cmd);
 	clear_and_up(rows_to_clear_count, rows_to_clear_count - 1);
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
@@ -650,6 +746,7 @@ _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 
 static int valid_char_task(void *pch)
 {
+	candidate_ctx_clear();
 	int status;
 	char ch = *((char *)pch);
 	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
@@ -798,6 +895,7 @@ _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
 
 static int history_up_task(void *pch)
 {
+	candidate_ctx_clear();
 	int status;
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
 	cmd_line_redraw();
@@ -816,6 +914,7 @@ _EXPORT_STATE_SYMBOL(history_up, NULL, history_up_task, NULL, ".cli_cmd_line");
 
 static int history_down_task(void *pch)
 {
+	candidate_ctx_clear();
 	int status;
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
 	cmd_line_redraw();
@@ -898,6 +997,7 @@ _EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 
 static int delete(void *pch)
 {
+	candidate_ctx_clear();
 	int status;
 	if (cmd_line.pos == cmd_line.size) {
 		goto delete_exit;
@@ -938,6 +1038,7 @@ _EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
 
 static int backspace_handler(void *pch)
 {
+	candidate_ctx_clear();
 	int status;
 	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
 		status = cli_out_push((_u8 *)"\b \b", 4);
@@ -990,6 +1091,7 @@ _EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
 
 static int clear_handler(void *arg)
 {
+	candidate_ctx_clear();
 	int status;
 	status = cli_out_push((_u8 *)"\x1b[H\x1b[2J", sizeof("\x1b[H\x1b[2J"));
 	if (status < 0) {
@@ -1011,6 +1113,7 @@ static void enter_entry(void *pch)
 }
 static int enter_press(void *pch)
 {
+	candidate_ctx_clear();
 	// int status;
 	origin_cmd.size = cmd_line.size;
 	for (int i = 0; i < origin_cmd.size; i++) {
@@ -1090,4 +1193,70 @@ int cli_cmd_line_task(char ch)
 		}
 	}
 	return CLI_OK;
+}
+
+/* ============================================================
+ *  cli_printk（从 cli_io.c 迁移至此，直接访问 cmd_line 状态）
+ * ============================================================ */
+
+extern int scheduler_is_in_get_char(void);
+
+int cli_printk(const char *fmt, ...)
+{
+	int status;
+	va_list args;
+	va_start(args, fmt);
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	char pre[2] = { buffer[0], '\0' };
+	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
+		if (pre[0] > log_level[0]) {
+			return 0;
+		}
+	}
+	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
+	    strcmp("8", log_level)) {
+		return 0;
+	}
+
+	int in_interactive = scheduler_is_in_get_char();
+	if (in_interactive) {
+		cli_out_push((_u8 *)"\r\033[K", 4);
+	}
+
+	const char *_pre = prefix_gen(pre);
+	if (is_kern_level(buffer[0])) {
+		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
+	}
+	int pre_len = strlen(_pre);
+	if (len > 0 && pre_len >= 0) {
+		memmove(buffer + pre_len, buffer, len + 1);
+		memcpy(buffer, _pre, pre_len);
+		strcat(buffer, COLOR_NONE);
+		if (cli_out_sync())
+			return CLI_ERR_IO_SYNC;
+		status = cli_out_push((_u8 *)buffer,
+				      pre_len + len + strlen(COLOR_NONE));
+		if (status < 0)
+			return status;
+		if (cli_out_sync())
+			return CLI_ERR_IO_SYNC;
+	}
+
+	if (in_interactive) {
+		if (candidate_ctx.active == 1) {
+			list_cmd_candidates(candidate_ctx.prefix,
+					    candidate_ctx.prefix_len);
+		} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
+			list_all_options(candidate_ctx.cmd);
+		} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
+			list_long_option_candidates(candidate_ctx.cmd,
+						    candidate_ctx.prefix,
+						    candidate_ctx.prefix_len);
+		} else {
+			cmd_line_redraw();
+		}
+	}
+
+	return len;
 }
