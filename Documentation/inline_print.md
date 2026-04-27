@@ -57,7 +57,6 @@ led    loglevel
 [INFO] voltage low!
 lin@linCli> l
 led    loglevel
-lin@linCli> l
 ```
 
 候选列表被完整重绘，用户体验连贯。
