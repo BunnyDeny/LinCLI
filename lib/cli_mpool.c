@@ -15,21 +15,6 @@ static uint8_t pool[CLI_MPOOL_COUNT][CLI_MPOOL_SIZE];
 static volatile uint32_t bitmap = 0;
 static const char *alloc_owner[CLI_MPOOL_COUNT] = { NULL };
 
-void *cli_mpool_alloc_base(void)
-{
-	cli_enter_critical();
-	for (int i = 0; i < CLI_MPOOL_COUNT; i++) {
-		if (!(bitmap & (1U << i))) {
-			bitmap |= (1U << i);
-			alloc_owner[i] = NULL;
-			cli_exit_critical();
-			return &pool[i][0];
-		}
-	}
-	cli_exit_critical();
-	return NULL;
-}
-
 void *cli_mpool_alloc_caller(const char *caller)
 {
 	cli_enter_critical();

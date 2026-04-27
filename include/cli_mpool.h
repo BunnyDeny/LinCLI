@@ -19,7 +19,6 @@
 extern "C" {
 #endif
 
-void *cli_mpool_alloc_base(void);
 void cli_mpool_free(void *ptr);
 void cli_mpool_get_usage(const char **owners, int *used_count);
 void cli_mpool_dump_usage(void);
