@@ -42,6 +42,7 @@ void *cli_mpool_alloc_caller(const char *caller)
 		}
 	}
 	cli_exit_critical();
+	cli_mpool_dump_usage();
 	return NULL;
 }
 
