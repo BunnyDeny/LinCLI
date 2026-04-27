@@ -631,6 +631,7 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 		       "exceeds buffer by %zu bytes\r\n",
 		       cmd_def->name, cmd_def->arg_struct_size,
 		       cmd_def->arg_buf_size);
+		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
 		return NULL;
 	}
@@ -660,6 +661,7 @@ int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
 	if (status < 0) {
 		pr_err("command parsing failed: %s\r\n", argv[0]);
 		cli_print_help(cmd_def);
+		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
 		return status;
 	}
