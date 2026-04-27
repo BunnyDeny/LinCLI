@@ -21,7 +21,7 @@ extern "C" {
 
 void cli_mpool_free(void *ptr);
 void cli_mpool_get_usage(const char **owners, int *used_count);
-void cli_mpool_dump_usage(void);
+extern void cli_mpool_dump_usage(void);
 
 #define cli_mpool_alloc() cli_mpool_alloc_caller(__func__)
 void *cli_mpool_alloc_caller(const char *caller);
