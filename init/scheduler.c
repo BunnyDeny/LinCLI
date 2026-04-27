@@ -417,6 +417,6 @@ int scheduler_task(void)
 	}
 	cnt++;
 	if ((cnt % 50) == 0)
-		pr_info("test\r\n");
+		pr_info("test : %7d\r\n", cnt);
 	return 0;
 }
