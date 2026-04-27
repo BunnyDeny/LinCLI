@@ -34,12 +34,6 @@ struct init_d *const _init_d_start[1]
 struct init_d *const _init_d_end[1]
 	__attribute__((used, section(".my_init_d.1.end"))) = { NULL };
 
-/* .dispose */
-struct tState *const _dispose_start[1]
-	__attribute__((used, section(".dispose.0.start"))) = { NULL };
-struct tState *const _dispose_end[1]
-	__attribute__((used, section(".dispose.1.end"))) = { NULL };
-
 /* .alias_cmd */
 struct alias_cmd *const _alias_cmd_start[1]
 	__attribute__((used, section(".alias_cmd.0.start"))) = { NULL };

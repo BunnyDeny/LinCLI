@@ -62,7 +62,10 @@ typedef struct cli_command {
 	size_t arg_struct_size; // 结构体大小
 	const cli_option_t *options; // 选项数组
 	size_t option_count; // 选项数量
-	int (*validator)(void *); // 自定义验证函数
+	int (*validator)(void *); // 自定义验证函数（旧接口兼容）
+	void (*cmd_entry)(void *); // 命令入口，只执行一次
+	int (*cmd_task)(void *); // 命令主体，每次调度器轮询执行一次
+	void (*cmd_exit)(void *); // 命令出口，只执行一次
 	void *arg_buf; // 命令参数解析缓冲区指针
 	size_t arg_buf_size; // 缓冲区大小
 } cli_command_t;
@@ -205,6 +208,19 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	CLI_OFFSETOF(_stype, _field##_count)
 
 /* ============================================================
+ * 非阻塞命令执行控制宏
+ * ============================================================
+ *
+ * cmd_task 返回值语义：
+ *   ret < 0  : 执行失败，退出命令，返回值由调度器记录
+ *   ret == 0 : 执行成功，退出命令
+ *   ret == CLI_CONTINUE : 本次执行完毕，但命令不结束，下次 scheduler 轮询继续
+ *   ret > 1  : 扩展语义，视为执行成功并退出
+ */
+
+#define CLI_CONTINUE 1 /* 继续执行，下次 scheduler 轮询再来 */
+
+/* ============================================================
  * CLI_COMMAND宏：注册一个命令（通过链接脚本段收集）
  * ============================================================
  *
@@ -218,7 +234,8 @@ extern struct alias_cmd *const _alias_cmd_end[];
  */
 
 #define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts,     \
-				   _opts_cnt, _vld, _buf, _buf_size, _section) \
+				   _opts_cnt, _vld, _entry, _task, _exit,    \
+				   _buf, _buf_size, _section)                \
 	static const cli_command_t _cli_cmd_def_##_obj = {                     \
 		.name = _cmd_str,                                              \
 		.doc = _doc_str,                                               \
@@ -227,6 +244,9 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		.options = _opts,                                              \
 		.option_count = _opts_cnt,                                     \
 		.validator = _vld,                                             \
+		.cmd_entry = _entry,                                           \
+		.cmd_task = _task,                                             \
+		.cmd_exit = _exit,                                             \
 		.arg_buf = _buf,                                               \
 		.arg_buf_size = _buf_size,                                     \
 	};                                                                     \
@@ -248,12 +268,18 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
                                                                              \
 	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */     \
+	/* 旧接口兼容：parse_cb 同时填入 validator 和 cmd_task，          \
+	 * entry 和 exit 留空，scheduler 通过 entry/exit 是否为 NULL      \
+	 * 判断这是旧式命令（执行一次即退出） */                           \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                          \
 		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr), \
 		_cli_options_##name,                                         \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),        \
-		(int (*)(void *))parse_cb, NULL, CLI_CMD_BUF_SIZE,           \
-		".cli_commands")
+		(int (*)(void *))parse_cb,                                   \
+		NULL,                                                        \
+		(int (*)(void *))parse_cb,                                   \
+		NULL,                                                        \
+		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
 #define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \
 			     buf, buf_size, ...)                               \
@@ -265,13 +291,19 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr),   \
 		_cli_options_##name,                                           \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
-		(int (*)(void *))parse_cb, buf, buf_size, ".cli_commands")
+		(int (*)(void *))parse_cb,                                     \
+		NULL,                                                          \
+		(int (*)(void *))parse_cb,                                     \
+		NULL,                                                          \
+		buf, buf_size, ".cli_commands")
 
 /* 无参数结构体、无选项的命令（arg_struct_size 为 0，缓冲区从内存池申请） */
 #define CLI_COMMAND_NO_STRUCT(name, cmd_str, doc_str, parse_cb)        \
 	_EXPORT_CLI_COMMAND_SYMBOL(name, cmd_str, doc_str, 0, NULL, 0, \
 				   (int (*)(void *))parse_cb, NULL,    \
-				   CLI_CMD_BUF_SIZE, ".cli_commands")
+				   (int (*)(void *))parse_cb,          \
+				   NULL,                               \
+				   NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
@@ -285,7 +317,8 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		__attribute__((used, section(".alias_cmd.1"))) =           \
 			&alias_cmd##new;                                   \
 	_EXPORT_CLI_COMMAND_SYMBOL(cmd_alias##new, #new, NULL, 0, NULL, 0, \
-				   (int (*)(void *))NULL, NULL, 0,         \
+				   (int (*)(void *))NULL, NULL,          \
+				   NULL, NULL, NULL, 0,                  \
 				   ".cli_commands")
 
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
@@ -297,6 +330,35 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)
 #endif
 
+/* ============================================================
+ * 新增：非阻塞三阶段命令注册宏
+ * ============================================================ */
+
+#define CLI_COMMAND_ASYNC(name, cmd_str, doc_str, _entry, _task, _exit,        \
+			    arg_struct_ptr, ...)                               \
+	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };              \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                              \
+		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr),     \
+		_cli_options_##name,                                             \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),            \
+		NULL,                                                            \
+		(void (*)(void *))_entry,                                        \
+		(int (*)(void *))_task,                                          \
+		(void (*)(void *))_exit,                                         \
+		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
+
+/* ============================================================
+ * 新增：命令解析准备与清理接口（取代 dispose_mec 状态机）
+ * ============================================================ */
+
+int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
+		      int *cmd_ret);
+void cmd_parse_cleanup(const cli_command_t *cmd_def);
+
+/* 兼容旧接口：同步一次性执行命令（内部使用新架构） */
 int dispose_task(char *cmd, int *cmd_ret);
+
+/* 命令链拆分工具 */
+int split_cmd_chain(char *buf, char **cmds, int max_cmds);
 
 #endif

@@ -27,15 +27,6 @@
 #include <errno.h>
 #include <limits.h>
 
-struct tStateEngine dispose_mec;
-extern struct tState *const _dispose_start[];
-extern struct tState *const _dispose_end[];
-
-struct dispose_ctx {
-	char *cmd;
-	int *cmd_ret;
-};
-
 #define CLI_HELP_REQ_MARK_SIZE 16
 #define CLI_HELP_DEP_MARK_SIZE 128
 #define CLI_MAX_ARGV 64
@@ -646,37 +637,20 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 	return cmd_def;
 }
 
-static int run_cmd_validator(const cli_command_t *cmd_def, int *cmd_ret)
-{
-	if (!cmd_def->validator) {
-		*cmd_ret = 0;
-		return 0;
-	}
-	if (cli_in_clear() < 0) {
-		pr_err("failed to clear input buffer\r\n");
-		*cmd_ret = -1;
-		return -1;
-	}
-	int ret = cmd_def->validator(cmd_def->arg_buf);
-	*cmd_ret = ret;
-	if (ret < 0) {
-		pr_err("command %s execution failed, return value: %d\r\n",
-		       cmd_def->name, ret);
-		return -1;
-	}
-	return 0;
-}
+/* ============================================================
+ * 新增：命令解析准备与清理（取代 dispose_mec 状态机）
+ * ============================================================ */
 
-static int dispose_start_task(void *arg)
+int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
+		      int *cmd_ret)
 {
 	static char *argv[CLI_MAX_ARGV];
-	struct dispose_ctx *ctx = (struct dispose_ctx *)arg;
-	int argc = tokenize(ctx->cmd, argv, CLI_MAX_ARGV);
+	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
+
 	cli_printk("\r\n");
 	cli_printk("\033[K");
 
-	const cli_command_t *cmd_def =
-		prepare_cmd_def(argc, argv, ctx->cmd_ret);
+	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, cmd_ret);
 	if (!cmd_def)
 		return dispose_exit;
 
@@ -686,22 +660,25 @@ static int dispose_start_task(void *arg)
 	if (status < 0) {
 		pr_err("command parsing failed: %s\r\n", argv[0]);
 		cli_print_help(cmd_def);
-		*ctx->cmd_ret = -1;
-	} else {
-		run_cmd_validator(cmd_def, ctx->cmd_ret);
+		*cmd_ret = -1;
+		return status;
 	}
 
+	*out_cmd_def = cmd_def;
+	return CLI_OK;
+}
+
+void cmd_parse_cleanup(const cli_command_t *cmd_def)
+{
 	if (cmd_def == &cmd_runtime && cmd_runtime.arg_buf) {
 		cli_mpool_free(cmd_runtime.arg_buf);
 		cmd_runtime.arg_buf = NULL;
 	}
-	return dispose_exit;
 }
-_EXPORT_STATE_SYMBOL(dispose_start, NULL, dispose_start_task, NULL, ".dispose");
 
 #define CMD_CHAIN_MAX 8
 
-static int split_cmd_chain(char *buf, char **cmds, int max_cmds)
+int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 {
 	int cnt = 0;
 	char *p = buf;
@@ -785,47 +762,56 @@ static char *alias_replace(char *cmd, char *buf, size_t buf_size)
 }
 #endif
 
-int dispose_init(void)
-{
-	int status = engine_init(&dispose_mec, "dispose_start", _dispose_start,
-				 _dispose_end);
-	if (status < 0) {
-		return status;
-	}
-	return CLI_OK;
-}
+/* ============================================================
+ * 兼容旧接口：同步一次性执行命令
+ * ============================================================ */
 
-static int run_dispose_once(char *cmd, int *cmd_ret)
+static int run_dispose_once_sync(char *cmd, int *cmd_ret)
 {
-	int status = dispose_init();
-	if (status < 0) {
-		pr_err("dispose_init exception: %s (%d)\r\n",
-		       cli_strerror(status), status);
-		return status;
-	}
+	const cli_command_t *cmd_def;
+	int status;
 	char *alias_buf = cli_mpool_alloc();
 	if (!alias_buf) {
 		pr_err("out of memory\r\n");
 		return CLI_ERR_NULL;
 	}
+
 #if ALIAS_EN
 	cmd = alias_replace(cmd, alias_buf, CLI_MPOOL_SIZE);
 #endif
-	struct dispose_ctx ctx = { cmd, cmd_ret };
-	*cmd_ret = 0;
-	while (1) {
-		status = stateEngineRun(&dispose_mec, &ctx);
-		if (status < 0) {
-			pr_err("dispose state machine exception, "
-			       "error code: %d\r\n",
-			       status);
-			cli_mpool_free(alias_buf);
-			return status;
-		} else if (status == dispose_exit) {
-			cli_mpool_free(alias_buf);
-			return CLI_OK;
-		}
+
+	status = cmd_parse_prepare(cmd, &cmd_def, cmd_ret);
+	if (status < 0) {
+		cli_mpool_free(alias_buf);
+		return status;
 	}
+	if (status == dispose_exit) {
+		cli_mpool_free(alias_buf);
+		return CLI_OK;
+	}
+
+	/* 执行命令：entry → task → exit */
+	if (cmd_def->cmd_entry)
+		cmd_def->cmd_entry(cmd_def->arg_buf);
+
+	if (cmd_def->cmd_task) {
+		/* 新接口：循环执行 task 直到非 CLI_CONTINUE */
+		int task_ret;
+		do {
+			task_ret = cmd_def->cmd_task(cmd_def->arg_buf);
+		} while (task_ret == CLI_CONTINUE);
+		*cmd_ret = task_ret;
+	} else if (cmd_def->validator) {
+		/* 旧接口：一次性执行 validator */
+		*cmd_ret = cmd_def->validator(cmd_def->arg_buf);
+	}
+
+	if (cmd_def->cmd_exit)
+		cmd_def->cmd_exit(cmd_def->arg_buf);
+
+	cmd_parse_cleanup(cmd_def);
+	cli_mpool_free(alias_buf);
+	return CLI_OK;
 }
 
 int dispose_task(char *cmd, int *cmd_ret)
@@ -863,7 +849,7 @@ int dispose_task(char *cmd, int *cmd_ret)
 			*cmd_ret = 0;
 			goto out;
 		}
-		int status = run_dispose_once(cmds[i], cmd_ret);
+		int status = run_dispose_once_sync(cmds[i], cmd_ret);
 		if (status < 0) {
 			ret = status;
 			goto out;

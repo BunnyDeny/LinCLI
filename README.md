@@ -474,6 +474,8 @@ lin@linCli>
 
 - **[项目结构与核心机制](Documentation/architecture.md)** — 介绍 `cli/`、`lib/`、`init/`、`tests/` 各目录职责，以及链接脚本段自动收集命令的核心原理。适合在注册完第一个命令之后，想要理解框架内部工作机制时阅读。
 
+- **[异步非阻塞命令](Documentation/async_commands.md)** — 介绍 `CLI_COMMAND_ASYNC` 宏与 `entry/task/exit` 三阶段接口。把耗时操作（电机控制、传感器等待、Flash 擦写等）拆成多次调度周期分片执行，避免阻塞 CLI 主循环。包含返回值语义、状态流转图和完整示例。
+
 - **[开机初始化函数](Documentation/init.md)** — 通过 `_EXPORT_INIT_SYMBOL` 宏自动收集开机初始化例程，无需在 `main()` 中手动调用。支持按优先级排序执行，非常适合 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
 
 - **[移植到单片机](Documentation/porting.md)** — 将 LinCLI 从 PC 模拟环境移植到 MCU 的完整指南，包括 UART 中断输入映射、调度循环集成、临界区保护实现、单字符输出覆盖，以及 GCC/LD 和 Keil MDK 的链接脚本适配示例。

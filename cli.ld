@@ -18,11 +18,6 @@
     KEEP(*(.my_init_d.1))
     KEEP(*(.my_init_d.1.end))
   }
-  .dispose : {
-    KEEP(*(.dispose.0.start))
-    KEEP(*(.dispose.1))
-    KEEP(*(.dispose.1.end))
-  }
   .alias_cmd : {
     KEEP(*(.alias_cmd.0.start))
     KEEP(*(.alias_cmd.1))
