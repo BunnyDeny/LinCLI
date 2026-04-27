@@ -125,6 +125,9 @@ struct scheduler_cmd_ctx {
 
 	/* 命令执行完后切换到的目标状态名 */
 	char next_state[32];
+
+	/* 别名替换缓冲区，在 cmd_run_exit 中释放 */
+	char *alias_buf;
 };
 
 static struct scheduler_cmd_ctx cmd_ctx;
@@ -185,6 +188,11 @@ void scheduler_cmd_run_exit(void *private)
 
 	cmd_parse_cleanup(cmd_ctx.cmd_def);
 	cmd_ctx.cmd_def = NULL;
+
+	if (cmd_ctx.alias_buf) {
+		cli_mpool_free(cmd_ctx.alias_buf);
+		cmd_ctx.alias_buf = NULL;
+	}
 }
 
 _EXPORT_STATE_SYMBOL(scheduler_cmd_run,
@@ -226,20 +234,44 @@ int scheduler_auto_run_task(void *private)
 	memcpy(origin_cmd.buf, cmd, len);
 	origin_cmd.size = len;
 
+	char *alias_buf = cli_mpool_alloc();
+	if (!alias_buf) {
+		pr_err("out of memory\r\n");
+		cmd_ctx.auto_run_idx++;
+		return CLI_OK;
+	}
+
+#if ALIAS_EN
+	{
+		char *replaced = alias_replace(origin_cmd.buf, alias_buf,
+					       CLI_MPOOL_SIZE);
+		if (replaced != origin_cmd.buf) {
+			int repl_len = strlen(replaced);
+			if (repl_len < CMD_LINE_BUF_SIZE) {
+				memcpy(origin_cmd.buf, replaced, repl_len + 1);
+				origin_cmd.size = repl_len;
+			}
+		}
+	}
+#endif
+
 	status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.cmd_def,
 				   &cmd_ctx.cmd_ret);
 	if (status < 0) {
+		cli_mpool_free(alias_buf);
 		/* 解析失败，跳过该命令，下次轮询处理下一个 */
 		cmd_ctx.auto_run_idx++;
 		return CLI_OK;
 	}
 	if (status == dispose_exit) {
+		cli_mpool_free(alias_buf);
 		/* 帮助已打印或无需执行，下次轮询处理下一个 */
 		cmd_ctx.auto_run_idx++;
 		return CLI_OK;
 	}
 
 	/* 准备好后，切换到命令执行状态 */
+	cmd_ctx.alias_buf = alias_buf;
 	cmd_ctx.auto_run_idx++;
 	strncpy(cmd_ctx.next_state, "scheduler_auto_run",
 		sizeof(cmd_ctx.next_state));
@@ -295,17 +327,30 @@ int scheduler_dispose_task(void *arg)
 	char *current_cmd = cmd_ctx.cmds[cmd_ctx.chain_idx];
 	cmd_ctx.chain_idx++;
 
+	char *alias_buf = cli_mpool_alloc();
+	if (!alias_buf) {
+		pr_err("out of memory\r\n");
+		goto chain_failed;
+	}
+
+#if ALIAS_EN
+	current_cmd = alias_replace(current_cmd, alias_buf, CLI_MPOOL_SIZE);
+#endif
+
 	status = cmd_parse_prepare(current_cmd, &cmd_ctx.cmd_def,
 				   &cmd_ctx.cmd_ret);
 	if (status < 0) {
+		cli_mpool_free(alias_buf);
 		/* 解析失败，中断命令链 */
 		goto chain_failed;
 	}
 	if (status == dispose_exit) {
+		cli_mpool_free(alias_buf);
 		/* 无需执行，继续下一个（下次调度直接再来） */
 		return CLI_OK;
 	}
 
+	cmd_ctx.alias_buf = alias_buf;
 	strncpy(cmd_ctx.next_state, "scheduler_dispose",
 		sizeof(cmd_ctx.next_state));
 	return state_switch(&scheduler_eng, "scheduler_cmd_run");

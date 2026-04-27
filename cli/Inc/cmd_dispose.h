@@ -361,4 +361,9 @@ int dispose_task(char *cmd, int *cmd_ret);
 /* 命令链拆分工具 */
 int split_cmd_chain(char *buf, char **cmds, int max_cmds);
 
+#if ALIAS_EN
+/* 别名替换工具 */
+char *alias_replace(char *cmd, char *buf, size_t buf_size);
+#endif
+
 #endif

@@ -739,7 +739,7 @@ static bool is_prefix(char *pre, char *str)
 	return true;
 }
 
-static char *alias_replace(char *cmd, char *buf, size_t buf_size)
+char *alias_replace(char *cmd, char *buf, size_t buf_size)
 {
 	struct alias_cmd *alias_cmd;
 	char *p = cmd;
