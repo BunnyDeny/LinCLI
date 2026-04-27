@@ -23,11 +23,11 @@
 
 void pr_logo(void *arg)
 {
-	cli_printk(" _     _        ____ _     ___ \r\n");
-	cli_printk("| |   (_)_ __  / ___| |   |_ _|\r\n");
-	cli_printk("| |   | | '_ \\| |   | |    | | \r\n");
-	cli_printk("| |___| | | | | |___| |___ | | \r\n");
-	cli_printk("|_____|_|_| |_|\\____|_____|___|\r\n");
+	all_printk(" _     _        ____ _     ___ \r\n");
+	all_printk("| |   (_)_ __  / ___| |   |_ _|\r\n");
+	all_printk("| |   | | '_ \\| |   | |    | | \r\n");
+	all_printk("| |___| | | | | |___| |___ | | \r\n");
+	all_printk("|_____|_|_| |_|\\____|_____|___|\r\n");
 
 	pr_info("welcome to use LinCLI\r\n");
 }

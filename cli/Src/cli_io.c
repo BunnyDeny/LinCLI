@@ -18,6 +18,7 @@
 
 #include "cli_io.h"
 #include "cli_critical.h"
+#include "cmd_dispose.h"
 #include <stdarg.h>
 #include <string.h>
 //#include <unistd.h>
@@ -239,6 +240,21 @@ static inline int is_kern_level(char c)
 
 static char buffer[CLI_PRINTK_BUF_SIZE];
 
+int all_printk(const char *fmt, ...)
+{
+	int status;
+	va_list args;
+	va_start(args, fmt);
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	status = cli_out_push((_u8 *)buffer, len);
+	if (status < 0)
+		return status;
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	return 0;
+}
+
 int cli_printk(const char *fmt, ...)
 {
 	int status;
@@ -299,3 +315,74 @@ void reset_cli_in_push_lock(void)
 {
 	cli_in_push_lock = 0;
 }
+
+/* ============================================================
+ *  loglevel 命令：控制日志过滤级别
+ * ============================================================ */
+
+struct loglevel_args {
+	bool emerg;
+	bool alert;
+	bool crit;
+	bool err;
+	bool warning;
+	bool notice;
+	bool info;
+	bool debug;
+	bool default_lvl;
+	bool cont;
+};
+
+static int loglevel_handler(void *_args)
+{
+	struct loglevel_args *args = _args;
+	if (args->emerg)
+		strcpy(log_level, KERN_EMERG);
+	else if (args->alert)
+		strcpy(log_level, KERN_ALERT);
+	else if (args->crit)
+		strcpy(log_level, KERN_CRIT);
+	else if (args->err)
+		strcpy(log_level, KERN_ERR);
+	else if (args->warning)
+		strcpy(log_level, KERN_WARNING);
+	else if (args->notice)
+		strcpy(log_level, KERN_NOTICE);
+	else if (args->info)
+		strcpy(log_level, KERN_INFO);
+	else if (args->debug)
+		strcpy(log_level, KERN_DEBUG);
+	else
+		strcpy(log_level, "8");
+	return 0;
+}
+
+CLI_COMMAND(
+	loglevel, "loglevel", "Set log level filter", loglevel_handler,
+	(struct loglevel_args *)0,
+	OPTION(0, "emerg", BOOL, "Set log level to EMERG (0)",
+	       struct loglevel_args, emerg, 0, NULL,
+	       "alert crit err warning notice info debug default cont", false),
+	OPTION(0, "alert", BOOL, "Set log level to ALERT (1)",
+	       struct loglevel_args, alert, 0, NULL,
+	       "emerg crit err warning notice info debug default cont", false),
+	OPTION(0, "crit", BOOL, "Set log level to CRIT (2)",
+	       struct loglevel_args, crit, 0, NULL,
+	       "emerg alert err warning notice info debug default cont", false),
+	OPTION(0, "err", BOOL, "Set log level to ERR (3)", struct loglevel_args,
+	       err, 0, NULL,
+	       "emerg alert crit warning notice info debug default cont",
+	       false),
+	OPTION(0, "warning", BOOL, "Set log level to WARNING (4)",
+	       struct loglevel_args, warning, 0, NULL,
+	       "emerg alert crit err notice info debug default cont", false),
+	OPTION(0, "notice", BOOL, "Set log level to NOTICE (5)",
+	       struct loglevel_args, notice, 0, NULL,
+	       "emerg alert crit err warning info debug default cont", false),
+	OPTION(0, "info", BOOL, "Set log level to INFO (6)",
+	       struct loglevel_args, info, 0, NULL,
+	       "emerg alert crit err warning notice debug default cont", false),
+	OPTION(0, "debug", BOOL, "Set log level to DEBUG (7)",
+	       struct loglevel_args, debug, 0, NULL,
+	       "emerg alert crit err warning notice info default cont", false),
+	END_OPTIONS);

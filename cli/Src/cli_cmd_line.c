@@ -110,7 +110,7 @@ static void cmd_line_replace(const char *new_buf, int new_size)
 		return;
 	if (cli_out_sync())
 		return;
-	cli_printk("\033[K");
+	all_printk("\033[K");
 	cli_prompt_print();
 
 	if (new_size > 0) {
@@ -147,7 +147,7 @@ static void cmd_line_redraw(void)
 		return;
 	if (cli_out_sync())
 		return;
-	cli_printk("\033[K");
+	all_printk("\033[K");
 	cli_prompt_print();
 	if (cmd_line.size > 0) {
 		status = cli_out_push((_u8 *)cmd_line.buf, cmd_line.size);
@@ -990,7 +990,7 @@ static int clear_handler(void *arg)
 	if (status < 0) {
 		return status;
 	}
-	cli_printk("\033[K");
+	all_printk("\033[K");
 	cli_prompt_print();
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {

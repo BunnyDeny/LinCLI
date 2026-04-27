@@ -548,9 +548,9 @@ static void cli_print_help(const cli_command_t *cmd)
 		return;
 	}
 
-	cli_printk(" command     : %s\r\n", cmd->name);
-	cli_printk(" description : %s\r\n", cmd->doc);
-	cli_printk(" option      :\r\n");
+	all_printk(" command     : %s\r\n", cmd->name);
+	all_printk(" description : %s\r\n", cmd->doc);
+	all_printk(" option      :\r\n");
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		cli_help_req_mark[0] = '\0';
@@ -570,7 +570,7 @@ static void cli_print_help(const cli_command_t *cmd)
 					 " [conflicts:%s]", opt->conflicts);
 			}
 		}
-		cli_printk("      -%c, --%-16s %s%s%s\r\n",
+		all_printk("      -%c, --%-16s %s%s%s\r\n",
 			   opt->short_opt ? opt->short_opt : ' ',
 			   opt->long_opt ? opt->long_opt : "",
 			   opt->help ? opt->help : "", cli_help_req_mark,
@@ -647,8 +647,8 @@ int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
 	static char *argv[CLI_MAX_ARGV];
 	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
 
-	cli_printk("\r\n");
-	cli_printk("\033[K");
+	all_printk("\r\n");
+	all_printk("\033[K");
 
 	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, cmd_ret);
 	if (!cmd_def)
@@ -712,15 +712,15 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 static int alias_handler(void *_args)
 {
 	struct alias_cmd *alias_cmd;
-	cli_printk("\r\n%-20s %-40s\r\n", "ALIAS", "ORIGINAL COMMAND");
-	cli_printk(
+	all_printk("\r\n%-20s %-40s\r\n", "ALIAS", "ORIGINAL COMMAND");
+	all_printk(
 		"------------------------------------------------------------\r\n");
 	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
 	{
-		cli_printk("%-20s %-40s\r\n", alias_cmd->alias_name,
+		all_printk("%-20s %-40s\r\n", alias_cmd->alias_name,
 			   alias_cmd->original_name);
 	}
-	cli_printk(
+	all_printk(
 		"------------------------------------------------------------\r\n");
 	return 0;
 }
@@ -761,7 +761,3 @@ char *alias_replace(char *cmd, char *buf, size_t buf_size)
 	return cmd;
 }
 #endif
-
-
-
-

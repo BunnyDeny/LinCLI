@@ -32,7 +32,7 @@ extern struct tState *const _scheduler_end[];
 
 __attribute__((weak)) void cli_prompt_print(void)
 {
-	cli_printk(COLOR_BOLD COLOR_GREEN
+	all_printk(COLOR_BOLD COLOR_GREEN
 		   "lin" COLOR_NONE COLOR_BOLD
 		   "@" COLOR_NONE COLOR_BOLD COLOR_CYAN
 		   "linCli" COLOR_NONE COLOR_BOLD COLOR_YELLOW "> " COLOR_NONE);
@@ -68,7 +68,7 @@ void scheduler_get_char_entry(void *private)
 	if (status < 0) {
 		pr_err("failed to clear input buffer\r\n");
 	}
-	cli_printk("\r\n");
+	all_printk("\r\n");
 	cli_prompt_print();
 	reset_cli_in_push_lock();
 }
@@ -195,10 +195,8 @@ void scheduler_cmd_run_exit(void *private)
 	}
 }
 
-_EXPORT_STATE_SYMBOL(scheduler_cmd_run,
-		     scheduler_cmd_run_entry,
-		     scheduler_cmd_run_task,
-		     scheduler_cmd_run_exit,
+_EXPORT_STATE_SYMBOL(scheduler_cmd_run, scheduler_cmd_run_entry,
+		     scheduler_cmd_run_task, scheduler_cmd_run_exit,
 		     ".scheduler");
 
 /* ============================================================
@@ -300,22 +298,23 @@ int scheduler_dispose_task(void *arg)
 	/* 首次进入：初始化命令链 */
 	if (cmd_ctx.chain_cnt == 0) {
 		if (!origin_cmd.buf[0]) {
-			return state_switch(&scheduler_eng, "scheduler_get_char");
+			return state_switch(&scheduler_eng,
+					    "scheduler_get_char");
 		}
 
 		cmd_ctx.chain_buf = cli_mpool_alloc();
 		if (!cmd_ctx.chain_buf) {
 			pr_err("out of memory\r\n");
-			return state_switch(&scheduler_eng, "scheduler_get_char");
+			return state_switch(&scheduler_eng,
+					    "scheduler_get_char");
 		}
 
 		int len = origin_cmd.size;
 		memcpy(cmd_ctx.chain_buf, origin_cmd.buf, len);
 		cmd_ctx.chain_buf[len] = '\0';
 
-		cmd_ctx.chain_cnt =
-			split_cmd_chain(cmd_ctx.chain_buf, cmd_ctx.cmds,
-					SCHEDULER_CHAIN_MAX);
+		cmd_ctx.chain_cnt = split_cmd_chain(
+			cmd_ctx.chain_buf, cmd_ctx.cmds, SCHEDULER_CHAIN_MAX);
 		cmd_ctx.chain_idx = 0;
 	}
 
@@ -398,6 +397,7 @@ int scheduler_init(void)
 	return 0;
 }
 
+int cnt;
 /* Test function */
 int scheduler_task(void)
 {
@@ -409,5 +409,8 @@ int scheduler_task(void)
 	if (cli_out_sync()) {
 		return -2;
 	}
+	cnt++;
+	if ((cnt % 50) == 0)
+		pr_info("test\r\n");
 	return 0;
 }

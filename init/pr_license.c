@@ -22,12 +22,12 @@
 
 void pr_license(void *arg)
 {
-	cli_printk("LinCLI  Copyright (C) 2026  bunnydeny\r\n");
-	cli_printk(
+	all_printk("LinCLI  Copyright (C) 2026  bunnydeny\r\n");
+	all_printk(
 		"This program comes with ABSOLUTELY NO WARRANTY; for details type `show -w'.\r\n");
-	cli_printk(
+	all_printk(
 		"This is free software, and you are welcome to redistribute it\r\n");
-	cli_printk(
+	all_printk(
 		"under certain conditions; type `show -c' for details.\n\r\n");
 }
 _EXPORT_INIT_SYMBOL(pr_license, 10, NULL, pr_license);
@@ -48,33 +48,33 @@ static int show_handler(void *_args)
 	}
 
 	if (args->warranty) {
-		cli_printk(
+		all_printk(
 			"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY\r\n");
-		cli_printk(
+		all_printk(
 			"APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT\r\n");
-		cli_printk(
+		all_printk(
 			"HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY\r\n");
-		cli_printk(
+		all_printk(
 			"OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,\r\n");
-		cli_printk(
+		all_printk(
 			"THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR\r\n");
-		cli_printk(
+		all_printk(
 			"PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM\r\n");
-		cli_printk(
+		all_printk(
 			"IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF\r\n");
-		cli_printk(
+		all_printk(
 			"ALL NECESSARY SERVICING, REPAIR OR CORRECTION.\r\n");
 	}
 
 	if (args->conditions) {
-		cli_printk(
+		all_printk(
 			"This program is free software: you can redistribute it and/or modify\r\n");
-		cli_printk(
+		all_printk(
 			"it under the terms of the GNU General Public License as published by\r\n");
-		cli_printk(
+		all_printk(
 			"the Free Software Foundation, either version 3 of the License, or\r\n");
-		cli_printk("(at your option) any later version.\n\r\n");
-		cli_printk(
+		all_printk("(at your option) any later version.\n\r\n");
+		all_printk(
 			"Please refer to the LICENSE file in the project root directory for the full text.\r\n");
 	}
 
