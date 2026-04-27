@@ -785,6 +785,16 @@ static char *alias_replace(char *cmd, char *buf, size_t buf_size)
 }
 #endif
 
+int dispose_init(void)
+{
+	int status = engine_init(&dispose_mec, "dispose_start", _dispose_start,
+				 _dispose_end);
+	if (status < 0) {
+		return status;
+	}
+	return CLI_OK;
+}
+
 static int run_dispose_once(char *cmd, int *cmd_ret)
 {
 	int status = dispose_init();
@@ -816,16 +826,6 @@ static int run_dispose_once(char *cmd, int *cmd_ret)
 			return CLI_OK;
 		}
 	}
-}
-
-int dispose_init(void)
-{
-	int status = engine_init(&dispose_mec, "dispose_start", _dispose_start,
-				 _dispose_end);
-	if (status < 0) {
-		return status;
-	}
-	return CLI_OK;
 }
 
 int dispose_task(char *cmd, int *cmd_ret)

@@ -297,7 +297,6 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)
 #endif
 
-int dispose_init(void);
 int dispose_task(char *cmd, int *cmd_ret);
 
 #endif
