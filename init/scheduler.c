@@ -403,7 +403,9 @@ int scheduler_is_in_get_char(void)
 		strcmp(scheduler_eng.from->name, "scheduler_get_char") == 0);
 }
 
+#if INLINE_TEST_EN
 int cnt;
+#endif
 /* Test function */
 int scheduler_task(void)
 {
@@ -415,8 +417,10 @@ int scheduler_task(void)
 	if (cli_out_sync()) {
 		return -2;
 	}
+#if INLINE_TEST_EN
 	cnt++;
 	if ((cnt % 50) == 0)
 		pr_info("test : %7d\r\n", cnt);
+#endif
 	return 0;
 }
