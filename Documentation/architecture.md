@@ -26,7 +26,6 @@
 - `.cli_cmd_line` — 存放命令行状态机的状态节点
 - `.scheduler`    — 存放调度器任务
 - `.my_init_d`    — 存放初始化函数
-- `.dispose`      — 存放 dispose 状态机
 - `.alias_cmd`    — 存放命令别名
 
 每个自定义段内部采用**三段式布局**（`.0.start`、`.1`、`.1.end`）：
