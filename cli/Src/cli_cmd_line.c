@@ -746,7 +746,6 @@ _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 
 static int valid_char_task(void *pch)
 {
-	candidate_ctx_clear();
 	int status;
 	char ch = *((char *)pch);
 	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
@@ -1038,7 +1037,6 @@ _EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
 
 static int backspace_handler(void *pch)
 {
-	candidate_ctx_clear();
 	int status;
 	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
 		status = cli_out_push((_u8 *)"\b \b", 4);
