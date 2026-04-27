@@ -13,13 +13,30 @@
 
 static uint8_t pool[CLI_MPOOL_COUNT][CLI_MPOOL_SIZE];
 static volatile uint32_t bitmap = 0;
+static const char *alloc_owner[CLI_MPOOL_COUNT] = { NULL };
 
-void *cli_mpool_alloc(void)
+void *cli_mpool_alloc_base(void)
 {
 	cli_enter_critical();
 	for (int i = 0; i < CLI_MPOOL_COUNT; i++) {
 		if (!(bitmap & (1U << i))) {
 			bitmap |= (1U << i);
+			alloc_owner[i] = NULL;
+			cli_exit_critical();
+			return &pool[i][0];
+		}
+	}
+	cli_exit_critical();
+	return NULL;
+}
+
+void *cli_mpool_alloc_caller(const char *caller)
+{
+	cli_enter_critical();
+	for (int i = 0; i < CLI_MPOOL_COUNT; i++) {
+		if (!(bitmap & (1U << i))) {
+			bitmap |= (1U << i);
+			alloc_owner[i] = caller;
 			cli_exit_critical();
 			return &pool[i][0];
 		}
@@ -51,5 +68,22 @@ void cli_mpool_free(void *ptr)
 
 	cli_enter_critical();
 	bitmap &= ~(1U << idx);
+	alloc_owner[idx] = NULL;
 	cli_exit_critical();
+}
+
+void cli_mpool_get_usage(const char **owners, int *used_count)
+{
+	int count = 0;
+	cli_enter_critical();
+	for (int i = 0; i < CLI_MPOOL_COUNT; i++) {
+		if (bitmap & (1U << i)) {
+			if (owners)
+				owners[count] = alloc_owner[i];
+			count++;
+		}
+	}
+	cli_exit_critical();
+	if (used_count)
+		*used_count = count;
 }
