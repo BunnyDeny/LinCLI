@@ -355,8 +355,7 @@ int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
 		      int *cmd_ret);
 void cmd_parse_cleanup(const cli_command_t *cmd_def);
 
-/* 兼容旧接口：同步一次性执行命令（内部使用新架构） */
-int dispose_task(char *cmd, int *cmd_ret);
+
 
 /* 命令链拆分工具 */
 int split_cmd_chain(char *buf, char **cmds, int max_cmds);
