@@ -23,6 +23,9 @@
 #include <string.h>
 //#include <unistd.h>
 
+extern int scheduler_is_in_get_char(void);
+extern void cli_cmd_line_redraw_prompt(void);
+
 char log_level[3] = "8";
 
 _u8 cli_in_push_lock = 1;
@@ -272,6 +275,12 @@ int cli_printk(const char *fmt, ...)
 	    strcmp("8", log_level)) {
 		return 0;
 	}
+
+	int in_interactive = scheduler_is_in_get_char();
+	if (in_interactive) {
+		cli_out_push((_u8 *)"\r\033[K", 4);
+	}
+
 	const char *_pre = prefix_gen(pre);
 	if (is_kern_level(buffer[0])) {
 		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
@@ -290,6 +299,11 @@ int cli_printk(const char *fmt, ...)
 		if (cli_out_sync())
 			return CLI_ERR_IO_SYNC;
 	}
+
+	if (in_interactive) {
+		cli_cmd_line_redraw_prompt();
+	}
+
 	return len;
 }
 

@@ -397,6 +397,12 @@ int scheduler_init(void)
 	return 0;
 }
 
+int scheduler_is_in_get_char(void)
+{
+	return (scheduler_eng.from &&
+		strcmp(scheduler_eng.from->name, "scheduler_get_char") == 0);
+}
+
 int cnt;
 /* Test function */
 int scheduler_task(void)

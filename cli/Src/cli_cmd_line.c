@@ -166,6 +166,11 @@ static void cmd_line_redraw(void)
 	}
 }
 
+void cli_cmd_line_redraw_prompt(void)
+{
+	cmd_line_redraw();
+}
+
 static int str_common_prefix_len(const char *a, const char *b)
 {
 	int i = 0;
