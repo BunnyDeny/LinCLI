@@ -1,7 +1,8 @@
 # 尾行模式打印支持
 
 
-https://github.com/user-attachments/assets/0d374112-c79e-48fc-b5ba-7aaa4aa44465
+<img width="564" height="558" alt="1" src="https://github.com/user-attachments/assets/6e795dfd-a3ad-4e61-ac5b-8c0998387e5a" />
+
 
 
 在嵌入式设备上，后台任务（如传感器采集、定时器中断、网络事件）随时可能输出日志，而用户往往正在命令行中输入调试指令。如果日志直接覆盖或穿插在输入行里，命令内容会被破坏、光标位置错乱，用户体验极差。
