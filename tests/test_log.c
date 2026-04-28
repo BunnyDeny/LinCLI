@@ -82,6 +82,12 @@ CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
 		   verbose, 0, NULL, NULL, false),
 	    OPTION('t', "tags", INT_ARRAY, "Tag list", struct log_args, tags, 8,
 		   NULL, "verbose", false),
+	    OPTION('c', "verbose1", BOOL, "Enable verbose", struct log_args,
+		   verbose, 0, NULL, NULL, false),
+	    OPTION('a', "verbose12", BOOL, "Enable verbose", struct log_args,
+		   verbose, 0, NULL, NULL, false),
+	    OPTION('b', "verbose13", BOOL, "Enable verbose", struct log_args,
+		   verbose, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
 #endif /* CLI_ENABLE_TESTS */

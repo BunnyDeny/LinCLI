@@ -495,6 +495,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 					const char *name_prefix,
 					int name_prefix_len)
 {
+	candidate_ctx_save(3, name_prefix, name_prefix_len, cmd);
 	clear_and_up(rows_to_clear_count, rows_to_clear_count - 1);
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
