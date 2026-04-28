@@ -138,6 +138,8 @@ static void candidate_ctx_clear(void)
 
 static void cmd_line_replace(const char *new_buf, int new_size)
 {
+	if (rows_to_clear_count > 1)
+		clear_and_up(rows_to_clear_count, rows_to_clear_count);
 	candidate_ctx_clear();
 	int status;
 
@@ -475,6 +477,7 @@ static void list_all_options(const cli_command_t *cmd)
 
 static void do_complete_short_option(char c, const cli_command_t *cmd)
 {
+	candidate_ctx_clear();
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (cmd->options[i].short_opt == c) {
 			if (cmd_line.size < CMD_LINE_BUF_SIZE - 1) {
