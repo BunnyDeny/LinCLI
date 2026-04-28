@@ -346,9 +346,7 @@ int scheduler_dispose_task(void *arg)
 		goto chain_failed;
 	}
 
-#if ALIAS_EN
 	current_cmd = alias_replace(current_cmd, alias_buf, CLI_MPOOL_SIZE);
-#endif
 
 	status = cmd_parse_prepare(current_cmd, &cmd_ctx.cmd_def,
 				   &cmd_ctx.cmd_ret);
