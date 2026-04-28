@@ -20,18 +20,6 @@
 #include "cli_io.h"
 #include "cmd_dispose.h"
 
-void pr_license(void *arg)
-{
-	all_printk("LinCLI  Copyright (C) 2026  bunnydeny\r\n");
-	all_printk(
-		"This program comes with ABSOLUTELY NO WARRANTY; for details type `show -w'.\r\n");
-	all_printk(
-		"This is free software, and you are welcome to redistribute it\r\n");
-	all_printk(
-		"under certain conditions; type `show -c' for details.\n\r\n");
-}
-_EXPORT_INIT_SYMBOL(pr_license, 10, NULL, pr_license);
-
 struct show_args {
 	bool warranty;
 	bool conditions;

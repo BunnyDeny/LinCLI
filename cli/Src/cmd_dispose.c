@@ -763,3 +763,15 @@ char *alias_replace(char *cmd, char *buf, size_t buf_size)
 	return cmd;
 }
 #endif
+
+static int help_handler(void *_args)
+{
+	all_printk("\r\n");
+	all_printk("For more information, please visit:\r\n");
+	all_printk("  https://github.com/BunnyDeny/LinCLI.git\r\n");
+	all_printk("\r\n");
+	all_printk("Tip: Press <Tab> on an empty prompt to list all commands.\r\n");
+	return 0;
+}
+
+CLI_COMMAND_NO_STRUCT(help, "help", "show help information", help_handler);

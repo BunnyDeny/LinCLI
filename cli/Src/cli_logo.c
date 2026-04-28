@@ -28,22 +28,15 @@ void pr_logo(void *arg)
 	all_printk("| |   | | '_ \\| |   | |    | | \r\n");
 	all_printk("| |___| | | | | |___| |___ | | \r\n");
 	all_printk("|_____|_|_| |_|\\____|_____|___|\r\n");
-
-	pr_info("welcome to use LinCLI\r\n");
+	all_printk("\r\n");
+	all_printk("Build:       " __DATE__ " " __TIME__ "\r\n");
+	all_printk("Version:     %d.%d.%d\r\n", CLI_VERSION_MAJOR,
+		CLI_VERSION_MINOR, CLI_VERSION_PATCH);
+	all_printk("Copyright:   (C) 2026 bunnydeny <guoy55448@gmail.com>\r\n");
+	all_printk("License:     GNU GPL v3+ (type `show -c' for details)\r\n");
+	all_printk("Warranty:    NONE (type `show -w' for disclaimer)\r\n");
+	all_printk("\r\n");
+	all_printk("Welcome to LinCLI! Type 'help' to get started.\r\n");
 }
 
-_EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);
-
-#if COMMAND_LOGO_EN
-
-extern void pr_license(void *);
-
-void logo_handler(void *arg)
-{
-	pr_logo(NULL);
-	pr_license(NULL);
-}
-
-CLI_COMMAND(logo, "logo", "show logo and license", logo_handler, NULL,
-	    END_OPTIONS);
-#endif
+_EXPORT_INIT_SYMBOL(logo, 11, NULL, pr_logo);

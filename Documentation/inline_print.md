@@ -31,7 +31,7 @@ LinCLI 的**尾行模式打印**机制彻底解决了这个问题。它是 `cli_
 
 **Before：**
 ```bash
-lin@linCli> loglev[INFO] temp = 42.5
+lin@linCli> lv[INFO] temp = 42.5
 ```
 输入的命令 `loglev` 被日志覆盖，后续按键位置错乱。
 
@@ -49,7 +49,7 @@ lin@linCli> loglev
 **Before：**
 ```bash
 lin@linCli> l<Tab>
-led    loglevel
+led    level
 [INFO] voltage low!    <-- 日志直接插在候选列表中间，显示错乱
 ```
 
@@ -57,7 +57,7 @@ led    loglevel
 ```bash
 [INFO] voltage low!
 lin@linCli> l
-led    loglevel
+led    level
 ```
 
 候选列表被完整重绘，用户体验连贯。

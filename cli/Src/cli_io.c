@@ -233,10 +233,10 @@ void reset_cli_in_push_lock(void)
 }
 
 /* ============================================================
- *  loglevel 命令：控制日志过滤级别
+ *  level 命令：控制日志过滤级别
  * ============================================================ */
 
-struct loglevel_args {
+struct level_args {
 	bool emerg;
 	bool alert;
 	bool crit;
@@ -249,9 +249,9 @@ struct loglevel_args {
 	bool cont;
 };
 
-static int loglevel_handler(void *_args)
+static int level_handler(void *_args)
 {
-	struct loglevel_args *args = _args;
+	struct level_args *args = _args;
 	if (args->emerg)
 		strcpy(log_level, KERN_EMERG);
 	else if (args->alert)
@@ -273,22 +273,22 @@ static int loglevel_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(loglevel, "loglevel", "Set log level filter", loglevel_handler,
-	    (struct loglevel_args *)0,
+CLI_COMMAND(level, "level", "Set log level filter", level_handler,
+	    (struct level_args *)0,
 	    OPTION(0, "emerg", BOOL, "Set log level to EMERG (0)",
-		   struct loglevel_args, emerg, 0, NULL, NULL, false),
+		   struct level_args, emerg, 0, NULL, NULL, false),
 	    OPTION(0, "alert", BOOL, "Set log level to ALERT (1)",
-		   struct loglevel_args, alert, 0, NULL, NULL, false),
+		   struct level_args, alert, 0, NULL, NULL, false),
 	    OPTION(0, "crit", BOOL, "Set log level to CRIT (2)",
-		   struct loglevel_args, crit, 0, NULL, NULL, false),
+		   struct level_args, crit, 0, NULL, NULL, false),
 	    OPTION(0, "err", BOOL, "Set log level to ERR (3)",
-		   struct loglevel_args, err, 0, NULL, NULL, false),
+		   struct level_args, err, 0, NULL, NULL, false),
 	    OPTION(0, "warning", BOOL, "Set log level to WARNING (4)",
-		   struct loglevel_args, warning, 0, NULL, NULL, false),
+		   struct level_args, warning, 0, NULL, NULL, false),
 	    OPTION(0, "notice", BOOL, "Set log level to NOTICE (5)",
-		   struct loglevel_args, notice, 0, NULL, NULL, false),
+		   struct level_args, notice, 0, NULL, NULL, false),
 	    OPTION(0, "info", BOOL, "Set log level to INFO (6)",
-		   struct loglevel_args, info, 0, NULL, NULL, false),
+		   struct level_args, info, 0, NULL, NULL, false),
 	    OPTION(0, "debug", BOOL, "Set log level to DEBUG (7)",
-		   struct loglevel_args, debug, 0, NULL, NULL, false),
+		   struct level_args, debug, 0, NULL, NULL, false),
 	    END_OPTIONS);
