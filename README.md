@@ -1,7 +1,5 @@
-
-<img width="564" height="554" alt="1" src="https://github.com/user-attachments/assets/151e4ba2-c8fb-4506-a107-71d4760deb39" />
-
 # LinCLI
+<img width="564" height="554" alt="1" src="https://github.com/user-attachments/assets/25c71c31-3f47-49f0-843c-8d70ec512ac2" />
 
 LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。它采用**链接脚本段自动收集**机制，将命令、状态机、初始化函数的注册工作完全交给编译器与链接器，开发者只需用宏定义命令和选项即可。框架具备极低的内存开销、清晰的层次结构，并内建命令历史、Tab 补全、选项依赖/互斥检查、重复选项检测等实用功能。
 
