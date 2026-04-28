@@ -11,9 +11,6 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
-/*是否启用命令重命名功能*/
-#define ALIAS_EN 1
-
 /* 是否编译 tests 文件夹下的测试命令 */
 #define CLI_ENABLE_TESTS 0
 

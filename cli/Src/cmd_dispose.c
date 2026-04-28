@@ -710,7 +710,6 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	return cnt;
 }
 
-#if ALIAS_EN
 static int alias_handler(void *_args)
 {
 	struct alias_cmd *alias_cmd;
@@ -762,7 +761,6 @@ char *alias_replace(char *cmd, char *buf, size_t buf_size)
 	}
 	return cmd;
 }
-#endif
 
 static int help_handler(void *_args)
 {

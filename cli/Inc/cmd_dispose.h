@@ -307,7 +307,6 @@ extern struct alias_cmd *const _alias_cmd_end[];
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
-#if ALIAS_EN
 #define CMD_ALIAS(new, origin)                                             \
 	struct alias_cmd alias_cmd##new = {                                \
 		.alias_name = #new,                                        \
@@ -325,10 +324,6 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	for (struct alias_cmd *const *_pp = (_start);        \
 	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
 		if (((alias_cmd) = *_pp) != NULL)
-#else
-#define CMD_ALIAS(new, origin)
-#define FOR_EACH_ALIAS(_start, _end, alias_cmd)
-#endif
 
 /* ============================================================
  * 新增：非阻塞三阶段命令注册宏
@@ -360,9 +355,7 @@ void cmd_parse_cleanup(const cli_command_t *cmd_def);
 /* 命令链拆分工具 */
 int split_cmd_chain(char *buf, char **cmds, int max_cmds);
 
-#if ALIAS_EN
 /* 别名替换工具 */
 char *alias_replace(char *cmd, char *buf, size_t buf_size);
-#endif
 
 #endif

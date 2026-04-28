@@ -245,7 +245,6 @@ int scheduler_auto_run_task(void *private)
 		return CLI_OK;
 	}
 
-#if ALIAS_EN
 	{
 		char *replaced = alias_replace(origin_cmd.buf, alias_buf,
 					       CLI_MPOOL_SIZE);
@@ -257,7 +256,6 @@ int scheduler_auto_run_task(void *private)
 			}
 		}
 	}
-#endif
 
 	status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.cmd_def,
 				   &cmd_ctx.cmd_ret);

@@ -37,5 +37,7 @@ struct init_d *const _init_d_end[1]
 /* .alias_cmd */
 struct alias_cmd *const _alias_cmd_start[1]
 	__attribute__((used, section(".alias_cmd.0.start"))) = { NULL };
+struct alias_cmd *const _alias_cmd_placeholder[1]
+	__attribute__((used, section(".alias_cmd.1"))) = { NULL };
 struct alias_cmd *const _alias_cmd_end[1]
 	__attribute__((used, section(".alias_cmd.1.end"))) = { NULL };
