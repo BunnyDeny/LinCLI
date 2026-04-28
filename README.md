@@ -478,7 +478,7 @@ lin@linCli> level --info
 **使用示例**：
 
 ```bash
-# 只显示错误及以上级别（屏蔽 info/debug）
+# 只显示错误及以上级别（屏蔽 warning/notice/info/debug）
 lin@linCli> level --err
 
 # 恢复默认（显示所有级别）
