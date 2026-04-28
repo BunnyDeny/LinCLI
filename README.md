@@ -1,6 +1,5 @@
 
-https://github.com/user-attachments/assets/8986da7a-ab7a-4236-bb4c-73b00fdc9420
-
+<img width="564" height="554" alt="1" src="https://github.com/user-attachments/assets/151e4ba2-c8fb-4506-a107-71d4760deb39" />
 
 # LinCLI
 
