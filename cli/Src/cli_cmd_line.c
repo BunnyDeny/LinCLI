@@ -463,8 +463,8 @@ static void cycle_cmd_candidate_highlight(void)
 	}
 	memcpy(new_buf, cmd_line.buf, tok_start);
 	memcpy(new_buf + tok_start, target->name, repl_len);
-	// if (tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
-	// 	new_buf[tok_start + repl_len] = ' ';
+	if (tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
+		new_buf[tok_start + repl_len] = ' ';
 
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
 
