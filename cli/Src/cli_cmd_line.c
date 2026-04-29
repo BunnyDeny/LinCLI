@@ -161,7 +161,11 @@ static void cmd_line_replace(const char *new_buf, int new_size)
 		return;
 	if (cli_out_sync())
 		return;
-	all_printk("\033[K");
+	status = cli_out_push((_u8 *)"\033[K", 3);
+	if (status < 0)
+		return;
+	if (cli_out_sync())
+		return;
 	cli_prompt_print();
 
 	if (new_size > 0) {
@@ -198,7 +202,11 @@ static void cmd_line_redraw(void)
 		return;
 	if (cli_out_sync())
 		return;
-	all_printk("\033[K");
+	status = cli_out_push((_u8 *)"\033[K", 3);
+	if (status < 0)
+		return;
+	if (cli_out_sync())
+		return;
 	cli_prompt_print();
 	if (cmd_line.size > 0) {
 		status = cli_out_push((_u8 *)cmd_line.buf, cmd_line.size);
@@ -725,6 +733,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
 		    strncmp(opt->long_opt, name_prefix, name_prefix_len) == 0) {
+			cli_out_push((_u8 *)"\r\n", 2);
 			cli_out_push((_u8 *)"--", 2);
 			if ((int)cows == highlight_idx) {
 				cli_out_push((_u8 *)"\033[7m", 4);
@@ -734,11 +743,10 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 			if ((int)cows == highlight_idx) {
 				cli_out_push((_u8 *)"\033[0m", 4);
 			}
-			cli_out_push((_u8 *)"\r\n", 2);
 			cows++;
 		}
 	}
-	candidate_ctx.rows = cows + 1;
+	candidate_ctx.rows = cows;
 	candidate_ctx.cols = 1;
 	cli_out_sync();
 	for (int i = 0; i < candidate_ctx.rows; i++) {
@@ -1060,20 +1068,30 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 static void candidate_redraw(void)
 {
 	if (candidate_ctx.active == 1) {
-		if (candidate_ctx.cycling == 1)
-			cycle_cmd_candidate_highlight();
-		else
+		if (candidate_ctx.cycling == 1) {
+			display_candidates(candidate_ctx.prefix,
+					   candidate_ctx.prefix_len,
+					   DISPLAY_MAX_COWS,
+					   candidate_ctx.highlight_index);
+			candidate_list_redraw(candidate_ctx.rows);
+		} else {
 			list_cmd_candidates(candidate_ctx.prefix,
 					    candidate_ctx.prefix_len);
+		}
 	} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
 		if (candidate_ctx.cycling == 2)
-			cycle_all_option_highlight();
+			list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
+					 candidate_ctx.prefix_len,
+					 candidate_ctx.highlight_index);
 		else
 			list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
 					 candidate_ctx.prefix_len, -1);
 	} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
 		if (candidate_ctx.cycling == 2)
-			cycle_long_option_highlight();
+			list_long_option_candidates(candidate_ctx.cmd,
+						    candidate_ctx.prefix,
+						    candidate_ctx.prefix_len,
+						    candidate_ctx.highlight_index);
 		else
 			list_long_option_candidates(candidate_ctx.cmd,
 						    candidate_ctx.prefix,
@@ -1664,7 +1682,13 @@ static int clear_handler(void *arg)
 	if (status < 0) {
 		return status;
 	}
-	all_printk("\033[K");
+	status = cli_out_push((_u8 *)"\033[K", 3);
+	if (status < 0) {
+		return status;
+	}
+	if (cli_out_sync()) {
+		return CLI_ERR_IO_SYNC;
+	}
 	cli_prompt_print();
 	candidate_redraw();
 	status = state_switch(&cmd_line_mec, "exit_handler");
