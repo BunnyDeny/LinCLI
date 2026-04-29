@@ -447,7 +447,7 @@ static void cycle_cmd_candidate_highlight(void)
 			total++;
 		}
 	}
-	if (candidate_ctx.highlight_index < 0)
+	while (candidate_ctx.highlight_index < 0)
 		candidate_ctx.highlight_index =
 			total + candidate_ctx.highlight_index;
 	while (candidate_ctx.highlight_index >= total) {
@@ -1170,6 +1170,11 @@ _EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
 static int backspace_handler(void *pch)
 {
 	int status;
+	if (candidate_ctx.cycling) {
+		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
+		candidate_ctx_clear();
+		cmd_line_redraw();
+	}
 	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
 		status = cli_out_push((_u8 *)"\b \b", 4);
 		if (status < 0) {
