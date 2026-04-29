@@ -533,17 +533,13 @@ static void complete_command_name(const char *prefix, int prefix_len)
 		complete_unique_cmd(match);
 	} else if (match_cnt > 1) {
 		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
-		if (candidate_ctx.active == 1) {
-			cycle_cmd_candidate_highlight();
-		} else {
-			char *lcp = cli_mpool_alloc();
-			if (!lcp) {
-				pr_err("out of memory\r\n");
-				return;
-			}
-			complete_multi_cmd(match, prefix, prefix_len, lcp);
-			cli_mpool_free(lcp);
+		char *lcp = cli_mpool_alloc();
+		if (!lcp) {
+			pr_err("out of memory\r\n");
+			return;
 		}
+		complete_multi_cmd(match, prefix, prefix_len, lcp);
+		cli_mpool_free(lcp);
 	} else {
 		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
 		candidate_ctx_clear();
@@ -554,7 +550,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 }
 
 static void list_all_options(const cli_command_t *cmd, const char *prefix,
-			       int prefix_len, int highlight_idx)
+			     int prefix_len, int highlight_idx)
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
@@ -927,11 +923,6 @@ static void complete_long_option(const cli_command_t *cmd,
 
 		if (lcp_len > name_prefix_len) {
 			replace_long_option(lcp, lcp_len);
-		} else if (candidate_ctx.active == 3) {
-			candidate_ctx.repl_start =
-				get_last_token_start(cmd_line.buf,
-					     cmd_line.size);
-			cycle_long_option_highlight();
 		} else {
 			list_long_option_candidates(cmd, name_prefix,
 						    name_prefix_len, -1);
@@ -968,17 +959,10 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 				cli_out_sync();
 			}
 		} else if (cmd->option_count > 0) {
-			if (candidate_ctx.active == 2) {
-				candidate_ctx.repl_start =
-					get_last_token_start(cmd_line.buf,
-						     cmd_line.size);
-				cycle_all_option_highlight();
-			} else {
-				list_all_options(cmd, prefix, prefix_len, -1);
-				candidate_ctx.repl_start =
-					get_last_token_start(cmd_line.buf,
-						     cmd_line.size);
-			}
+			list_all_options(cmd, prefix, prefix_len, -1);
+			candidate_ctx.repl_start =
+				get_last_token_start(cmd_line.buf,
+					     cmd_line.size);
 		} else {
 			cli_out_push((_u8 *)"\a", 1);
 			cli_out_sync();
@@ -997,11 +981,6 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 				cli_out_push((_u8 *)"\a", 1);
 				cli_out_sync();
 			}
-		} else if (candidate_ctx.active == 2) {
-			candidate_ctx.repl_start =
-				get_last_token_start(cmd_line.buf,
-					     cmd_line.size);
-			cycle_all_option_highlight();
 		} else {
 			list_all_options(cmd, prefix, prefix_len, -1);
 			candidate_ctx.repl_start =
@@ -1025,6 +1004,39 @@ static void complete_option(const cli_command_t *cmd, const char *prefix,
 	cli_out_push((_u8 *)"\a", 1);
 	cli_out_sync();
 }
+
+/* ============================================================
+ *  候选列表重绘辅助函数（cli_printk / clear_handler 共用）
+ * ============================================================ */
+
+static void candidate_redraw(void)
+{
+	if (candidate_ctx.active == 1) {
+		if (candidate_ctx.cycling == 1)
+			cycle_cmd_candidate_highlight();
+		else
+			list_cmd_candidates(candidate_ctx.prefix,
+					    candidate_ctx.prefix_len);
+	} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
+		if (candidate_ctx.cycling == 2)
+			cycle_all_option_highlight();
+		else
+			list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
+					 candidate_ctx.prefix_len, -1);
+	} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
+		if (candidate_ctx.cycling == 2)
+			cycle_long_option_highlight();
+		else
+			list_long_option_candidates(candidate_ctx.cmd,
+						    candidate_ctx.prefix,
+						    candidate_ctx.prefix_len,
+						    -1);
+	}
+}
+
+/* ============================================================
+ *  状态机任务函数
+ * ============================================================ */
 
 static int cmd_line_start_task(void *pch)
 {
@@ -1121,7 +1133,13 @@ static int invalid_char_task(void *pch)
 		next_state = "enter";
 		break;
 	case '\t':
-		next_state = "tab_complete";
+		if (candidate_ctx.cycling) {
+			next_state = "tab_cycle";
+		} else if (candidate_ctx.active) {
+			next_state = "tab_cycle_enter";
+		} else {
+			next_state = "tab_complete";
+		}
 		break;
 	case 12:
 		next_state = "clear";
@@ -1138,6 +1156,10 @@ static int invalid_char_task(void *pch)
 _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
 		     ".cli_cmd_line");
 
+/* ------------------------------------------------------------
+ * ESC 序列解析与分发状态
+ * ------------------------------------------------------------ */
+
 static int ESC_handler(void *pch)
 {
 	int status, esc_params_count = 2;
@@ -1152,100 +1174,179 @@ static int ESC_handler(void *pch)
 			esc_params_count--;
 		}
 	}
+
+	char *next_state = "exit_handler";
+
 	if (esc_params[1] == 'D') {
-		if (candidate_ctx.active == 1) {
-			candidate_ctx.highlight_index--;
-			cycle_cmd_candidate_highlight();
-		} else if (candidate_ctx.active == 2) {
-			candidate_ctx.highlight_index--;
-			cycle_all_option_highlight();
-		} else if (candidate_ctx.active == 3) {
-			candidate_ctx.highlight_index--;
-			cycle_long_option_highlight();
-		} else if (cmd_line.pos > 0) {
-			char *left_move = "\x1b[D";
-			status = cli_out_push((_u8 *)left_move,
-					      strlen(left_move) + 1);
-			if (status < 0) {
-				return status;
-			}
-			cmd_line.pos--;
-		}
+		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
+			next_state = "cmd_cycle_left";
+		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
+			 candidate_ctx.cycling)
+			next_state = "opt_cycle_left";
+		else
+			next_state = "cursor_left";
 	} else if (esc_params[1] == 'C') {
-		if (candidate_ctx.active == 1) {
-			candidate_ctx.highlight_index++;
-			cycle_cmd_candidate_highlight();
-		} else if (candidate_ctx.active == 2) {
-			candidate_ctx.highlight_index++;
-			cycle_all_option_highlight();
-		} else if (candidate_ctx.active == 3) {
-			candidate_ctx.highlight_index++;
-			cycle_long_option_highlight();
-		} else if (cmd_line.pos < cmd_line.size) {
-			char *right_move = "\x1b[C";
-			status = cli_out_push((_u8 *)right_move,
-					      strlen(right_move) + 1);
-			if (status < 0) {
-				return status;
-			}
-			cmd_line.pos++;
-		}
-
+		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
+			next_state = "cmd_cycle_right";
+		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
+			 candidate_ctx.cycling)
+			next_state = "opt_cycle_right";
+		else
+			next_state = "cursor_right";
 	} else if (esc_params[1] == 'A') {
-		if (candidate_ctx.active == 1) {
-			candidate_ctx.highlight_index -= candidate_ctx.cols;
-			cycle_cmd_candidate_highlight();
-		} else if (candidate_ctx.active == 2) {
-			candidate_ctx.highlight_index -= candidate_ctx.cols;
-			cycle_all_option_highlight();
-		} else if (candidate_ctx.active == 3) {
-			candidate_ctx.highlight_index -= candidate_ctx.cols;
-			cycle_long_option_highlight();
-		} else {
-			status = state_switch(&cmd_line_mec, "history_up");
-			if (status < 0) {
-				return status;
-			}
-			return CLI_OK;
-		}
-
+		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
+			next_state = "cmd_cycle_up";
+		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
+			 candidate_ctx.cycling)
+			next_state = "opt_cycle_up";
+		else
+			next_state = "history_up";
 	} else if (esc_params[1] == 'B') {
-		if (candidate_ctx.active == 1) {
-			candidate_ctx.highlight_index += candidate_ctx.cols;
-			cycle_cmd_candidate_highlight();
-		} else if (candidate_ctx.active == 2) {
-			candidate_ctx.highlight_index += candidate_ctx.cols;
-			cycle_all_option_highlight();
-		} else if (candidate_ctx.active == 3) {
-			candidate_ctx.highlight_index += candidate_ctx.cols;
-			cycle_long_option_highlight();
-		} else {
-			status = state_switch(&cmd_line_mec, "history_down");
-			if (status < 0) {
-				return status;
-			}
-			return CLI_OK;
-		}
+		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
+			next_state = "cmd_cycle_down";
+		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
+			 candidate_ctx.cycling)
+			next_state = "opt_cycle_down";
+		else
+			next_state = "history_down";
 	} else if (esc_params[1] == '3') {
 		status = cli_in_pop((_u8 *)&ch, 1);
 		if (status < 0) {
 			return status;
 		}
 		if (ch == '~') {
-			status = state_switch(&cmd_line_mec, "delete");
-			if (status < 0) {
-				return status;
-			}
-			return CLI_OK;
+			next_state = "delete";
 		}
 	}
-	status = state_switch(&cmd_line_mec, "exit_handler");
-	if (status < 0) {
+
+	status = state_switch(&cmd_line_mec, next_state);
+	if (status < 0)
 		return status;
-	}
 	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * 光标移动状态
+ * ------------------------------------------------------------ */
+
+static int cursor_left_task(void *pch)
+{
+	if (cmd_line.pos > 0) {
+		cli_out_push((_u8 *)"\033[D", 4);
+		cmd_line.pos--;
+	}
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(cursor_left, NULL, cursor_left_task, NULL,
+		     ".cli_cmd_line");
+
+static int cursor_right_task(void *pch)
+{
+	if (cmd_line.pos < cmd_line.size) {
+		cli_out_push((_u8 *)"\033[C", 4);
+		cmd_line.pos++;
+	}
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(cursor_right, NULL, cursor_right_task, NULL,
+		     ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * 命令候选列表导航状态
+ * ------------------------------------------------------------ */
+
+static int cmd_cycle_left_task(void *pch)
+{
+	candidate_ctx.highlight_index--;
+	cycle_cmd_candidate_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(cmd_cycle_left, NULL, cmd_cycle_left_task, NULL,
+		     ".cli_cmd_line");
+
+static int cmd_cycle_right_task(void *pch)
+{
+	candidate_ctx.highlight_index++;
+	cycle_cmd_candidate_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(cmd_cycle_right, NULL, cmd_cycle_right_task, NULL,
+		     ".cli_cmd_line");
+
+static int cmd_cycle_up_task(void *pch)
+{
+	candidate_ctx.highlight_index -= candidate_ctx.cols;
+	cycle_cmd_candidate_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(cmd_cycle_up, NULL, cmd_cycle_up_task, NULL,
+		     ".cli_cmd_line");
+
+static int cmd_cycle_down_task(void *pch)
+{
+	candidate_ctx.highlight_index += candidate_ctx.cols;
+	cycle_cmd_candidate_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(cmd_cycle_down, NULL, cmd_cycle_down_task, NULL,
+		     ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * 选项候选列表导航状态（统一处理 all_opts 和 long_opts）
+ * ------------------------------------------------------------ */
+
+static int opt_cycle_left_task(void *pch)
+{
+	candidate_ctx.highlight_index--;
+	if (candidate_ctx.active == 2)
+		cycle_all_option_highlight();
+	else if (candidate_ctx.active == 3)
+		cycle_long_option_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(opt_cycle_left, NULL, opt_cycle_left_task, NULL,
+		     ".cli_cmd_line");
+
+static int opt_cycle_right_task(void *pch)
+{
+	candidate_ctx.highlight_index++;
+	if (candidate_ctx.active == 2)
+		cycle_all_option_highlight();
+	else if (candidate_ctx.active == 3)
+		cycle_long_option_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(opt_cycle_right, NULL, opt_cycle_right_task, NULL,
+		     ".cli_cmd_line");
+
+static int opt_cycle_up_task(void *pch)
+{
+	candidate_ctx.highlight_index -= candidate_ctx.cols;
+	if (candidate_ctx.active == 2)
+		cycle_all_option_highlight();
+	else if (candidate_ctx.active == 3)
+		cycle_long_option_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(opt_cycle_up, NULL, opt_cycle_up_task, NULL,
+		     ".cli_cmd_line");
+
+static int opt_cycle_down_task(void *pch)
+{
+	candidate_ctx.highlight_index += candidate_ctx.cols;
+	if (candidate_ctx.active == 2)
+		cycle_all_option_highlight();
+	else if (candidate_ctx.active == 3)
+		cycle_long_option_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(opt_cycle_down, NULL, opt_cycle_down_task, NULL,
+		     ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * 历史记录状态
+ * ------------------------------------------------------------ */
 
 static int history_up_task(void *pch)
 {
@@ -1289,6 +1390,10 @@ static int history_down_task(void *pch)
 _EXPORT_STATE_SYMBOL(history_down, NULL, history_down_task, NULL,
 		     ".cli_cmd_line");
 
+/* ------------------------------------------------------------
+ * Tab 补全状态（仅处理首次补全）
+ * ------------------------------------------------------------ */
+
 static int get_current_segment_start(const char *buf, int size)
 {
 	int start = 0;
@@ -1317,19 +1422,9 @@ static int tab_complete_task(void *pch)
 	       cmd_line.buf[first_word_end] != ' ')
 		first_word_end++;
 
-	if (candidate_ctx.cycling == 1) {
-		candidate_ctx.highlight_index++;
-		cycle_cmd_candidate_highlight();
-	} else if (candidate_ctx.cycling == 2) {
-		candidate_ctx.highlight_index++;
-		if (candidate_ctx.active == 2) {
-			cycle_all_option_highlight();
-		} else if (candidate_ctx.active == 3) {
-			cycle_long_option_highlight();
-		}
-	} else if (cmd_line.size == 0 ||
-		   (tok_start >= cmd_start && tok_start < first_word_end) ||
-		   cmd_start >= cmd_line.size) {
+	if (cmd_line.size == 0 ||
+	    (tok_start >= cmd_start && tok_start < first_word_end) ||
+	    cmd_start >= cmd_line.size) {
 		complete_command_name(prefix, prefix_len);
 	} else {
 		char *cmd_name = cli_mpool_alloc();
@@ -1359,7 +1454,50 @@ static int tab_complete_task(void *pch)
 _EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 		     ".cli_cmd_line");
 
-static int delete(void *pch)
+/* ------------------------------------------------------------
+ * Tab 循环进入状态（列表已显示，首次进入高亮循环）
+ * ------------------------------------------------------------ */
+
+static int tab_cycle_enter_task(void *pch)
+{
+	if (candidate_ctx.active == 1) {
+		candidate_ctx.cycling = 1;
+		cycle_cmd_candidate_highlight();
+	} else if (candidate_ctx.active == 2) {
+		candidate_ctx.cycling = 2;
+		cycle_all_option_highlight();
+	} else if (candidate_ctx.active == 3) {
+		candidate_ctx.cycling = 2;
+		cycle_long_option_highlight();
+	}
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(tab_cycle_enter, NULL, tab_cycle_enter_task, NULL,
+		     ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * Tab 循环继续状态（已在高亮循环中，切到下一个）
+ * ------------------------------------------------------------ */
+
+static int tab_cycle_task(void *pch)
+{
+	candidate_ctx.highlight_index++;
+	if (candidate_ctx.active == 1) {
+		cycle_cmd_candidate_highlight();
+	} else if (candidate_ctx.active == 2) {
+		cycle_all_option_highlight();
+	} else if (candidate_ctx.active == 3) {
+		cycle_long_option_highlight();
+	}
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(tab_cycle, NULL, tab_cycle_task, NULL, ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * Delete / Backspace / Clear / Enter / Exit
+ * ------------------------------------------------------------ */
+
+static int delete_task(void *pch)
 {
 	candidate_ctx_clear();
 	int status;
@@ -1398,7 +1536,7 @@ delete_exit:
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(delete, NULL, delete, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(delete, NULL, delete_task, NULL, ".cli_cmd_line");
 
 static int backspace_handler(void *pch)
 {
@@ -1466,27 +1604,7 @@ static int clear_handler(void *arg)
 	}
 	all_printk("\033[K");
 	cli_prompt_print();
-	if (candidate_ctx.active == 1) {
-		if (candidate_ctx.cycling == 1)
-			cycle_cmd_candidate_highlight();
-		else
-			list_cmd_candidates(candidate_ctx.prefix,
-					    candidate_ctx.prefix_len);
-	} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
-		if (candidate_ctx.cycling == 2)
-			cycle_all_option_highlight();
-		else
-			list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
-					 candidate_ctx.prefix_len, -1);
-	} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
-		if (candidate_ctx.cycling == 2)
-			cycle_long_option_highlight();
-		else
-			list_long_option_candidates(candidate_ctx.cmd,
-						    candidate_ctx.prefix,
-						    candidate_ctx.prefix_len,
-						    -1);
-	}
+	candidate_redraw();
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
 		return status;
@@ -1507,7 +1625,6 @@ static int enter_press(void *pch)
 		cmd_line_redraw();
 		return state_switch(&cmd_line_mec, "exit_handler");
 	}
-	// int status;
 	origin_cmd.size = cmd_line.size;
 	for (int i = 0; i < origin_cmd.size; i++) {
 		origin_cmd.buf[i] = cmd_line.buf[i];
@@ -1637,41 +1754,10 @@ int cli_printk(const char *fmt, ...)
 	}
 
 	if (in_interactive) {
-		if (candidate_ctx.active == 1) {
-			if (candidate_ctx.cycling == 1) {
-				cycle_cmd_candidate_highlight();
-			} else {
-				clear_and_up(candidate_ctx.rows,
-					     candidate_ctx.rows);
-				display_candidates(candidate_ctx.prefix,
-						   candidate_ctx.prefix_len,
-						   DISPLAY_MAX_COWS, -1);
-				for (int i = 0; i < candidate_ctx.rows; i++) {
-					cli_out_push((_u8 *)"\033[1A", 4);
-					cli_out_sync();
-				}
-				cmd_line_redraw();
-			}
-		} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
-			if (candidate_ctx.cycling == 2)
-				cycle_all_option_highlight();
-			else
-				list_all_options(candidate_ctx.cmd,
-						 candidate_ctx.prefix,
-						 candidate_ctx.prefix_len,
-						 -1);
-		} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
-			if (candidate_ctx.cycling == 2)
-				cycle_long_option_highlight();
-			else
-				list_long_option_candidates(
-					candidate_ctx.cmd,
-					candidate_ctx.prefix,
-					candidate_ctx.prefix_len,
-					-1);
-		} else {
+		if (candidate_ctx.active)
+			candidate_redraw();
+		else
 			cmd_line_redraw();
-		}
 	}
 
 	return len;
