@@ -33,6 +33,7 @@ extern struct tState *const _cli_cmd_line_end[];
 
 static bool is_valid_char(char c);
 void cli_prompt_print(void);
+static int get_current_segment_start(const char *buf, int size);
 
 struct cmd_line {
 	_u8 pos;
@@ -111,6 +112,8 @@ struct candidate_ctx {
 	char prefix[CMD_LINE_BUF_SIZE];
 	int prefix_len;
 	const cli_command_t *cmd;
+	int highlight_index;
+	int cycling; /* 0=none, 1=cmd cycling, 2=opt cycling */
 };
 static struct candidate_ctx candidate_ctx = { 0 };
 
@@ -129,11 +132,14 @@ static void candidate_ctx_save(int active, const char *prefix, int prefix_len,
 		candidate_ctx.prefix_len = 0;
 	}
 	candidate_ctx.cmd = cmd;
+	candidate_ctx.highlight_index = 0;
+	candidate_ctx.cycling = 0;
 }
 
 static void candidate_ctx_clear(void)
 {
 	candidate_ctx.active = 0;
+	candidate_ctx.cycling = 0;
 }
 
 static void cmd_line_replace(const char *new_buf, int new_size)
@@ -358,7 +364,7 @@ static int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
 }
 
 static void display_candidates(const char *prefix, int prefix_len,
-			       int display_max_cows)
+			       int display_max_cows, int highlight_idx)
 {
 	const cli_command_t *cmd;
 	int max_len = 0, cnt = 0;
@@ -376,6 +382,7 @@ static void display_candidates(const char *prefix, int prefix_len,
 	max_len += 3;
 	int cows = display_max_cows / max_len, cur_cow = 0;
 	rows_to_clear_count = (cnt + cows - 1) / cows;
+	int cur_idx = 0;
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd->name)
@@ -384,7 +391,15 @@ static void display_candidates(const char *prefix, int prefix_len,
 			if (cur_cow == 0) {
 				cli_out_push((_u8 *)"\r\n", 2);
 			}
-			cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
+			if (cur_idx == highlight_idx) {
+				cli_out_push((_u8 *)"\033[7m", 4);
+				cli_out_push((_u8 *)cmd->name,
+					     strlen(cmd->name));
+				cli_out_push((_u8 *)"\033[0m", 4);
+			} else {
+				cli_out_push((_u8 *)cmd->name,
+					     strlen(cmd->name));
+			}
 			int space_count = max_len - strlen(cmd->name);
 			while (space_count--) {
 				cli_out_push((_u8 *)" ", 1);
@@ -394,6 +409,7 @@ static void display_candidates(const char *prefix, int prefix_len,
 				cur_cow = 0;
 			}
 			cli_out_sync();
+			cur_idx++;
 		}
 	}
 }
@@ -402,12 +418,76 @@ static void list_cmd_candidates(const char *prefix, int prefix_len)
 {
 	candidate_ctx_save(1, prefix, prefix_len, NULL);
 	clear_and_up(rows_to_clear_count, rows_to_clear_count);
-	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS);
+	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS, -1);
 	for (int i = 0; i < rows_to_clear_count; i++) {
 		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
 		cli_out_sync();
 	}
 	cmd_line_redraw();
+}
+
+static void cycle_cmd_candidate_highlight(void)
+{
+	const cli_command_t *target = NULL;
+	int idx = 0;
+	int total = 0;
+	const cli_command_t *cmd;
+
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd->name)
+			continue;
+		if (strncmp(cmd->name, candidate_ctx.prefix,
+			    candidate_ctx.prefix_len) == 0) {
+			if (idx == candidate_ctx.highlight_index)
+				target = cmd;
+			total++;
+			idx++;
+		}
+	}
+	if (!target)
+		return;
+
+	int tok_start = get_current_segment_start(cmd_line.buf, cmd_line.size);
+	int repl_len = (int)strlen(target->name);
+	int new_size = tok_start + repl_len;
+	if (new_size < CMD_LINE_BUF_SIZE - 1)
+		new_size++;
+	if (new_size > CMD_LINE_BUF_SIZE)
+		new_size = CMD_LINE_BUF_SIZE;
+
+	char *new_buf = cli_mpool_alloc();
+	if (!new_buf) {
+		pr_err("out of memory\r\n");
+		return;
+	}
+	memcpy(new_buf, cmd_line.buf, tok_start);
+	memcpy(new_buf + tok_start, target->name, repl_len);
+	// if (tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
+	// 	new_buf[tok_start + repl_len] = ' ';
+
+	clear_and_up(rows_to_clear_count, rows_to_clear_count);
+
+	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
+	memcpy(cmd_line.buf, new_buf, new_size);
+	cmd_line.size = new_size;
+	cmd_line.pos = new_size;
+	cli_mpool_free(new_buf);
+
+	display_candidates(candidate_ctx.prefix, candidate_ctx.prefix_len,
+			   DISPLAY_MAX_COWS, candidate_ctx.highlight_index);
+
+	for (int i = 0; i < rows_to_clear_count; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
+	}
+	cmd_line_redraw();
+
+	candidate_ctx.highlight_index++;
+	if (candidate_ctx.highlight_index >= total)
+		candidate_ctx.highlight_index = 0;
+	candidate_ctx.active = 1;
+	candidate_ctx.cycling = 1;
 }
 
 static void complete_multi_cmd(const cli_command_t *first_match,
@@ -431,13 +511,17 @@ static void complete_command_name(const char *prefix, int prefix_len)
 	if (match_cnt == 1) {
 		complete_unique_cmd(match);
 	} else if (match_cnt > 1) {
-		char *lcp = cli_mpool_alloc();
-		if (!lcp) {
-			pr_err("out of memory\r\n");
-			return;
+		if (candidate_ctx.active == 1) {
+			cycle_cmd_candidate_highlight();
+		} else {
+			char *lcp = cli_mpool_alloc();
+			if (!lcp) {
+				pr_err("out of memory\r\n");
+				return;
+			}
+			complete_multi_cmd(match, prefix, prefix_len, lcp);
+			cli_mpool_free(lcp);
 		}
-		complete_multi_cmd(match, prefix, prefix_len, lcp);
-		cli_mpool_free(lcp);
 	} else {
 		candidate_ctx_clear();
 		clear_and_up(rows_to_clear_count, rows_to_clear_count);
@@ -966,9 +1050,13 @@ static int tab_complete_task(void *pch)
 	       cmd_line.buf[first_word_end] != ' ')
 		first_word_end++;
 
-	if (cmd_line.size == 0 ||
-	    (tok_start >= cmd_start && tok_start < first_word_end) ||
-	    cmd_start >= cmd_line.size) {
+	if (candidate_ctx.cycling == 1) {
+		cycle_cmd_candidate_highlight();
+	} else if (candidate_ctx.cycling == 2) {
+		/* TODO: option highlight cycling */
+	} else if (cmd_line.size == 0 ||
+		   (tok_start >= cmd_start && tok_start < first_word_end) ||
+		   cmd_start >= cmd_line.size) {
 		complete_command_name(prefix, prefix_len);
 	} else {
 		char *cmd_name = cli_mpool_alloc();
