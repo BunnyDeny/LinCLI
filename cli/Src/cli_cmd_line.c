@@ -1698,7 +1698,7 @@ static int clear_handler(void *arg)
 	if (cli_out_sync()) {
 		return CLI_ERR_IO_SYNC;
 	}
-	cli_prompt_print();
+	cmd_line_redraw();
 	candidate_redraw();
 	status = state_switch(&cmd_line_mec, "exit_handler");
 	if (status < 0) {
