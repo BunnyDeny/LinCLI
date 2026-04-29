@@ -855,6 +855,11 @@ static int valid_char_task(void *pch)
 {
 	int status;
 	char ch = *((char *)pch);
+	if (candidate_ctx.cycling) {
+		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
+		candidate_ctx_clear();
+		cmd_line_redraw();
+	}
 	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
 		pr_warn("command length exceeds the limit. \r\n");
 		goto label_cmd_line_exit;
