@@ -726,7 +726,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 					int highlight_idx)
 {
 	int old_rows = candidate_ctx.rows;
-	clear_and_up(old_rows, old_rows - 1);
+	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(3, name_prefix, name_prefix_len, cmd);
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
@@ -744,11 +744,11 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 				cli_out_push((_u8 *)"\033[0m", 4);
 			}
 			cows++;
+			cli_out_sync();
 		}
 	}
 	candidate_ctx.rows = cows;
 	candidate_ctx.cols = 1;
-	cli_out_sync();
 	for (int i = 0; i < candidate_ctx.rows; i++) {
 		cli_out_push((_u8 *)"\033[1A", 4);
 		cli_out_sync();
