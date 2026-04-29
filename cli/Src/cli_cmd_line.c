@@ -1396,7 +1396,20 @@ int cli_printk(const char *fmt, ...)
 
 	if (in_interactive) {
 		if (candidate_ctx.active == 1) {
-			cycle_cmd_candidate_highlight();
+			if (candidate_ctx.cycling == 1) {
+				cycle_cmd_candidate_highlight();
+			} else {
+				clear_and_up(candidate_ctx.rows,
+					     candidate_ctx.rows);
+				display_candidates(candidate_ctx.prefix,
+						   candidate_ctx.prefix_len,
+						   DISPLAY_MAX_COWS, -1);
+				for (int i = 0; i < candidate_ctx.rows; i++) {
+					cli_out_push((_u8 *)"\033[1A", 4);
+					cli_out_sync();
+				}
+				cmd_line_redraw();
+			}
 		} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
 			list_all_options(candidate_ctx.cmd);
 		} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
