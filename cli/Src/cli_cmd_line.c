@@ -1245,7 +1245,12 @@ static void enter_entry(void *pch)
 }
 static int enter_press(void *pch)
 {
-	candidate_ctx_clear();
+	if (candidate_ctx.cycling) {
+		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
+		candidate_ctx_clear();
+		cmd_line_redraw();
+		return state_switch(&cmd_line_mec, "exit_handler");
+	}
 	// int status;
 	origin_cmd.size = cmd_line.size;
 	for (int i = 0; i < origin_cmd.size; i++) {
