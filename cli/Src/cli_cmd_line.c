@@ -1274,10 +1274,10 @@ void cli_mpool_dump_usage(void)
 
 	cli_mpool_get_usage(owners, &used_count);
 
-	cli_printk("[mpool] exhausted! %d/%d blocks used\r\n", used_count,
-		   CLI_MPOOL_COUNT);
+	pr_crit("[mpool] exhausted! %d/%d blocks used\r\n", used_count,
+		CLI_MPOOL_COUNT);
 	for (int i = 0; i < used_count; i++) {
-		cli_printk("[mpool]   [%d] %s\r\n", i,
-			   owners[i] ? owners[i] : "unknown");
+		pr_crit("[mpool]   [%d] %s\r\n", i,
+			owners[i] ? owners[i] : "unknown");
 	}
 }
