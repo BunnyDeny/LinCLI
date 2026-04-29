@@ -370,52 +370,59 @@ static int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
 	return lcp_len;
 }
 
+static void compute_candidate_layout(const char *prefix, int prefix_len,
+				     int display_max_cows, int *max_len,
+				     int *cnt)
+{
+	const cli_command_t *cmd;
+	*max_len = 0;
+	*cnt = 0;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd->name)
+			continue;
+		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
+			*max_len = *max_len > strlen(cmd->name) ?
+					   *max_len :
+					   strlen(cmd->name);
+			(*cnt)++;
+		}
+	}
+	*max_len += 3;
+	int cows = display_max_cows / *max_len;
+	candidate_ctx.rows = (*cnt + cows - 1) / cows;
+	candidate_ctx.cols = cows;
+}
+
 static void display_candidates(const char *prefix, int prefix_len,
 			       int display_max_cows, int highlight_idx)
 {
 	const cli_command_t *cmd;
-	int max_len = 0, cnt = 0;
+	int max_len, cnt;
+	compute_candidate_layout(prefix, prefix_len, display_max_cows,
+				 &max_len, &cnt);
+
+	int cur_cow = 0, cur_idx = 0;
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd->name)
 			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
-			max_len = max_len > strlen(cmd->name) ?
-					  max_len :
-					  strlen(cmd->name);
-			cnt++;
-		}
-	}
-	max_len += 3;
-	int cows = display_max_cows / max_len, cur_cow = 0;
-	candidate_ctx.rows = (cnt + cows - 1) / cows;
-	candidate_ctx.cols = cows;
-	int cur_idx = 0;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
-	{
-		if (!cmd->name)
-			continue;
-		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
-			if (cur_cow == 0) {
+			if (cur_cow == 0)
 				cli_out_push((_u8 *)"\r\n", 2);
-			}
 			if (cur_idx == highlight_idx) {
 				cli_out_push((_u8 *)"\033[7m", 4);
-				cli_out_push((_u8 *)cmd->name,
-					     strlen(cmd->name));
+				cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
 				cli_out_push((_u8 *)"\033[0m", 4);
 			} else {
-				cli_out_push((_u8 *)cmd->name,
-					     strlen(cmd->name));
+				cli_out_push((_u8 *)cmd->name, strlen(cmd->name));
 			}
 			int space_count = max_len - strlen(cmd->name);
-			while (space_count--) {
+			while (space_count--)
 				cli_out_push((_u8 *)" ", 1);
-			}
 			cur_cow++;
-			if (cur_cow >= cows) {
+			if (cur_cow >= candidate_ctx.cols)
 				cur_cow = 0;
-			}
 			cli_out_sync();
 			cur_idx++;
 		}
@@ -435,48 +442,29 @@ static void list_cmd_candidates(const char *prefix, int prefix_len)
 	cmd_line_redraw();
 }
 
-static void cycle_cmd_candidate_highlight(void)
+
+static void normalize_highlight_index(int total)
 {
-	const cli_command_t *target = NULL;
-	int idx = 0;
-	int total = 0;
-	const cli_command_t *cmd;
-	clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
-	{
-		if (!cmd->name)
-			continue;
-		if (strncmp(cmd->name, candidate_ctx.prefix,
-			    candidate_ctx.prefix_len) == 0) {
-			if (idx == candidate_ctx.highlight_index)
-				target = cmd;
-			total++;
-		}
-	}
 	while (candidate_ctx.highlight_index < 0)
-		candidate_ctx.highlight_index =
-			total + candidate_ctx.highlight_index;
-	while (candidate_ctx.highlight_index >= total) {
-		candidate_ctx.highlight_index =
-			candidate_ctx.highlight_index % total;
+		candidate_ctx.highlight_index = total + candidate_ctx.highlight_index;
+	while (candidate_ctx.highlight_index >= total)
+		candidate_ctx.highlight_index = candidate_ctx.highlight_index % total;
+}
+
+static void candidate_list_redraw(int rows)
+{
+	for (int i = 0; i < rows; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
 	}
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
-	{
-		if (!cmd->name)
-			continue;
-		if (strncmp(cmd->name, candidate_ctx.prefix,
-			    candidate_ctx.prefix_len) == 0) {
-			if (idx == candidate_ctx.highlight_index)
-				target = cmd;
-			idx++;
-		}
-	}
-	if (!target)
-		return;
-	int tok_start = get_current_segment_start(cmd_line.buf, cmd_line.size);
-	int repl_len = (int)strlen(target->name);
-	int new_size = tok_start + repl_len;
-	if (new_size < CMD_LINE_BUF_SIZE - 1)
+	cmd_line_redraw();
+}
+
+static void replace_token_at(int seg_start, const char *token, int tok_len,
+			     int append_space)
+{
+	int new_size = seg_start + tok_len;
+	if (append_space && new_size < CMD_LINE_BUF_SIZE - 1)
 		new_size++;
 	if (new_size > CMD_LINE_BUF_SIZE)
 		new_size = CMD_LINE_BUF_SIZE;
@@ -486,27 +474,146 @@ static void cycle_cmd_candidate_highlight(void)
 		pr_err("out of memory\r\n");
 		return;
 	}
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	memcpy(new_buf + tok_start, target->name, repl_len);
-	if (tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
-		new_buf[tok_start + repl_len] = ' ';
-
-	clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
+	memcpy(new_buf, cmd_line.buf, seg_start);
+	memcpy(new_buf + seg_start, token, tok_len);
+	if (append_space && seg_start + tok_len < CMD_LINE_BUF_SIZE - 1)
+		new_buf[seg_start + tok_len] = ' ';
 
 	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
 	memcpy(cmd_line.buf, new_buf, new_size);
 	cmd_line.size = new_size;
 	cmd_line.pos = new_size;
 	cli_mpool_free(new_buf);
+}
+
+static int cmd_match_total(void)
+{
+	int total = 0;
+	const cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd->name)
+			continue;
+		if (strncmp(cmd->name, candidate_ctx.prefix,
+			    candidate_ctx.prefix_len) == 0)
+			total++;
+	}
+	return total;
+}
+
+static const cli_command_t *cmd_find_match_by_index(int idx)
+{
+	int cur = 0;
+	const cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd->name)
+			continue;
+		if (strncmp(cmd->name, candidate_ctx.prefix,
+			    candidate_ctx.prefix_len) == 0) {
+			if (cur == idx)
+				return cmd;
+			cur++;
+		}
+	}
+	return NULL;
+}
+
+static int long_opt_match_total(const cli_command_t *cmd)
+{
+	int total = 0;
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		const cli_option_t *opt = &cmd->options[i];
+		if (opt->long_opt &&
+		    strncmp(opt->long_opt, candidate_ctx.prefix,
+			    candidate_ctx.prefix_len) == 0)
+			total++;
+	}
+	return total;
+}
+
+static const cli_option_t *long_opt_find_match_by_index(const cli_command_t *cmd,
+							int idx)
+{
+	int cur = 0;
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		const cli_option_t *opt = &cmd->options[i];
+		if (opt->long_opt &&
+		    strncmp(opt->long_opt, candidate_ctx.prefix,
+			    candidate_ctx.prefix_len) == 0) {
+			if (cur == idx)
+				return opt;
+			cur++;
+		}
+	}
+	return NULL;
+}
+
+static int build_option_token(const cli_option_t *opt, char *buf)
+{
+	int pos = 0;
+	if (opt->long_opt && candidate_ctx.prefix_len >= 2 &&
+	    candidate_ctx.prefix[0] == '-' &&
+	    candidate_ctx.prefix[1] == '-') {
+		buf[pos++] = '-';
+		buf[pos++] = '-';
+		int len = (int)strlen(opt->long_opt);
+		memcpy(buf + pos, opt->long_opt, len);
+		pos += len;
+	} else if (opt->short_opt) {
+		buf[pos++] = '-';
+		buf[pos++] = opt->short_opt;
+	} else if (opt->long_opt) {
+		buf[pos++] = '-';
+		buf[pos++] = '-';
+		int len = (int)strlen(opt->long_opt);
+		memcpy(buf + pos, opt->long_opt, len);
+		pos += len;
+	}
+	return pos;
+}
+
+static void replace_long_opt_at(int tok_start, const char *long_opt,
+				int long_len)
+{
+	char *new_buf = cli_mpool_alloc();
+	if (!new_buf) {
+		pr_err("out of memory\r\n");
+		return;
+	}
+	memcpy(new_buf, cmd_line.buf, tok_start);
+	new_buf[tok_start] = '-';
+	new_buf[tok_start + 1] = '-';
+	memcpy(new_buf + tok_start + 2, long_opt, long_len);
+	int new_size = tok_start + 2 + long_len;
+	if (new_size < CMD_LINE_BUF_SIZE - 1)
+		new_buf[new_size++] = ' ';
+
+	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
+	memcpy(cmd_line.buf, new_buf, new_size);
+	cmd_line.size = new_size;
+	cmd_line.pos = new_size;
+	cli_mpool_free(new_buf);
+}
+
+static void cycle_cmd_candidate_highlight(void)
+{
+	clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
+
+	int total = cmd_match_total();
+	normalize_highlight_index(total);
+
+	const cli_command_t *target =
+		cmd_find_match_by_index(candidate_ctx.highlight_index);
+	if (!target)
+		return;
+
+	int tok_start = get_current_segment_start(cmd_line.buf, cmd_line.size);
+	replace_token_at(tok_start, target->name, (int)strlen(target->name), 1);
 
 	display_candidates(candidate_ctx.prefix, candidate_ctx.prefix_len,
 			   DISPLAY_MAX_COWS, candidate_ctx.highlight_index);
-
-	for (int i = 0; i < candidate_ctx.rows; i++) {
-		cli_out_push((_u8 *)"\033[1A", 4);
-		cli_out_sync();
-	}
-	cmd_line_redraw();
+	candidate_list_redraw(candidate_ctx.rows);
 	candidate_ctx.active = 1;
 	candidate_ctx.cycling = 1;
 }
@@ -648,13 +755,7 @@ static void cycle_all_option_highlight(void)
 	if (!cmd)
 		return;
 
-	int total = (int)cmd->option_count;
-	while (candidate_ctx.highlight_index < 0)
-		candidate_ctx.highlight_index = total + candidate_ctx.highlight_index;
-	while (candidate_ctx.highlight_index >= total)
-		candidate_ctx.highlight_index =
-			candidate_ctx.highlight_index % total;
-
+	normalize_highlight_index((int)cmd->option_count);
 	const cli_option_t *target = &cmd->options[candidate_ctx.highlight_index];
 
 	char *new_buf = cli_mpool_alloc();
@@ -666,31 +767,12 @@ static void cycle_all_option_highlight(void)
 	int tok_start = candidate_ctx.repl_start;
 	if (tok_start < 0 || tok_start > cmd_line.size)
 		tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	int new_size = tok_start;
+
 	memcpy(new_buf, cmd_line.buf, tok_start);
-
-	if (target->long_opt && candidate_ctx.prefix_len >= 2 &&
-	    candidate_ctx.prefix[0] == '-' &&
-	    candidate_ctx.prefix[1] == '-') {
-		new_buf[new_size++] = '-';
-		new_buf[new_size++] = '-';
-		int len = (int)strlen(target->long_opt);
-		memcpy(new_buf + new_size, target->long_opt, len);
-		new_size += len;
-	} else if (target->short_opt) {
-		new_buf[new_size++] = '-';
-		new_buf[new_size++] = target->short_opt;
-	} else if (target->long_opt) {
-		new_buf[new_size++] = '-';
-		new_buf[new_size++] = '-';
-		int len = (int)strlen(target->long_opt);
-		memcpy(new_buf + new_size, target->long_opt, len);
-		new_size += len;
-	}
-
-	if (new_size < CMD_LINE_BUF_SIZE - 1) {
+	int repl_len = build_option_token(target, new_buf + tok_start);
+	int new_size = tok_start + repl_len;
+	if (new_size < CMD_LINE_BUF_SIZE - 1)
 		new_buf[new_size++] = ' ';
-	}
 
 	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
 	memcpy(cmd_line.buf, new_buf, new_size);
@@ -714,70 +796,22 @@ static void cycle_long_option_highlight(void)
 	if (!cmd)
 		return;
 
-	int idx = 0;
-	int total = 0;
-	const cli_option_t *target = NULL;
-
-	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
-		if (opt->long_opt &&
-		    strncmp(opt->long_opt, candidate_ctx.prefix,
-			    candidate_ctx.prefix_len) == 0) {
-			total++;
-		}
-	}
-
+	int total = long_opt_match_total(cmd);
 	if (total == 0)
 		return;
 
-	while (candidate_ctx.highlight_index < 0)
-		candidate_ctx.highlight_index = total + candidate_ctx.highlight_index;
-	while (candidate_ctx.highlight_index >= total)
-		candidate_ctx.highlight_index =
-			candidate_ctx.highlight_index % total;
+	normalize_highlight_index(total);
 
-	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
-		if (opt->long_opt &&
-		    strncmp(opt->long_opt, candidate_ctx.prefix,
-			    candidate_ctx.prefix_len) == 0) {
-			if (idx == candidate_ctx.highlight_index) {
-				target = opt;
-				break;
-			}
-			idx++;
-		}
-	}
-
+	const cli_option_t *target =
+		long_opt_find_match_by_index(cmd, candidate_ctx.highlight_index);
 	if (!target)
 		return;
-
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
 
 	int tok_start = candidate_ctx.repl_start;
 	if (tok_start < 0 || tok_start > cmd_line.size)
 		tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	int new_size = tok_start;
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[new_size++] = '-';
-	new_buf[new_size++] = '-';
-	int len = (int)strlen(target->long_opt);
-	memcpy(new_buf + new_size, target->long_opt, len);
-	new_size += len;
-
-	if (new_size < CMD_LINE_BUF_SIZE - 1) {
-		new_buf[new_size++] = ' ';
-	}
-
-	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
-	memcpy(cmd_line.buf, new_buf, new_size);
-	cmd_line.size = new_size;
-	cmd_line.pos = new_size;
-	cli_mpool_free(new_buf);
+	replace_long_opt_at(tok_start, target->long_opt,
+			    (int)strlen(target->long_opt));
 
 	int saved_repl_start = candidate_ctx.repl_start;
 	int saved_highlight = candidate_ctx.highlight_index;
@@ -882,12 +916,36 @@ static bool is_last_full_token_the_only_option(const cli_command_t *cmd)
 	return false;
 }
 
+static int long_opt_compute_lcp(const cli_command_t *cmd,
+				const char *name_prefix, int name_prefix_len,
+				const cli_option_t *first_match)
+{
+	int lcp_len = (int)strlen(first_match->long_opt);
+	char *lcp = cli_mpool_alloc();
+	if (!lcp) {
+		pr_err("out of memory\r\n");
+		return -1;
+	}
+	memcpy(lcp, first_match->long_opt, lcp_len);
+
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		const cli_option_t *opt = &cmd->options[i];
+		if (!opt->long_opt ||
+		    strncmp(opt->long_opt, name_prefix, name_prefix_len) != 0)
+			continue;
+		int cpl = str_common_prefix_len(lcp, opt->long_opt);
+		if (cpl < lcp_len)
+			lcp_len = cpl;
+	}
+	cli_mpool_free(lcp);
+	return lcp_len;
+}
+
 static void complete_long_option(const cli_command_t *cmd,
 				 const char *name_prefix, int name_prefix_len)
 {
 	const cli_option_t *match = NULL;
 	int match_cnt = 0;
-	char *lcp = NULL;
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		const cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
@@ -902,27 +960,12 @@ static void complete_long_option(const cli_command_t *cmd,
 		replace_long_option_only(match->long_opt,
 					 (int)strlen(match->long_opt));
 	} else if (match_cnt > 1) {
-		int lcp_len = (int)strlen(match->long_opt);
-		lcp = cli_mpool_alloc();
-		if (!lcp) {
-			pr_err("out of memory\r\n");
-			goto out;
-		}
-		memcpy(lcp, match->long_opt, lcp_len);
-
-		for (size_t i = 0; i < cmd->option_count; i++) {
-			const cli_option_t *opt = &cmd->options[i];
-			if (!opt->long_opt ||
-			    strncmp(opt->long_opt, name_prefix,
-				    name_prefix_len) != 0)
-				continue;
-			int cpl = str_common_prefix_len(lcp, opt->long_opt);
-			if (cpl < lcp_len)
-				lcp_len = cpl;
-		}
-
+		int lcp_len = long_opt_compute_lcp(cmd, name_prefix,
+						   name_prefix_len, match);
+		if (lcp_len < 0)
+			return;
 		if (lcp_len > name_prefix_len) {
-			replace_long_option(lcp, lcp_len);
+			replace_long_option(match->long_opt, lcp_len);
 		} else {
 			list_long_option_candidates(cmd, name_prefix,
 						    name_prefix_len, -1);
@@ -934,59 +977,64 @@ static void complete_long_option(const cli_command_t *cmd,
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
 	}
-out:
-	if (lcp)
-		cli_mpool_free(lcp);
+}
+
+static void complete_option_empty_prefix(const cli_command_t *cmd)
+{
+	if (cmd->option_count == 1) {
+		const cli_option_t *opt = &cmd->options[0];
+		if (is_last_full_token_the_only_option(cmd)) {
+			cli_out_push((_u8 *)"\a", 1);
+			cli_out_sync();
+		} else if (opt->long_opt) {
+			replace_long_option_only(opt->long_opt,
+						 (int)strlen(opt->long_opt));
+		} else if (opt->short_opt) {
+			replace_short_option(opt->short_opt);
+		} else {
+			cli_out_push((_u8 *)"\a", 1);
+			cli_out_sync();
+		}
+	} else if (cmd->option_count > 0) {
+		list_all_options(cmd, "", 0, -1);
+		candidate_ctx.repl_start =
+			get_last_token_start(cmd_line.buf, cmd_line.size);
+	} else {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+	}
+}
+
+static void complete_option_dash_prefix(const cli_command_t *cmd,
+					const char *prefix, int prefix_len)
+{
+	if (cmd->option_count == 1) {
+		const cli_option_t *opt = &cmd->options[0];
+		if (opt->long_opt) {
+			replace_long_option(opt->long_opt,
+					    (int)strlen(opt->long_opt));
+		} else if (opt->short_opt) {
+			replace_short_option(opt->short_opt);
+		} else {
+			cli_out_push((_u8 *)"\a", 1);
+			cli_out_sync();
+		}
+	} else {
+		list_all_options(cmd, prefix, prefix_len, -1);
+		candidate_ctx.repl_start =
+			get_last_token_start(cmd_line.buf, cmd_line.size);
+	}
 }
 
 static void complete_option(const cli_command_t *cmd, const char *prefix,
 			    int prefix_len)
 {
 	if (prefix_len == 0) {
-		if (cmd->option_count == 1) {
-			const cli_option_t *opt = &cmd->options[0];
-			if (is_last_full_token_the_only_option(cmd)) {
-				cli_out_push((_u8 *)"\a", 1);
-				cli_out_sync();
-			} else if (opt->long_opt) {
-				replace_long_option_only(
-					opt->long_opt,
-					(int)strlen(opt->long_opt));
-			} else if (opt->short_opt) {
-				replace_short_option(opt->short_opt);
-			} else {
-				cli_out_push((_u8 *)"\a", 1);
-				cli_out_sync();
-			}
-		} else if (cmd->option_count > 0) {
-			list_all_options(cmd, prefix, prefix_len, -1);
-			candidate_ctx.repl_start =
-				get_last_token_start(cmd_line.buf,
-					     cmd_line.size);
-		} else {
-			cli_out_push((_u8 *)"\a", 1);
-			cli_out_sync();
-		}
+		complete_option_empty_prefix(cmd);
 		return;
 	}
 	if (prefix_len == 1 && prefix[0] == '-') {
-		if (cmd->option_count == 1) {
-			const cli_option_t *opt = &cmd->options[0];
-			if (opt->long_opt) {
-				replace_long_option(opt->long_opt,
-						    (int)strlen(opt->long_opt));
-			} else if (opt->short_opt) {
-				replace_short_option(opt->short_opt);
-			} else {
-				cli_out_push((_u8 *)"\a", 1);
-				cli_out_sync();
-			}
-		} else {
-			list_all_options(cmd, prefix, prefix_len, -1);
-			candidate_ctx.repl_start =
-				get_last_token_start(cmd_line.buf,
-					     cmd_line.size);
-		}
+		complete_option_dash_prefix(cmd, prefix, prefix_len);
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] == '-') {
@@ -1058,9 +1106,45 @@ static int cmd_line_start_task(void *pch)
 _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 		     ".cli_cmd_line");
 
-static int valid_char_task(void *pch)
+static int valid_char_append(char ch)
+{
+	int status = cli_out_push((_u8 *)&ch, 1);
+	if (status < 0)
+		return status;
+	cmd_line.buf[cmd_line.pos] = ch;
+	cmd_line.size++;
+	cmd_line.pos++;
+	return CLI_OK;
+}
+
+static int valid_char_insert(char ch)
 {
 	int status;
+	for (int i = cmd_line.size + 1; i >= cmd_line.pos + 1; i--) {
+		cmd_line.buf[i] = cmd_line.buf[i - 1];
+	}
+	cmd_line.buf[cmd_line.pos] = ch;
+	status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
+			      cmd_line.size - cmd_line.pos + 1);
+	if (status < 0)
+		return status;
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	int pos_move_cnt = cmd_line.size - cmd_line.pos;
+	while (pos_move_cnt--) {
+		status = cli_out_push((_u8 *)"\033[D", 4);
+		if (status < 0)
+			return status;
+		if (cli_out_sync())
+			return CLI_ERR_IO_SYNC;
+	}
+	cmd_line.size++;
+	cmd_line.pos++;
+	return CLI_OK;
+}
+
+static int valid_char_task(void *pch)
+{
 	char ch = *((char *)pch);
 	if (candidate_ctx.active) {
 		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
@@ -1069,49 +1153,16 @@ static int valid_char_task(void *pch)
 	}
 	if (cmd_line.size == CMD_LINE_BUF_SIZE) {
 		pr_warn("command length exceeds the limit. \r\n");
-		goto label_cmd_line_exit;
+		return state_switch(&cmd_line_mec, "exit_handler");
 	}
-	if (cmd_line.pos == cmd_line.size) {
-		status = cli_out_push((_u8 *)pch, 1);
-		if (status < 0) {
-			return status;
-		}
-		cmd_line.buf[cmd_line.pos] = ch;
-		goto label_size_pos_inc;
-	} else if (cmd_line.pos < cmd_line.size) {
-		for (int i = cmd_line.size + 1; i >= cmd_line.pos + 1; i--) {
-			cmd_line.buf[i] = cmd_line.buf[i - 1];
-		}
-		cmd_line.buf[cmd_line.pos] = ch;
-		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
-				      cmd_line.size - cmd_line.pos + 1);
-		if (status < 0) {
-			return status;
-		}
-		if (cli_out_sync()) {
-			return CLI_ERR_IO_SYNC;
-		}
-		int pos_move_cnt = cmd_line.size - cmd_line.pos;
-		while (pos_move_cnt--) {
-			status = cli_out_push((_u8 *)"\033[D", 4);
-			if (status < 0) {
-				return status;
-			}
-			if (cli_out_sync()) {
-				return CLI_ERR_IO_SYNC;
-			}
-		}
-		goto label_size_pos_inc;
-	}
-label_size_pos_inc:
-	cmd_line.size++;
-	cmd_line.pos++;
-label_cmd_line_exit:
-	status = state_switch(&cmd_line_mec, "exit_handler");
-	if (status < 0) {
+	int status;
+	if (cmd_line.pos == cmd_line.size)
+		status = valid_char_append(ch);
+	else
+		status = valid_char_insert(ch);
+	if (status < 0)
 		return status;
-	}
-	return CLI_OK;
+	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
 
@@ -1160,6 +1211,44 @@ _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
  * ESC 序列解析与分发状态
  * ------------------------------------------------------------ */
 
+static char *esc_resolve_horizontal(char seq)
+{
+	bool is_cycle = candidate_ctx.cycling;
+	if (seq == 'D') { // left
+		if (candidate_ctx.active == 1 && is_cycle)
+			return "cmd_cycle_left";
+		if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
+		    is_cycle)
+			return "opt_cycle_left";
+		return "cursor_left";
+	}
+	// right
+	if (candidate_ctx.active == 1 && is_cycle)
+		return "cmd_cycle_right";
+	if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) && is_cycle)
+		return "opt_cycle_right";
+	return "cursor_right";
+}
+
+static char *esc_resolve_vertical(char seq)
+{
+	bool is_cycle = candidate_ctx.cycling;
+	if (seq == 'A') { // up
+		if (candidate_ctx.active == 1 && is_cycle)
+			return "cmd_cycle_up";
+		if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
+		    is_cycle)
+			return "opt_cycle_up";
+		return "history_up";
+	}
+	// down
+	if (candidate_ctx.active == 1 && is_cycle)
+		return "cmd_cycle_down";
+	if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) && is_cycle)
+		return "opt_cycle_down";
+	return "history_down";
+}
+
 static int ESC_handler(void *pch)
 {
 	int status, esc_params_count = 2;
@@ -1167,56 +1256,25 @@ static int ESC_handler(void *pch)
 	while (esc_params_count) {
 		if (cli_get_in_size()) {
 			status = cli_in_pop((_u8 *)&ch, 1);
-			if (status < 0) {
+			if (status < 0)
 				return status;
-			}
 			esc_params[2 - esc_params_count] = ch;
 			esc_params_count--;
 		}
 	}
 
 	char *next_state = "exit_handler";
-
-	if (esc_params[1] == 'D') {
-		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
-			next_state = "cmd_cycle_left";
-		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-			 candidate_ctx.cycling)
-			next_state = "opt_cycle_left";
-		else
-			next_state = "cursor_left";
-	} else if (esc_params[1] == 'C') {
-		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
-			next_state = "cmd_cycle_right";
-		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-			 candidate_ctx.cycling)
-			next_state = "opt_cycle_right";
-		else
-			next_state = "cursor_right";
-	} else if (esc_params[1] == 'A') {
-		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
-			next_state = "cmd_cycle_up";
-		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-			 candidate_ctx.cycling)
-			next_state = "opt_cycle_up";
-		else
-			next_state = "history_up";
-	} else if (esc_params[1] == 'B') {
-		if (candidate_ctx.active == 1 && candidate_ctx.cycling)
-			next_state = "cmd_cycle_down";
-		else if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-			 candidate_ctx.cycling)
-			next_state = "opt_cycle_down";
-		else
-			next_state = "history_down";
-	} else if (esc_params[1] == '3') {
+	char seq = esc_params[1];
+	if (seq == 'D' || seq == 'C')
+		next_state = esc_resolve_horizontal(seq);
+	else if (seq == 'A' || seq == 'B')
+		next_state = esc_resolve_vertical(seq);
+	else if (seq == '3') {
 		status = cli_in_pop((_u8 *)&ch, 1);
-		if (status < 0) {
+		if (status < 0)
 			return status;
-		}
-		if (ch == '~') {
+		if (ch == '~')
 			next_state = "delete";
-		}
 	}
 
 	status = state_switch(&cmd_line_mec, next_state);
@@ -1407,9 +1465,18 @@ static int get_current_segment_start(const char *buf, int size)
 	return start;
 }
 
+static void extract_current_cmd_name(char *cmd_name, int buf_size,
+				     int cmd_start, int first_word_end)
+{
+	int len = first_word_end - cmd_start;
+	if (len >= buf_size)
+		len = buf_size - 1;
+	memcpy(cmd_name, cmd_line.buf + cmd_start, len);
+	cmd_name[len] = '\0';
+}
+
 static int tab_complete_task(void *pch)
 {
-	int status;
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	int prefix_len = cmd_line.size - tok_start;
 	const char *prefix = &cmd_line.buf[tok_start];
@@ -1432,10 +1499,8 @@ static int tab_complete_task(void *pch)
 			pr_err("out of memory\r\n");
 			return CLI_ERR_NULL;
 		}
-		memcpy(cmd_name, cmd_line.buf + cmd_start,
-		       first_word_end - cmd_start);
-		cmd_name[first_word_end - cmd_start] = '\0';
-
+		extract_current_cmd_name(cmd_name, CMD_LINE_BUF_SIZE,
+					 cmd_start, first_word_end);
 		const cli_command_t *cmd = find_cmd_by_name(cmd_name);
 		cli_mpool_free(cmd_name);
 		if (!cmd) {
@@ -1446,10 +1511,7 @@ static int tab_complete_task(void *pch)
 		}
 	}
 
-	status = state_switch(&cmd_line_mec, "exit_handler");
-	if (status < 0)
-		return status;
-	return CLI_OK;
+	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 		     ".cli_cmd_line");
@@ -1497,46 +1559,82 @@ _EXPORT_STATE_SYMBOL(tab_cycle, NULL, tab_cycle_task, NULL, ".cli_cmd_line");
  * Delete / Backspace / Clear / Enter / Exit
  * ------------------------------------------------------------ */
 
+static int delete_in_middle(void)
+{
+	int status;
+	for (int i = cmd_line.pos; i < cmd_line.size; i++) {
+		cmd_line.buf[i] = cmd_line.buf[i + 1];
+	}
+	cmd_line.buf[cmd_line.size - 1] = ' ';
+	int writeNums = cmd_line.size - cmd_line.pos;
+	status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos], writeNums);
+	if (status < 0)
+		return status;
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	int pos_move_cnt = cmd_line.size - cmd_line.pos;
+	while (pos_move_cnt--) {
+		status = cli_out_push((_u8 *)"\033[D", 4);
+		if (status < 0)
+			return status;
+		if (cli_out_sync())
+			return CLI_ERR_IO_SYNC;
+	}
+	cmd_line.size--;
+	return CLI_OK;
+}
+
 static int delete_task(void *pch)
 {
 	candidate_ctx_clear();
 	int status;
-	if (cmd_line.pos == cmd_line.size) {
-		goto delete_exit;
-	} else if (cmd_line.pos < cmd_line.size) {
-		for (int i = cmd_line.pos; i < cmd_line.size; i++) {
-			cmd_line.buf[i] = cmd_line.buf[i + 1];
-		}
-		cmd_line.buf[cmd_line.size - 1] = ' ';
-		int writeNums = cmd_line.size - cmd_line.pos;
-		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos],
-				      writeNums);
-		if (status < 0) {
-			return status;
-		}
-		if (cli_out_sync()) {
-			return CLI_ERR_IO_SYNC;
-		}
-		int pos_move_cnt = cmd_line.size - cmd_line.pos;
-		while (pos_move_cnt--) {
-			status = cli_out_push((_u8 *)"\033[D", 4);
-			if (status < 0) {
-				return status;
-			}
-			if (cli_out_sync()) {
-				return CLI_ERR_IO_SYNC;
-			}
-		}
-		cmd_line.size--;
-	}
-delete_exit:
-	status = state_switch(&cmd_line_mec, "exit_handler");
-	if (status < 0) {
+	if (cmd_line.pos < cmd_line.size)
+		status = delete_in_middle();
+	else
+		status = CLI_OK;
+	if (status < 0)
 		return status;
-	}
-	return CLI_OK;
+	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(delete, NULL, delete_task, NULL, ".cli_cmd_line");
+
+static int backspace_at_tail(void)
+{
+	int status = cli_out_push((_u8 *)"\b \b", 4);
+	if (status < 0)
+		return status;
+	cmd_line.size--;
+	cmd_line.pos--;
+	return CLI_OK;
+}
+
+static int backspace_in_middle(void)
+{
+	int status = cli_out_push((_u8 *)"\b \b", 4);
+	if (status < 0)
+		return status;
+	for (int i = cmd_line.pos - 1; i < cmd_line.size - 1; i++) {
+		cmd_line.buf[i] = cmd_line.buf[i + 1];
+	}
+	cmd_line.buf[cmd_line.size - 1] = ' ';
+	status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos - 1],
+			      cmd_line.size - cmd_line.pos + 1);
+	if (status < 0)
+		return status;
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	int pos_move_cnt = cmd_line.size - cmd_line.pos + 1;
+	while (pos_move_cnt--) {
+		status = cli_out_push((_u8 *)"\033[D", 4);
+		if (status < 0)
+			return status;
+		if (cli_out_sync())
+			return CLI_ERR_IO_SYNC;
+	}
+	cmd_line.size--;
+	cmd_line.pos--;
+	return CLI_OK;
+}
 
 static int backspace_handler(void *pch)
 {
@@ -1546,51 +1644,15 @@ static int backspace_handler(void *pch)
 		candidate_ctx_clear();
 		cmd_line_redraw();
 	}
-	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size) {
-		status = cli_out_push((_u8 *)"\b \b", 4);
-		if (status < 0) {
-			return status;
-		}
-		goto label_size_pos_dis;
-	} else if (cmd_line.pos == 0) {
-		goto label_exit2;
-	} else if (cmd_line.pos < cmd_line.size) {
-		status = cli_out_push((_u8 *)"\b \b", 4);
-		if (status < 0) {
-			return status;
-		}
-		for (int i = cmd_line.pos - 1; i < cmd_line.size - 1; i++) {
-			cmd_line.buf[i] = cmd_line.buf[i + 1];
-		}
-		cmd_line.buf[cmd_line.size - 1] = ' ';
-		status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos - 1],
-				      cmd_line.size - cmd_line.pos + 1);
-		if (status < 0) {
-			return status;
-		}
-		if (cli_out_sync()) {
-			return CLI_ERR_IO_SYNC;
-		}
-		int pos_move_cnt = cmd_line.size - cmd_line.pos + 1;
-		while (pos_move_cnt--) {
-			status = cli_out_push((_u8 *)"\033[D", 4);
-			if (status < 0) {
-				return status;
-			}
-			if (cli_out_sync()) {
-				return CLI_ERR_IO_SYNC;
-			}
-		}
-	}
-label_size_pos_dis:
-	cmd_line.size--;
-	cmd_line.pos--;
-label_exit2:
-	status = state_switch(&cmd_line_mec, "exit_handler");
-	if (status < 0) {
+	if (cmd_line.pos != 0 && cmd_line.pos == cmd_line.size)
+		status = backspace_at_tail();
+	else if (cmd_line.pos == 0)
+		status = CLI_OK;
+	else
+		status = backspace_in_middle();
+	if (status < 0)
 		return status;
-	}
-	return CLI_OK;
+	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(backspace_handler, NULL, backspace_handler, NULL,
 		     ".cli_cmd_line");
@@ -1711,47 +1773,57 @@ int cli_cmd_line_task(char ch)
 
 extern int scheduler_is_in_get_char(void);
 
+static bool printk_should_drop(const char *pre)
+{
+	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
+		if (pre[0] > log_level[0])
+			return true;
+	}
+	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
+	    strcmp("8", log_level))
+		return true;
+	return false;
+}
+
+static int printk_format_and_send(const char *pre_str, int raw_len)
+{
+	if (is_kern_level(buffer[0]))
+		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
+	int pre_len = strlen(pre_str);
+	if (raw_len <= 0 || pre_len < 0)
+		return 0;
+	memmove(buffer + pre_len, buffer, raw_len + 1);
+	memcpy(buffer, pre_str, pre_len);
+	strcat(buffer, COLOR_NONE);
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	int status = cli_out_push((_u8 *)buffer,
+				  pre_len + raw_len + strlen(COLOR_NONE));
+	if (status < 0)
+		return status;
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	return 0;
+}
+
 int cli_printk(const char *fmt, ...)
 {
-	int status;
 	va_list args;
 	va_start(args, fmt);
 	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
-	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
-		if (pre[0] > log_level[0]) {
-			return 0;
-		}
-	}
-	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
-	    strcmp("8", log_level)) {
+	if (printk_should_drop(pre))
 		return 0;
-	}
 
 	int in_interactive = scheduler_is_in_get_char();
-	if (in_interactive) {
+	if (in_interactive)
 		cli_out_push((_u8 *)"\r\033[K", 4);
-	}
 
 	const char *_pre = prefix_gen(pre);
-	if (is_kern_level(buffer[0])) {
-		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
-	}
-	int pre_len = strlen(_pre);
-	if (len > 0 && pre_len >= 0) {
-		memmove(buffer + pre_len, buffer, len + 1);
-		memcpy(buffer, _pre, pre_len);
-		strcat(buffer, COLOR_NONE);
-		if (cli_out_sync())
-			return CLI_ERR_IO_SYNC;
-		status = cli_out_push((_u8 *)buffer,
-				      pre_len + len + strlen(COLOR_NONE));
-		if (status < 0)
-			return status;
-		if (cli_out_sync())
-			return CLI_ERR_IO_SYNC;
-	}
+	int status = printk_format_and_send(_pre, len);
+	if (status < 0)
+		return status;
 
 	if (in_interactive) {
 		if (candidate_ctx.active)
@@ -1759,7 +1831,6 @@ int cli_printk(const char *fmt, ...)
 		else
 			cmd_line_redraw();
 	}
-
 	return len;
 }
 
