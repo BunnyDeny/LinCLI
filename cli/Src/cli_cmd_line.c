@@ -1079,24 +1079,33 @@ static void candidate_redraw(void)
 					    candidate_ctx.prefix_len);
 		}
 	} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
-		if (candidate_ctx.cycling == 2)
+		int saved_highlight = candidate_ctx.highlight_index;
+		int saved_cycling = candidate_ctx.cycling;
+		if (saved_cycling == 2)
 			list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
 					 candidate_ctx.prefix_len,
-					 candidate_ctx.highlight_index);
+					 saved_highlight);
 		else
 			list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
 					 candidate_ctx.prefix_len, -1);
+		candidate_ctx.highlight_index = saved_highlight;
+		candidate_ctx.cycling = saved_cycling;
+		candidate_ctx.active = 2;
 	} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
-		if (candidate_ctx.cycling == 2)
+		int saved_highlight = candidate_ctx.highlight_index;
+		int saved_cycling = candidate_ctx.cycling;
+		if (saved_cycling == 2)
 			list_long_option_candidates(candidate_ctx.cmd,
 						    candidate_ctx.prefix,
 						    candidate_ctx.prefix_len,
-						    candidate_ctx.highlight_index);
+						    saved_highlight);
 		else
 			list_long_option_candidates(candidate_ctx.cmd,
 						    candidate_ctx.prefix,
-						    candidate_ctx.prefix_len,
-						    -1);
+						    candidate_ctx.prefix_len, -1);
+		candidate_ctx.highlight_index = saved_highlight;
+		candidate_ctx.cycling = saved_cycling;
+		candidate_ctx.active = 3;
 	}
 }
 
