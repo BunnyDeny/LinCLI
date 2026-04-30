@@ -42,6 +42,13 @@ extern const cli_candidate_t *const _cli_candidates_start[];
 extern const cli_candidate_t *const _cli_candidates_end[];
 
 /* ============================================================
+ * 候选值数组辅助宏，展开为复合字面量数组指针。
+ * 外层双层圆括号避免预处理器把大括号内的逗号当成宏参数分隔符。
+ * ============================================================ */
+#define CANDIDATES(...) \
+	((char *[]){ __VA_ARGS__ })
+
+/* ============================================================
  * 注册宏：定义一个 cli_candidate_t 并将其指针放入 .cli_candidates 段
  * ============================================================
  *
@@ -49,18 +56,17 @@ extern const cli_candidate_t *const _cli_candidates_end[];
  *   name         - 宏实例名（用于生成内部静态变量名，需唯一）
  *   _cmd         - 该候选所归属的命令名字符串（如 "ls"）
  *   _long_option - long_option 字段初始值（如 "--file"）
- *   _argc        - argv 数组有效元素个数
- *   _argv        - 候选值字符串数组指针
+ *   _argv        - 候选值字符串数组指针（通过 CANDIDATES(...) 宏定义）
  *
  * 示例：
- *   CLI_CANDIDATE(foo, "ls", "--file", 0, NULL);
+ *   CLI_CANDIDATE(foo, "ls", "--file", CANDIDATES("a", "b", "c"));
  */
 
-#define CLI_CANDIDATE(name, _cmd, _long_option, _argc, _argv)            \
+#define CLI_CANDIDATE(name, _cmd, _long_option, _argv)                   \
 	static const cli_candidate_t _cli_candidate_def_##name = {         \
 		.cmd = _cmd,                                                 \
 		.long_option = _long_option,                                 \
-		.argc = _argc,                                               \
+		.argc = (int)((sizeof(_argv) / sizeof(char *))),             \
 		.argv = _argv,                                               \
 	};                                                               \
 	static const cli_candidate_t *const _cli_candidate_ptr_##name      \
