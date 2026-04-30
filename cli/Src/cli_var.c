@@ -8,6 +8,7 @@
 #include "cli_errno.h"
 #include "cli_mpool.h"
 #include "cmd_dispose.h"
+#include "init_d.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -298,6 +299,53 @@ void cli_var_list_all(void)
 			   value_buf, attr_buf);
 	}
 }
+
+/* ============================================================
+ * 运行时填充 var 命令 -r / -w 选项的候选列表
+ * ============================================================ */
+
+#define MAX_CLI_VAR_CANDS 64
+
+static char *var_read_names[MAX_CLI_VAR_CANDS + 1];
+static char *var_write_names[MAX_CLI_VAR_CANDS + 1];
+static int var_read_count;
+static int var_write_count;
+
+static void cli_var_candidate_init(void *arg)
+{
+	(void)arg;
+	const cli_var_t *var;
+	var_read_count = 0;
+	var_write_count = 0;
+	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
+	{
+		if (!var || !var->name)
+			continue;
+		if (var_read_count < MAX_CLI_VAR_CANDS)
+			var_read_names[var_read_count++] = (char *)var->name;
+		if (!var->readonly && var_write_count < MAX_CLI_VAR_CANDS)
+			var_write_names[var_write_count++] = (char *)var->name;
+	}
+	const cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd || !cmd->name || strcmp(cmd->name, "var") != 0)
+			continue;
+		for (size_t i = 0; i < cmd->option_count; i++) {
+			cli_option_t *opt = &cmd->options[i];
+			if (opt->long_opt && strcmp(opt->long_opt, "read") == 0) {
+				opt->candidate_argc = var_read_count;
+				opt->candidate_argv = var_read_names;
+			} else if (opt->long_opt &&
+				   strcmp(opt->long_opt, "write") == 0) {
+				opt->candidate_argc = var_write_count;
+				opt->candidate_argv = var_write_names;
+			}
+		}
+	}
+}
+_EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL,
+		     cli_var_candidate_init);
 
 /* ============================================================
  * 示例变量（验证用，生产环境可删除或保留作为 demo）
