@@ -35,9 +35,9 @@ typedef struct cli_var {
 extern const cli_var_t *const _cli_vars_start[];
 extern const cli_var_t *const _cli_vars_end[];
 
-#define _FOR_EACH_CLI_VAR(_start, _end, _var)                          \
-	for (const cli_var_t *const *_pp = (_start);                       \
-	     _pp < (const cli_var_t *const *)(_end); _pp++)                \
+#define _FOR_EACH_CLI_VAR(_start, _end, _var)               \
+	for (const cli_var_t *const *_pp = (_start);        \
+	     _pp < (const cli_var_t *const *)(_end); _pp++) \
 		if (((_var) = *_pp) != NULL)
 
 /* ============================================================
@@ -55,37 +55,23 @@ extern const cli_var_t *const _cli_vars_end[];
  * 对于 char *p，sizeof(p) = 指针大小（通常为 8），需避免。
  */
 
-#define _CLI_VAR_REGISTER(_symbol, _name, _type, _doc, _ro)            \
-	static const cli_var_t _cli_var_def_##_symbol = {                  \
-		.name = _name,                                             \
-		.type = _type,                                             \
-		.addr = (void *)&(_symbol),                                \
-		.size = sizeof(_symbol),                                   \
-		.doc = _doc,                                               \
-		.readonly = _ro,                                           \
-	};                                                                 \
-	static const cli_var_t *const _cli_var_ptr_##_symbol               \
-		__attribute__((used, section(".cli_vars.1"))) =            \
+#define _CLI_VAR_REGISTER(_symbol, _name, _type, _doc, _ro)     \
+	static const cli_var_t _cli_var_def_##_symbol = {       \
+		.name = _name,                                  \
+		.type = _type,                                  \
+		.addr = (void *)&(_symbol),                     \
+		.size = sizeof(_symbol),                        \
+		.doc = _doc,                                    \
+		.readonly = _ro,                                \
+	};                                                      \
+	static const cli_var_t *const _cli_var_ptr_##_symbol    \
+		__attribute__((used, section(".cli_vars.1"))) = \
 			&_cli_var_def_##_symbol
 
-#define CLI_VAR(_symbol, _name, _type, _doc)                           \
+#define CLI_VAR(_symbol, _name, _type, _doc) \
 	_CLI_VAR_REGISTER(_symbol, _name, CLI_TYPE_##_type, _doc, false)
 
-#define CLI_VAR_RO(_symbol, _name, _type, _doc)                        \
+#define CLI_VAR_RO(_symbol, _name, _type, _doc) \
 	_CLI_VAR_REGISTER(_symbol, _name, CLI_TYPE_##_type, _doc, true)
-
-/* ============================================================
- * 函数接口
- * ============================================================ */
-
-const cli_var_t *cli_var_find(const char *name);
-void cli_var_print(const cli_var_t *var);
-int cli_var_set(const cli_var_t *var, const char *value);
-void cli_var_list_all(void);
-
-/* 打印与修改（var 命令 handler 内部使用） */
-void cli_var_print(const cli_var_t *var);
-int cli_var_set(const cli_var_t *var, const char *value);
-const cli_var_t *cli_var_find(const char *name);
 
 #endif
