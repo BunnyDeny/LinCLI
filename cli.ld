@@ -1,3 +1,8 @@
+  .cli_candidates : {
+    KEEP(*(.cli_candidates.0.start))
+    KEEP(*(.cli_candidates.1))
+    KEEP(*(.cli_candidates.1.end))
+  }
   .cli_commands : {
     KEEP(*(.cli_commands.0.start))
     KEEP(*(.cli_commands.1))

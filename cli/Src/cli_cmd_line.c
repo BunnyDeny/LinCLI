@@ -522,7 +522,7 @@ static int long_opt_match_total(const cli_command_t *cmd)
 {
 	int total = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
+		cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
 		    strncmp(opt->long_opt, candidate_ctx.prefix,
 			    candidate_ctx.prefix_len) == 0)
@@ -531,12 +531,12 @@ static int long_opt_match_total(const cli_command_t *cmd)
 	return total;
 }
 
-static const cli_option_t *
+static cli_option_t *
 long_opt_find_match_by_index(const cli_command_t *cmd, int idx)
 {
 	int cur = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
+		cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
 		    strncmp(opt->long_opt, candidate_ctx.prefix,
 			    candidate_ctx.prefix_len) == 0) {
@@ -548,7 +548,7 @@ long_opt_find_match_by_index(const cli_command_t *cmd, int idx)
 	return NULL;
 }
 
-static int build_option_token(const cli_option_t *opt, char *buf)
+static int build_option_token(cli_option_t *opt, char *buf)
 {
 	int pos = 0;
 	if (opt->long_opt && candidate_ctx.prefix_len >= 2 &&
@@ -654,7 +654,7 @@ static void complete_command_name(const char *prefix, int prefix_len)
 	}
 }
 
-static void display_one_option(const cli_option_t *opt, int idx,
+static void display_one_option(cli_option_t *opt, int idx,
 			       int highlight_idx, int *cows)
 {
 	cli_out_push((_u8 *)"\r\n", 2);
@@ -715,7 +715,7 @@ static void do_complete_short_option(char c, const cli_command_t *cmd)
 	cli_out_sync();
 }
 
-static void display_one_long_option(const cli_option_t *opt, int highlight_idx,
+static void display_one_long_option(cli_option_t *opt, int highlight_idx,
 				    int *cows)
 {
 	cli_out_push((_u8 *)"\r\n", 2);
@@ -740,7 +740,7 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 	candidate_ctx_save(3, name_prefix, name_prefix_len, cmd);
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
+		cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
 		    strncmp(opt->long_opt, name_prefix, name_prefix_len) == 0) {
 			display_one_long_option(opt, highlight_idx, &cows);
@@ -763,7 +763,7 @@ static int get_option_repl_start(void)
 	return tok_start;
 }
 
-static int apply_option_to_cmdline(const cli_option_t *opt, int tok_start)
+static int apply_option_to_cmdline(cli_option_t *opt, int tok_start)
 {
 	char *new_buf = cli_mpool_alloc();
 	if (!new_buf) {
@@ -812,7 +812,7 @@ static void cycle_all_option_highlight(void)
 		return;
 
 	normalize_highlight_index((int)cmd->option_count);
-	const cli_option_t *target =
+	cli_option_t *target =
 		&cmd->options[candidate_ctx.highlight_index];
 
 	int tok_start = get_option_repl_start();
@@ -823,7 +823,7 @@ static void cycle_all_option_highlight(void)
 }
 
 static void refresh_long_option_highlight(const cli_command_t *cmd,
-					  const cli_option_t *target)
+					  cli_option_t *target)
 {
 	int tok_start = candidate_ctx.repl_start;
 	if (tok_start < 0 || tok_start > cmd_line.size)
@@ -848,7 +848,7 @@ static void cycle_long_option_highlight(void)
 	if (total == 0)
 		return;
 	normalize_highlight_index(total);
-	const cli_option_t *target = long_opt_find_match_by_index(
+	cli_option_t *target = long_opt_find_match_by_index(
 		cmd, candidate_ctx.highlight_index);
 	if (!target)
 		return;
@@ -913,7 +913,7 @@ static void replace_short_option(char c)
 	cli_mpool_free(new_buf);
 }
 
-static bool is_token_match_option(int start, int len, const cli_option_t *opt)
+static bool is_token_match_option(int start, int len, cli_option_t *opt)
 {
 	if (opt->long_opt) {
 		int llen = (int)strlen(opt->long_opt);
@@ -947,14 +947,14 @@ static bool is_last_full_token_the_only_option(const cli_command_t *cmd)
 	start++;
 
 	int len = end - start + 1;
-	const cli_option_t *opt = &cmd->options[0];
+	cli_option_t *opt = &cmd->options[0];
 
 	return is_token_match_option(start, len, opt);
 }
 
 static int long_opt_compute_lcp(const cli_command_t *cmd,
 				const char *name_prefix, int name_prefix_len,
-				const cli_option_t *first_match)
+				cli_option_t *first_match)
 {
 	int lcp_len = (int)strlen(first_match->long_opt);
 	char *lcp = cli_mpool_alloc();
@@ -965,7 +965,7 @@ static int long_opt_compute_lcp(const cli_command_t *cmd,
 	memcpy(lcp, first_match->long_opt, lcp_len);
 
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
+		cli_option_t *opt = &cmd->options[i];
 		if (!opt->long_opt ||
 		    strncmp(opt->long_opt, name_prefix, name_prefix_len) != 0)
 			continue;
@@ -980,7 +980,7 @@ static int long_opt_compute_lcp(const cli_command_t *cmd,
 static void do_complete_long_option(const cli_command_t *cmd,
 				    const char *name_prefix,
 				    int name_prefix_len, int match_cnt,
-				    const cli_option_t *match)
+				    cli_option_t *match)
 {
 	if (match_cnt == 1) {
 		replace_long_option_only(match->long_opt,
@@ -1007,10 +1007,10 @@ static void do_complete_long_option(const cli_command_t *cmd,
 static void complete_long_option(const cli_command_t *cmd,
 				 const char *name_prefix, int name_prefix_len)
 {
-	const cli_option_t *match = NULL;
+	cli_option_t *match = NULL;
 	int match_cnt = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
+		cli_option_t *opt = &cmd->options[i];
 		if (opt->long_opt &&
 		    strncmp(opt->long_opt, name_prefix, name_prefix_len) == 0) {
 			match_cnt++;
@@ -1025,7 +1025,7 @@ static void complete_long_option(const cli_command_t *cmd,
 static void complete_option_empty_prefix(const cli_command_t *cmd)
 {
 	if (cmd->option_count == 1) {
-		const cli_option_t *opt = &cmd->options[0];
+		cli_option_t *opt = &cmd->options[0];
 		if (is_last_full_token_the_only_option(cmd)) {
 			cli_out_push((_u8 *)"\a", 1);
 			cli_out_sync();
@@ -1052,7 +1052,7 @@ static void complete_option_dash_prefix(const cli_command_t *cmd,
 					const char *prefix, int prefix_len)
 {
 	if (cmd->option_count == 1) {
-		const cli_option_t *opt = &cmd->options[0];
+		cli_option_t *opt = &cmd->options[0];
 		if (opt->long_opt) {
 			replace_long_option(opt->long_opt,
 					    (int)strlen(opt->long_opt));

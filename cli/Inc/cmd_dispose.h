@@ -53,6 +53,8 @@ typedef struct cli_option {
 	bool required; // 是否必需
 	const char *depends; // 依赖列表（空格分隔的长选项名）
 	const char *conflicts; // 互斥列表（空格分隔的长选项名）
+	int candidate_argc; // 候选值个数（字符串类型选项的 Tab 补全）
+	char **candidate_argv; // 候选值列表
 } cli_option_t;
 
 typedef struct cli_command {
@@ -60,7 +62,7 @@ typedef struct cli_command {
 	const char *doc; // 命令说明
 	void *arg_struct; // 参数结构体指针（运行时填充）
 	size_t arg_struct_size; // 结构体大小
-	const cli_option_t *options; // 选项数组
+	cli_option_t *options; // 选项数组
 	size_t option_count; // 选项数量
 	int (*validator)(void *); // 自定义验证函数（旧接口兼容）
 	void (*cmd_entry)(void *); // 命令入口，只执行一次
@@ -265,7 +267,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 
 #define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)   \
 	/* 定义选项数组（放在全局区） */                                     \
-	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
+	cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
                                                                              \
 	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */     \
 	/* 旧接口兼容：parse_cb 同时填入 validator 和 cmd_task，          \
@@ -284,7 +286,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \
 			     buf, buf_size, ...)                               \
 	/* 定义选项数组（放在静态区） */                                       \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
+	static cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
                                                                                \
 	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */                     \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
@@ -331,7 +333,7 @@ extern struct alias_cmd *const _alias_cmd_end[];
 
 #define CLI_COMMAND_ASYNC(name, cmd_str, doc_str, _entry, _task, _exit,        \
 			    arg_struct_ptr, ...)                               \
-	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };              \
+	cli_option_t _cli_options_##name[] = { __VA_ARGS__ };              \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                              \
 		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr),     \
 		_cli_options_##name,                                             \
