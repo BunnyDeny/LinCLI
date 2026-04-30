@@ -1288,23 +1288,31 @@ _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
  * ESC 序列解析与分发状态
  * ------------------------------------------------------------ */
 
+static bool is_opt_cycle_active(void)
+{
+	int a = candidate_ctx.active;
+	return a == 2 || a == 3;
+}
+
 static char *esc_resolve_horizontal(char seq)
 {
 	bool is_cycle = candidate_ctx.cycling;
 	if (seq == 'D') { // left
 		if (candidate_ctx.active == 1 && is_cycle)
 			return "cmd_cycle_left";
-		if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-		    is_cycle)
+		if (is_opt_cycle_active() && is_cycle)
 			return "opt_cycle_left";
+		if (candidate_ctx.active == 4)
+			return "value_cycle_prev";
 		return "cursor_left";
 	}
 	// right
 	if (candidate_ctx.active == 1 && is_cycle)
 		return "cmd_cycle_right";
-	if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-	    is_cycle)
+	if (is_opt_cycle_active() && is_cycle)
 		return "opt_cycle_right";
+	if (candidate_ctx.active == 4)
+		return "value_cycle_next";
 	return "cursor_right";
 }
 
@@ -1314,17 +1322,19 @@ static char *esc_resolve_vertical(char seq)
 	if (seq == 'A') { // up
 		if (candidate_ctx.active == 1 && is_cycle)
 			return "cmd_cycle_up";
-		if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-		    is_cycle)
+		if (is_opt_cycle_active() && is_cycle)
 			return "opt_cycle_up";
+		if (candidate_ctx.active == 4)
+			return "value_cycle_prev";
 		return "history_up";
 	}
 	// down
 	if (candidate_ctx.active == 1 && is_cycle)
 		return "cmd_cycle_down";
-	if ((candidate_ctx.active == 2 || candidate_ctx.active == 3) &&
-	    is_cycle)
+	if (is_opt_cycle_active() && is_cycle)
 		return "opt_cycle_down";
+	if (candidate_ctx.active == 4)
+		return "value_cycle_next";
 	return "history_down";
 }
 
@@ -1503,6 +1513,36 @@ static int opt_cycle_down_task(void *pch)
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(opt_cycle_down, NULL, opt_cycle_down_task, NULL,
+		     ".cli_cmd_line");
+
+/* ------------------------------------------------------------
+ * 值候选列表导航状态
+ * ------------------------------------------------------------ */
+
+static void cycle_value_highlight(void);
+
+static int value_cycle_prev_task(void *pch)
+{
+	if (candidate_ctx.cycling == 0)
+		candidate_ctx.highlight_index = -1;
+	else
+		candidate_ctx.highlight_index--;
+	cycle_value_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(value_cycle_prev, NULL, value_cycle_prev_task, NULL,
+		     ".cli_cmd_line");
+
+static int value_cycle_next_task(void *pch)
+{
+	if (candidate_ctx.cycling == 0)
+		candidate_ctx.highlight_index = 0;
+	else
+		candidate_ctx.highlight_index++;
+	cycle_value_highlight();
+	return state_switch(&cmd_line_mec, "exit_handler");
+}
+_EXPORT_STATE_SYMBOL(value_cycle_next, NULL, value_cycle_next_task, NULL,
 		     ".cli_cmd_line");
 
 /* ------------------------------------------------------------
