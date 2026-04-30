@@ -22,6 +22,7 @@
 #include "cli_io.h"
 #include "cli_cmd_line.h"
 #include "cli_mpool.h"
+#include "cli_var.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
@@ -812,9 +813,31 @@ int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
 	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
 	all_printk("\r\n");
 	all_printk("\033[K");
-	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, cmd_ret);
-	if (!cmd_def)
+
+	/* ========================================================
+	 * 变量系统：set 命令拦截（位置参数，不走选项解析）
+	 * ======================================================== */
+	if (argc >= 1 && strcmp(argv[0], "set") == 0) {
+		int ret = cli_var_set_by_cmdline(argc, argv);
+		*cmd_ret = ret;
 		return dispose_exit;
+	}
+
+	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, cmd_ret);
+	if (!cmd_def) {
+		/* ====================================================
+		 * 变量系统：命令查找失败后，尝试变量名直接查看
+		 * ==================================================== */
+		if (argc == 1) {
+			const cli_var_t *var = cli_var_find(argv[0]);
+			if (var) {
+				cli_var_print(var);
+				*cmd_ret = 0;
+				return dispose_exit;
+			}
+		}
+		return dispose_exit;
+	}
 	memset(cmd_def->arg_buf, 0, cmd_def->arg_buf_size);
 	int ret = execute_parsing(cmd_def, argc, argv, cmd_ret);
 	if (ret < 0)

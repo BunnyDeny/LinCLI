@@ -9,6 +9,7 @@
 #include "cmd_dispose.h"
 #include "stateM.h"
 #include "init_d.h"
+#include "cli_var.h"
 
 /* .cli_commands */
 const cli_command_t *const _cli_commands_start[1]
@@ -41,3 +42,9 @@ struct alias_cmd *const _alias_cmd_placeholder[1]
 	__attribute__((used, section(".alias_cmd.1"))) = { NULL };
 struct alias_cmd *const _alias_cmd_end[1]
 	__attribute__((used, section(".alias_cmd.1.end"))) = { NULL };
+
+/* .cli_vars */
+const cli_var_t *const _cli_vars_start[1]
+	__attribute__((used, section(".cli_vars.0.start"))) = { NULL };
+const cli_var_t *const _cli_vars_end[1]
+	__attribute__((used, section(".cli_vars.1.end"))) = { NULL };

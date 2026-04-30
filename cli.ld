@@ -23,3 +23,8 @@
     KEEP(*(.alias_cmd.1))
     KEEP(*(.alias_cmd.1.end))
   }
+  .cli_vars : {
+    KEEP(*(.cli_vars.0.start))
+    KEEP(*(.cli_vars.1))
+    KEEP(*(.cli_vars.1.end))
+  }
