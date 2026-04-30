@@ -1572,40 +1572,64 @@ static void extract_current_cmd_name(char *cmd_name, int buf_size,
 	cmd_name[len] = '\0';
 }
 
+static void get_token_prefix(int *tok_start, int *prefix_len,
+			     const char **prefix)
+{
+	*tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	*prefix_len = cmd_line.size - *tok_start;
+	*prefix = &cmd_line.buf[*tok_start];
+}
+
+static void get_first_word_bounds(int *cmd_start, int *first_word_end)
+{
+	*cmd_start = get_current_segment_start(cmd_line.buf, cmd_line.size);
+	while (*cmd_start < cmd_line.size && cmd_line.buf[*cmd_start] == ' ')
+		(*cmd_start)++;
+	*first_word_end = *cmd_start;
+	while (*first_word_end < cmd_line.size &&
+	       cmd_line.buf[*first_word_end] != ' ')
+		(*first_word_end)++;
+}
+
+static int try_complete_option(const char *prefix, int prefix_len,
+			       int cmd_start, int first_word_end)
+{
+	char *cmd_name = cli_mpool_alloc();
+	if (cmd_name == NULL) {
+		pr_err("out of memory\r\n");
+		return CLI_ERR_NULL;
+	}
+	extract_current_cmd_name(cmd_name, CMD_LINE_BUF_SIZE, cmd_start,
+				 first_word_end);
+	const cli_command_t *cmd = find_cmd_by_name(cmd_name);
+	cli_mpool_free(cmd_name);
+	if (!cmd) {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+	} else {
+		complete_option(cmd, prefix, prefix_len);
+	}
+	return 0;
+}
+
 static int tab_complete_task(void *pch)
 {
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	int prefix_len = cmd_line.size - tok_start;
-	const char *prefix = &cmd_line.buf[tok_start];
+	int tok_start, prefix_len;
+	const char *prefix;
+	get_token_prefix(&tok_start, &prefix_len, &prefix);
 
-	int cmd_start = get_current_segment_start(cmd_line.buf, cmd_line.size);
-	while (cmd_start < cmd_line.size && cmd_line.buf[cmd_start] == ' ')
-		cmd_start++;
-	int first_word_end = cmd_start;
-	while (first_word_end < cmd_line.size &&
-	       cmd_line.buf[first_word_end] != ' ')
-		first_word_end++;
+	int cmd_start, first_word_end;
+	get_first_word_bounds(&cmd_start, &first_word_end);
 
 	if (cmd_line.size == 0 ||
 	    (tok_start >= cmd_start && tok_start < first_word_end) ||
 	    cmd_start >= cmd_line.size) {
 		complete_command_name(prefix, prefix_len);
 	} else {
-		char *cmd_name = cli_mpool_alloc();
-		if (cmd_name == NULL) {
-			pr_err("out of memory\r\n");
-			return CLI_ERR_NULL;
-		}
-		extract_current_cmd_name(cmd_name, CMD_LINE_BUF_SIZE, cmd_start,
-					 first_word_end);
-		const cli_command_t *cmd = find_cmd_by_name(cmd_name);
-		cli_mpool_free(cmd_name);
-		if (!cmd) {
-			cli_out_push((_u8 *)"\a", 1);
-			cli_out_sync();
-		} else {
-			complete_option(cmd, prefix, prefix_len);
-		}
+		int status = try_complete_option(prefix, prefix_len, cmd_start,
+						 first_word_end);
+		if (status < 0)
+			return status;
 	}
 
 	return state_switch(&cmd_line_mec, "exit_handler");
