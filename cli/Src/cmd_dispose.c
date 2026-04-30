@@ -69,7 +69,7 @@ static int tokenize(char *line, char **argv, int max_argv)
 /**
  * @brief 根据用户输入的选项字符串查找对应的 cli_option_t 定义。
  */
-static const cli_option_t *find_option(const cli_command_t *cmd,
+static cli_option_t *find_option(const cli_command_t *cmd,
 				       const char *arg)
 {
 	if (!arg || arg[0] != '-')
@@ -99,7 +99,7 @@ static const cli_option_t *find_option(const cli_command_t *cmd,
  * ============================================================ */
 
 struct parse_state {
-	const cli_option_t *cur_opt;
+	cli_option_t *cur_opt;
 	int cur_opt_argc;
 	int cur_opt_idx;
 	char *scratch_pool;
@@ -132,7 +132,7 @@ static int resolve_option(const cli_command_t *cmd, const char *arg,
 	return 0;
 }
 
-static int mark_option_seen(const cli_option_t *opt, bool *opt_seen,
+static int mark_option_seen(cli_option_t *opt, bool *opt_seen,
 			    struct parse_state *state)
 {
 	size_t idx = (size_t)(opt - state->cmd->options);
@@ -148,7 +148,7 @@ static int mark_option_seen(const cli_option_t *opt, bool *opt_seen,
 	return 0;
 }
 
-static void apply_bool_option(const cli_option_t *opt, void *arg_struct)
+static void apply_bool_option(cli_option_t *opt, void *arg_struct)
 {
 	void *dst = (char *)arg_struct + opt->offset;
 	*(bool *)dst = true;
@@ -208,7 +208,7 @@ static int cli_parse_double(const char *arg, double *out)
 	return 0;
 }
 
-static int *ensure_int_array(const cli_option_t *opt, void *arg_struct,
+static int *ensure_int_array(cli_option_t *opt, void *arg_struct,
 			     struct parse_state *state)
 {
 	void *dst = (char *)arg_struct + opt->offset;
@@ -231,7 +231,7 @@ static int *ensure_int_array(const cli_option_t *opt, void *arg_struct,
 	return arr;
 }
 
-static void update_array_count(const cli_option_t *opt, void *arg_struct,
+static void update_array_count(cli_option_t *opt, void *arg_struct,
 			       int cur_count)
 {
 	if (opt->offset_count > 0) {
@@ -241,7 +241,7 @@ static void update_array_count(const cli_option_t *opt, void *arg_struct,
 	}
 }
 
-static int parse_int_array(const cli_option_t *opt, const char *arg,
+static int parse_int_array(cli_option_t *opt, const char *arg,
 			   void *arg_struct, struct parse_state *state)
 {
 	if (state->cur_opt_idx >= (int)opt->max_args) {
@@ -365,7 +365,7 @@ static bool extract_next_name(const char **p, char *buf, size_t buf_size)
 	return true;
 }
 
-static int report_name_check_error(const cli_option_t *opt,
+static int report_name_check_error(cli_option_t *opt,
 				   const char *name_buf, bool expect_present,
 				   int err_code)
 {
@@ -385,7 +385,7 @@ static int check_name_list(const cli_command_t *cmd, const bool *opt_seen,
 			   size_t opt_idx, const char *list,
 			   bool expect_present, int err_code)
 {
-	const cli_option_t *opt = &cmd->options[opt_idx];
+	cli_option_t *opt = &cmd->options[opt_idx];
 	char name_buf[32];
 	const char *p = list;
 	while (extract_next_name(&p, name_buf, sizeof(name_buf))) {
@@ -622,7 +622,7 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 /**
  * @brief 打印指定命令的帮助信息。
  */
-static void build_opt_marks(const cli_option_t *opt, char *req_mark,
+static void build_opt_marks(cli_option_t *opt, char *req_mark,
 			    char *dep_mark, size_t dep_mark_size)
 {
 	req_mark[0] = '\0';
@@ -664,14 +664,19 @@ static void free_help_marks(char *req_mark, char *dep_mark)
 		cli_mpool_free(dep_mark);
 }
 
-static void print_cmd_header(const cli_command_t *cmd)
+static void print_cmd_brief(const cli_command_t *cmd)
 {
 	all_printk(" command     : %s\r\n", cmd->name);
-	all_printk(" description : %s\r\n", cmd->doc);
+	all_printk(" description : %s\r\n", cmd->brief);
+	if (cmd->usage && cmd->usage_count > 0) {
+		all_printk(" usage       : %s\r\n", cmd->usage[0]);
+		for (int i = 1; i < cmd->usage_count; i++)
+			all_printk("               %s\r\n", cmd->usage[i]);
+	}
 	all_printk(" option      :\r\n");
 }
 
-static void print_opt_line(const cli_option_t *opt, const char *req_mark,
+static void print_opt_line(cli_option_t *opt, const char *req_mark,
 			   const char *dep_mark)
 {
 	all_printk("      -%c, --%-16s %s%s%s\r\n",
@@ -689,9 +694,9 @@ static void cli_print_help(const cli_command_t *cmd)
 	if (!alloc_help_marks(&req_mark, &dep_mark))
 		return;
 
-	print_cmd_header(cmd);
+	print_cmd_brief(cmd);
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		const cli_option_t *opt = &cmd->options[i];
+		cli_option_t *opt = &cmd->options[i];
 		build_opt_marks(opt, req_mark, dep_mark,
 				CLI_HELP_DEP_MARK_SIZE);
 		print_opt_line(opt, req_mark, dep_mark);
@@ -791,13 +796,24 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
  * 新增：命令解析准备与清理（取代 dispose_mec 状态机）
  * ============================================================ */
 
+static void cli_print_usage(const cli_command_t *cmd)
+{
+	if (!cmd || !cmd->usage || cmd->usage_count <= 0)
+		return;
+	all_printk("usage: %s\r\n", cmd->usage[0]);
+	for (int i = 1; i < cmd->usage_count; i++)
+		all_printk("       %s\r\n", cmd->usage[i]);
+}
+
 static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
 			   int *cmd_ret)
 {
 	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
 		pr_err("command parsing failed: %s\r\n", argv[0]);
-		cli_print_help(cmd_def);
+		cli_print_usage(cmd_def);
+		pr_err("try '%s -h' or '%s --help' for more information.\r\n",
+		       cmd_def->name, cmd_def->name);
 		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
 		return status;

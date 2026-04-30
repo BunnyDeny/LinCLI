@@ -100,6 +100,7 @@ static void key_exit(void *_args)
 }
 
 CLI_COMMAND_ASYNC(key, "key", "Test key input interaction (async)",
+		  USAGE("key"),
 		  key_entry, key_task, key_exit,
 		  (struct key_args *)0,
 		  END_OPTIONS);

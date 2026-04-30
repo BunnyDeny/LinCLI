@@ -25,6 +25,7 @@
 #include "cmd_dispose.h"
 #include "cli_auto_cmd.h"
 #include "cli_mpool.h"
+#include "cli_var.h"
 
 struct tStateEngine scheduler_eng;
 extern struct tState *const _scheduler_start[];

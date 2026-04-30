@@ -73,7 +73,9 @@ static int log_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(log, "log", "Configure logger", log_handler, (struct log_args *)0,
+CLI_COMMAND(log, "log", "Configure logger",
+	    USAGE("log -f <file> -l <level> [-v] [-t <tags...>]"),
+	    log_handler, (struct log_args *)0,
 	    OPTION('f', "file", STRING, "Log file path", struct log_args, file,
 		   0, NULL, NULL, true),
 	    OPTION('l', "level", INT, "Log level", struct log_args, level, 0,

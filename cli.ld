@@ -1,3 +1,8 @@
+  .cli_candidates : {
+    KEEP(*(.cli_candidates.0.start))
+    KEEP(*(.cli_candidates.1))
+    KEEP(*(.cli_candidates.1.end))
+  }
   .cli_commands : {
     KEEP(*(.cli_commands.0.start))
     KEEP(*(.cli_commands.1))
@@ -22,4 +27,9 @@
     KEEP(*(.alias_cmd.0.start))
     KEEP(*(.alias_cmd.1))
     KEEP(*(.alias_cmd.1.end))
+  }
+  .cli_vars : {
+    KEEP(*(.cli_vars.0.start))
+    KEEP(*(.cli_vars.1))
+    KEEP(*(.cli_vars.1.end))
   }

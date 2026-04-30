@@ -67,15 +67,8 @@ static int led_handler(void *_args)
 {
 	struct led_args *args = _args;
 
-	if (!args->on && !args->off) {
-		pr_err("please specify --on or --off\r\n");
-		return -1;
-	}
 	if (args->on) {
-		cli_printk("LED ON");
-		if (args->brightness > 0)
-			cli_printk(", brightness=%d", args->brightness);
-		cli_printk("\r\n");
+		cli_printk("LED ON, brightness=%d\r\n", args->brightness);
 	}
 	if (args->off) {
 		cli_printk("LED OFF\r\n");
@@ -84,14 +77,16 @@ static int led_handler(void *_args)
 }
 ```
 
-注意这里**没有**用 `else` 把 `on` 和 `off` 写成互斥分支，而是直接暴力判断 `if (args->on)` 和 `if (args->off)`。因为框架在调用 handler 之前，会先检查互斥和依赖关系——这些规则是在下一步注册命令时，通过 `OPTION` 宏的 `conflicts` 和 `depends` 参数配置的。你不需要在 handler 里重复做这些校验，只需要各自处理自己的业务逻辑即可。
+注意这里**没有**用 `else` 把 `on` 和 `off` 写成互斥分支，而是直接暴力判断 `if (args->on)` 和 `if (args->off)`。框架在调用 handler 之前，已经帮你做完了所有选项校验——包括互斥、依赖、required、重复选项检测等。你不需要在 handler 里再做任何校验，只需要专注于业务逻辑即可。
 
 > **默认值保证**：框架在每次解析命令前，都会把 `struct led_args` 所占的内存**全部清零**。因此，如果用户没有输入某个选项，对应的字段一定是 `0`（`bool` 为 `false`，`int` 为 `0`，指针为 `NULL`，数组长度为 `0`）。任何选项都是如此，handler 里可以放心地按"未指定 = 0"来写逻辑。
 
 ### 第 3 步：用 `CLI_COMMAND` 注册命令
 
 ```c
-CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
+CLI_COMMAND(led, "led", "Control LED",
+    USAGE("led --on [-b <brightness>]", "led --off"),
+    led_handler, (struct led_args *)0,
     OPTION(0, "on",  BOOL, "Turn LED on",  struct led_args, on,  0, "brightness", "off", false),
     OPTION(0, "off", BOOL, "Turn LED off", struct led_args, off, 0, NULL,         "on",  false),
     OPTION('b', "brightness", INT, "Brightness 0-100", struct led_args, brightness, 0, "on", NULL, false),
@@ -100,13 +95,14 @@ CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
 
 ### 宏参数详解
 
-#### `CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)`
+#### `CLI_COMMAND(name, cmd_str, brief_str, _usage_arr, parse_cb, arg_struct_ptr, ...)`
 
 | 参数 | 含义 |
 |------|------|
 | `name` | **C 标识符名**。宏会用它生成内部静态符号（如 `_cli_cmd_def_led`、`_cli_options_led`），不会暴露给用户。 |
 | `cmd_str` | **命令字符串**。用户在终端里实际输入的名字，如 `"led"`。 |
-| `doc_str` | **帮助文本**。执行 `led --help` 时显示的第一行描述。 |
+| `brief_str` | **命令简介**。执行 `led --help` 时显示的第一行描述。 |
+| `_usage_arr` | **用法字符串数组**。通过 `USAGE(...)` 宏定义，如 `USAGE("led --on [-b <brightness>]", "led --off")`。解析失败时框架会自动打印这些用法提示。 |
 | `parse_cb` | **处理函数**。类型必须是 `int (*)(void *)`，框架会把填充好的参数结构体指针传给它。 |
 | `arg_struct_ptr` | **类型推导指针**。通常写 `(struct led_args *)0`，宏内部用 `typeof(*arg_struct_ptr)` 推导结构体类型和大小。**不能写 `NULL`**。 |
 | `...` | **选项列表**。由若干 `OPTION(...)` 组成，最后以 `END_OPTIONS` 结尾。 |
@@ -160,9 +156,10 @@ lin@linCli>
 
 ```bash
 lin@linCli> led --on
-[ERR] option - /--on depends on brightness but not provided
 [ERR] command parsing failed: led
-...
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 lin@linCli>
 ```
 
@@ -170,9 +167,10 @@ lin@linCli>
 
 ```bash
 lin@linCli> led -b 80
-[ERR] option -b/--brightness depends on on but not provided
 [ERR] command parsing failed: led
-...
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 lin@linCli>
 ```
 
@@ -180,9 +178,10 @@ lin@linCli>
 
 ```bash
 lin@linCli> led --on --off
-[ERR] option - /--on conflicts with off, cannot be used together
 [ERR] command parsing failed: led
-...
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 lin@linCli>
 ```
 
@@ -200,7 +199,7 @@ lin@linCli>
 
 ## 内置帮助信息
 
-LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `doc_str` 以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
+LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `brief_str`、用法列表以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
 
 以 `led` 命令为例：
 
@@ -208,6 +207,8 @@ LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用�
 lin@linCli> led --help
  command     : led
  description : Control LED
+ usage       : led --on [-b <brightness>]
+               led --off
  option      :
   - , --off              Turn LED off
   - , --on               Turn LED on [depends:brightness] [conflicts:off]
@@ -235,8 +236,9 @@ static int string_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
-	    (struct string_args *)0,
+CLI_COMMAND(ts, "ts", "Test STRING option",
+	    USAGE("ts [-m <msg>]"),
+	    string_handler, (struct string_args *)0,
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg, 0, NULL, NULL, false),
 	    END_OPTIONS);
 CMD_ALIAS(echo, "ts --msg");
@@ -274,6 +276,7 @@ lin@linCli>
 lin@linCli> echo -h
  command     : ts
  description : Test STRING option
+ usage       : ts [-m <msg>]
  option      :
   -m, --msg              Message text
 
@@ -508,6 +511,10 @@ lin@linCli> level
 - **[测试用例详解](Documentation/tests.md)** — 所有内置测试命令（`tb`、`ts`、`ti`、`td`、`ta`、`tc`、`tr`、`tcf`、`tw` 等）的功能说明、可用选项和终端操作示例。
 
 - **[用户可定制接口](Documentation/customization.md)** — 介绍如何通过弱定义（`weak`）覆盖框架的默认行为，包括日志系统 `cli_printk`、日志过滤与颜色、命令提示符样式等。
+
+- **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象，支持在线查看和修改 `INT` / `DOUBLE` / `BOOL` / `STRING` 类型的变量，无需重新编译。非常适合现场 PID 调参、开关调试和状态监控。
+
+- **[Tab 补全候选列表](Documentation/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 
 - **[尾行模式打印支持](Documentation/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
 

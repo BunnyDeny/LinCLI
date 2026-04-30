@@ -53,14 +53,18 @@ typedef struct cli_option {
 	bool required; // 是否必需
 	const char *depends; // 依赖列表（空格分隔的长选项名）
 	const char *conflicts; // 互斥列表（空格分隔的长选项名）
+	int candidate_argc; // 候选值个数（字符串类型选项的 Tab 补全）
+	char **candidate_argv; // 候选值列表
 } cli_option_t;
 
 typedef struct cli_command {
 	const char *name; // 命令名
-	const char *doc; // 命令说明
+	const char *brief; // 命令简介
+	char **usage; // 用法字符串数组（NULL 表示无用法说明）
+	int usage_count; // 用法数量
 	void *arg_struct; // 参数结构体指针（运行时填充）
 	size_t arg_struct_size; // 结构体大小
-	const cli_option_t *options; // 选项数组
+	cli_option_t *options; // 选项数组
 	size_t option_count; // 选项数量
 	int (*validator)(void *); // 自定义验证函数（旧接口兼容）
 	void (*cmd_entry)(void *); // 命令入口，只执行一次
@@ -233,12 +237,14 @@ extern struct alias_cmd *const _alias_cmd_end[];
  * 导致运行时缓冲区分配错误。
  */
 
-#define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _doc_str, _size, _opts,     \
-				   _opts_cnt, _vld, _entry, _task, _exit,    \
-				   _buf, _buf_size, _section)                \
+#define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _brief_str, _usage,      \
+				   _size, _opts, _opts_cnt, _vld, _entry,    \
+				   _task, _exit, _buf, _buf_size, _section)  \
 	static const cli_command_t _cli_cmd_def_##_obj = {                     \
 		.name = _cmd_str,                                              \
-		.doc = _doc_str,                                               \
+		.brief = _brief_str,                                           \
+		.usage = _usage,                                               \
+		.usage_count = (int)((sizeof(_usage) / sizeof(char *)) - 1),   \
 		.arg_struct = NULL,                                            \
 		.arg_struct_size = _size,                                      \
 		.options = _opts,                                              \
@@ -263,16 +269,24 @@ extern struct alias_cmd *const _alias_cmd_end[];
 #define _CLI_SIZEOF_POINTEE(ptr) \
 	((size_t)(((char *)((ptr) + 1)) - ((char *)(ptr))))
 
-#define CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)   \
+/* 用法字符串数组辅助宏，展开为 NULL 结尾的数组指针。
+ * 数组元素个数由 _EXPORT_CLI_COMMAND_SYMBOL 内部通过 sizeof 自动计算。
+ * 外层双层圆括号是为了避免预处理器把大括号内的逗号当成宏参数分隔符。 */
+#define USAGE(...) \
+	((char *[]){ __VA_ARGS__, NULL })
+
+#define CLI_COMMAND(name, cmd_str, brief_str, _usage_arr, parse_cb,        \
+		    arg_struct_ptr, ...)                                     \
 	/* 定义选项数组（放在全局区） */                                     \
-	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
+	cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
                                                                              \
 	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */     \
 	/* 旧接口兼容：parse_cb 同时填入 validator 和 cmd_task，          \
 	 * entry 和 exit 留空，scheduler 通过 entry/exit 是否为 NULL      \
 	 * 判断这是旧式命令（执行一次即退出） */                           \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                          \
-		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr), \
+		name, cmd_str, brief_str, _usage_arr,                        \
+		_CLI_SIZEOF_POINTEE(arg_struct_ptr),                         \
 		_cli_options_##name,                                         \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),        \
 		(int (*)(void *))parse_cb,                                   \
@@ -281,28 +295,31 @@ extern struct alias_cmd *const _alias_cmd_end[];
 		NULL,                                                        \
 		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
-#define CLI_COMMAND_WITH_BUF(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, \
-			     buf, buf_size, ...)                               \
+#define CLI_COMMAND_WITH_BUF(name, cmd_str, brief_str, _usage_arr,           \
+				 parse_cb, arg_struct_ptr, buf,            \
+				 buf_size, ...)                            \
 	/* 定义选项数组（放在静态区） */                                       \
-	static const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
+	static cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
                                                                                \
 	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */                     \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
-		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr),   \
-		_cli_options_##name,                                           \
-		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),          \
-		(int (*)(void *))parse_cb,                                     \
-		NULL,                                                          \
-		(int (*)(void *))parse_cb,                                     \
-		NULL,                                                          \
+		name, cmd_str, brief_str, _usage_arr,                        \
+		_CLI_SIZEOF_POINTEE(arg_struct_ptr),                         \
+		_cli_options_##name,                                         \
+		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),        \
+		(int (*)(void *))parse_cb,                                   \
+		NULL,                                                        \
+		(int (*)(void *))parse_cb,                                   \
+		NULL,                                                        \
 		buf, buf_size, ".cli_commands")
 
 /* 无参数结构体、无选项的命令（arg_struct_size 为 0，缓冲区从内存池申请） */
-#define CLI_COMMAND_NO_STRUCT(name, cmd_str, doc_str, parse_cb)        \
-	_EXPORT_CLI_COMMAND_SYMBOL(name, cmd_str, doc_str, 0, NULL, 0, \
-				   (int (*)(void *))parse_cb, NULL,    \
-				   (int (*)(void *))parse_cb,          \
-				   NULL,                               \
+#define CLI_COMMAND_NO_STRUCT(name, cmd_str, brief_str, parse_cb)      \
+	_EXPORT_CLI_COMMAND_SYMBOL(name, cmd_str, brief_str, (void *)0, 0, \
+				   NULL, 0,                              \
+				   (int (*)(void *))parse_cb, NULL,        \
+				   (int (*)(void *))parse_cb,              \
+				   NULL,                                   \
 				   NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
 #define END_OPTIONS /* 结束标记，实际为空 */
@@ -315,9 +332,10 @@ extern struct alias_cmd *const _alias_cmd_end[];
 	static struct alias_cmd *const alias_cmd_ptr##new                  \
 		__attribute__((used, section(".alias_cmd.1"))) =           \
 			&alias_cmd##new;                                   \
-	_EXPORT_CLI_COMMAND_SYMBOL(cmd_alias##new, #new, NULL, 0, NULL, 0, \
-				   (int (*)(void *))NULL, NULL,          \
-				   NULL, NULL, NULL, 0,                  \
+	_EXPORT_CLI_COMMAND_SYMBOL(cmd_alias##new, #new, NULL, (void *)0,  \
+				   0, NULL, 0,                               \
+				   (int (*)(void *))NULL, NULL,              \
+				   NULL, NULL, NULL, 0,                      \
 				   ".cli_commands")
 
 #define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
@@ -329,11 +347,13 @@ extern struct alias_cmd *const _alias_cmd_end[];
  * 新增：非阻塞三阶段命令注册宏
  * ============================================================ */
 
-#define CLI_COMMAND_ASYNC(name, cmd_str, doc_str, _entry, _task, _exit,        \
-			    arg_struct_ptr, ...)                               \
-	const cli_option_t _cli_options_##name[] = { __VA_ARGS__ };              \
+#define CLI_COMMAND_ASYNC(name, cmd_str, brief_str, _usage_arr,          \
+				 _entry, _task, _exit, arg_struct_ptr,    \
+				 ...)                                     \
+	cli_option_t _cli_options_##name[] = { __VA_ARGS__ };              \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                              \
-		name, cmd_str, doc_str, _CLI_SIZEOF_POINTEE(arg_struct_ptr),     \
+		name, cmd_str, brief_str, _usage_arr,                            \
+		_CLI_SIZEOF_POINTEE(arg_struct_ptr),                             \
 		_cli_options_##name,                                             \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),            \
 		NULL,                                                            \

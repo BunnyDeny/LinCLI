@@ -29,12 +29,6 @@ static int show_handler(void *_args)
 {
 	struct show_args *args = _args;
 
-	if (args->warranty == false && args->conditions == false) {
-		pr_err("please input the option \'-c/--conditions\' or "
-		       "\'-w/--warranty\' for command \'show\'\r\n");
-		return -1;
-	}
-
 	if (args->warranty) {
 		all_printk(
 			"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY\r\n");
@@ -69,8 +63,9 @@ static int show_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(show, "show", "Show warranty or copying conditions", show_handler,
-	    (struct show_args *)0,
+CLI_COMMAND(show, "show", "Show warranty or copying conditions",
+	    USAGE("show -w", "show -c"),
+	    show_handler, (struct show_args *)0,
 	    OPTION('w', "warranty", BOOL, "Show warranty disclaimer",
 		   struct show_args, warranty, 0, NULL, NULL, false),
 	    OPTION('c', "conditions", BOOL, "Show copying conditions",

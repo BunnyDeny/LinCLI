@@ -50,8 +50,9 @@ static int required_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(tr, "tr", "Test required option", required_handler,
-	    (struct required_args *)0,
+CLI_COMMAND(tr, "tr", "Test required option",
+	    USAGE("tr -f <file>"),
+	    required_handler, (struct required_args *)0,
 	    OPTION('f', "file", STRING, "Input file path", struct required_args,
 		   file, 0, NULL, NULL, true),
 	    END_OPTIONS);

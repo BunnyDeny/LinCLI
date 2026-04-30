@@ -50,15 +50,8 @@ static int led_handler(void *_args)
 {
 	struct led_args *args = _args;
 
-	if (!args->on && !args->off) {
-		pr_err("please specify --on or --off\r\n");
-		return -1;
-	}
 	if (args->on) {
-		cli_printk("LED ON");
-		if (args->brightness > 0)
-			cli_printk(", brightness=%d", args->brightness);
-		cli_printk("\r\n");
+		cli_printk("LED ON, brightness=%d\r\n", args->brightness);
 	}
 	if (args->off) {
 		cli_printk("LED OFF\r\n");
@@ -66,7 +59,9 @@ static int led_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
+CLI_COMMAND(led, "led", "Control LED",
+	    USAGE("led --on [-b <brightness>]", "led --off"),
+	    led_handler, (struct led_args *)0,
 	    OPTION(0, "off", BOOL, "Turn LED off", struct led_args, off, 0,
 		   NULL, "brightness", false),
 	    OPTION(0, "on", BOOL, "Turn LED on", struct led_args, on, 0,
