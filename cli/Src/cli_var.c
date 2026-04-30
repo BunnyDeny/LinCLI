@@ -41,8 +41,7 @@ static void print_int(const cli_var_t *var)
 
 static void print_double(const cli_var_t *var)
 {
-	all_printk("%s (DOUBLE) = %.6f\r\n", var->name,
-		   *(double *)var->addr);
+	all_printk("%s (DOUBLE) = %.6f\r\n", var->name, *(double *)var->addr);
 }
 
 static void print_bool(const cli_var_t *var)
@@ -53,8 +52,7 @@ static void print_bool(const cli_var_t *var)
 
 static void print_string(const cli_var_t *var)
 {
-	all_printk("%s (STRING) = \"%s\"\r\n", var->name,
-		   (char *)var->addr);
+	all_printk("%s (STRING) = \"%s\"\r\n", var->name, (char *)var->addr);
 }
 
 void cli_var_print(const cli_var_t *var)
@@ -147,8 +145,7 @@ int cli_var_set(const cli_var_t *var, const char *value)
 	case CLI_TYPE_BOOL: {
 		if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0)
 			*(bool *)var->addr = true;
-		else if (strcmp(value, "false") == 0 ||
-			 strcmp(value, "0") == 0)
+		else if (strcmp(value, "false") == 0 || strcmp(value, "0") == 0)
 			*(bool *)var->addr = false;
 		else {
 			pr_err("bool value must be true/false or 1/0\r\n");
@@ -159,8 +156,8 @@ int cli_var_set(const cli_var_t *var, const char *value)
 	case CLI_TYPE_STRING: {
 		size_t len = strlen(value);
 		if (len >= var->size) {
-			pr_warn("'%s' truncated: %zu -> %zu chars\r\n", var->name,
-				len, var->size - 1);
+			pr_warn("'%s' truncated: %zu -> %zu chars\r\n",
+				var->name, len, var->size - 1);
 			len = var->size - 1;
 		}
 		memcpy(var->addr, value, len);
@@ -182,8 +179,7 @@ int cli_var_set(const cli_var_t *var, const char *value)
 		all_printk("%.6f\r\n", *(double *)var->addr);
 		break;
 	case CLI_TYPE_BOOL:
-		all_printk("%s\r\n",
-			   *(bool *)var->addr ? "true" : "false");
+		all_printk("%s\r\n", *(bool *)var->addr ? "true" : "false");
 		break;
 	case CLI_TYPE_STRING:
 		all_printk("\"%s\"\r\n", (char *)var->addr);
@@ -247,12 +243,12 @@ static int var_handler(void *_args)
 
 CLI_COMMAND(var_cmd, "var", "Read/write exported variables", var_handler,
 	    (struct var_args *)0,
-	    OPTION('r', "read", STRING, "Read variable value", struct var_args,
+	    OPTION('r', "read", STRING, "Read variable name", struct var_args,
 		   read, 0, NULL, "write list", false),
 	    OPTION('w', "write", STRING, "Write variable name", struct var_args,
 		   write, 0, NULL, "read list", false),
-	    OPTION('l', "list", BOOL, "List all exported variables", struct var_args,
-		   list, 0, NULL, "read write", false),
+	    OPTION('l', "list", BOOL, "List all exported variables",
+		   struct var_args, list, 0, NULL, "read write", false),
 	    OPTION(0, "val", STRING, "Value to write", struct var_args, val, 0,
 		   "write", NULL, false),
 	    END_OPTIONS);
@@ -260,10 +256,11 @@ CLI_COMMAND(var_cmd, "var", "Read/write exported variables", var_handler,
 void cli_var_list_all(void)
 {
 	const cli_var_t *var;
-	all_printk("\r\n%-20s %-10s %-24s %-4s %s\r\n", "NAME", "TYPE",
-		   "VALUE", "ATTR", "DOC");
-	all_printk("------------------------------------------------------------------"
-		   "\r\n");
+	all_printk("\r\n%-20s %-10s %-24s %-4s %s\r\n", "NAME", "TYPE", "VALUE",
+		   "ATTR", "DOC");
+	all_printk(
+		"------------------------------------------------------------------"
+		"\r\n");
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
 	{
@@ -296,15 +293,11 @@ void cli_var_list_all(void)
 		}
 
 		const char *type_str =
-			(var->type == CLI_TYPE_INT) ?
-				"INT" :
-			(var->type == CLI_TYPE_DOUBLE) ?
-				"DOUBLE" :
-			(var->type == CLI_TYPE_BOOL) ?
-				"BOOL" :
-			(var->type == CLI_TYPE_STRING) ?
-				"STRING" :
-				"UNKNOWN";
+			(var->type == CLI_TYPE_INT)    ? "INT" :
+			(var->type == CLI_TYPE_DOUBLE) ? "DOUBLE" :
+			(var->type == CLI_TYPE_BOOL)   ? "BOOL" :
+			(var->type == CLI_TYPE_STRING) ? "STRING" :
+							 "UNKNOWN";
 
 		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name, type_str,
 			   value_buf, attr_buf, var->doc ? var->doc : "");
@@ -344,7 +337,8 @@ static void cli_var_candidate_init(void *arg)
 			continue;
 		for (size_t i = 0; i < cmd->option_count; i++) {
 			cli_option_t *opt = &cmd->options[i];
-			if (opt->long_opt && strcmp(opt->long_opt, "read") == 0) {
+			if (opt->long_opt &&
+			    strcmp(opt->long_opt, "read") == 0) {
 				opt->candidate_argc = var_read_count;
 				opt->candidate_argv = var_read_names;
 			} else if (opt->long_opt &&
@@ -355,8 +349,7 @@ static void cli_var_candidate_init(void *arg)
 		}
 	}
 }
-_EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL,
-		     cli_var_candidate_init);
+_EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL, cli_var_candidate_init);
 
 /* ============================================================
  * 示例变量（验证用，生产环境可删除或保留作为 demo）
