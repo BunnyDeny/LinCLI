@@ -1142,6 +1142,8 @@ static void candidate_redraw_long_opts(void)
 	candidate_ctx.active = 3;
 }
 
+static void candidate_redraw_values(void);
+
 static void candidate_redraw(void)
 {
 	if (candidate_ctx.active == 1) {
@@ -1150,6 +1152,8 @@ static void candidate_redraw(void)
 		candidate_redraw_all_opts();
 	} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
 		candidate_redraw_long_opts();
+	} else if (candidate_ctx.active == 4 && candidate_ctx.cmd) {
+		candidate_redraw_values();
 	}
 }
 
@@ -1668,6 +1672,7 @@ static void list_value_candidates(char **argv, int argc,
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
+	candidate_ctx_save(4, prefix, prefix_len, candidate_ctx.cmd);
 	int cows = 0;
 	for (int i = 0; i < argc; i++) {
 		if (strncmp(argv[i], prefix, prefix_len) != 0)
@@ -1683,6 +1688,19 @@ static void list_value_candidates(char **argv, int argc,
 		cli_out_sync();
 	}
 	cmd_line_redraw();
+}
+
+static void candidate_redraw_values(void)
+{
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	int prev_start, prev_len;
+	get_prev_token_bounds(tok_start, &prev_start, &prev_len);
+	cli_option_t *opt = find_string_option_by_token(candidate_ctx.cmd,
+							prev_start, prev_len);
+	if (opt && opt->candidate_argc > 0)
+		list_value_candidates(opt->candidate_argv, opt->candidate_argc,
+				      candidate_ctx.prefix,
+				      candidate_ctx.prefix_len);
 }
 
 static void do_complete_string_value(cli_option_t *opt,
@@ -1712,6 +1730,7 @@ static void do_complete_string_value(cli_option_t *opt,
 static void complete_string_value(const cli_command_t *cmd,
 				  const char *prefix, int prefix_len)
 {
+	candidate_ctx.cmd = cmd;
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	int prev_start, prev_len;
 	get_prev_token_bounds(tok_start, &prev_start, &prev_len);
@@ -1788,6 +1807,10 @@ static int tab_cycle_enter_task(void *pch)
 	} else if (candidate_ctx.active == 3) {
 		candidate_ctx.cycling = 2;
 		cycle_long_option_highlight();
+	} else if (candidate_ctx.active == 4) {
+		candidate_ctx.cycling = 2;
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
 	}
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
@@ -1807,6 +1830,9 @@ static int tab_cycle_task(void *pch)
 		cycle_all_option_highlight();
 	} else if (candidate_ctx.active == 3) {
 		cycle_long_option_highlight();
+	} else if (candidate_ctx.active == 4) {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
 	}
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
