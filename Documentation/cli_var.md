@@ -40,7 +40,7 @@ CLI_VAR_RO(g_ki, "g_ki", DOUBLE, "PID Ki parameter (read-only)");
 | `INT` | 变量类型，可选 `INT` / `DOUBLE` / `BOOL` / `STRING` |
 | `"Main loop counter"` | 变量描述文档，显示在 `var -l` 列表中 |
 
-> **类型匹配要求**：`CLI_VAR` 的 `TYPE` 必须与 C 变量的实际类型严格对应。`STRING` 类型要求变量为 `char[]` 数组（如 `char buf[32]`），不能使用 `char *` 指针。
+> **类型匹配要求**：`CLI_VAR` 的 `TYPE` 必须与 C 变量的实际类型严格对应。`STRING` 类型要求变量为 `char[]` 数组（如 `char buf[32]`），不能使用 `char *` 指针——因为框架内部通过 `sizeof(symbol)` 获取变量大小来做边界检查，数组能返回正确的长度，而指针只能返回指针本身的大小（如 8 字节）。
 
 ---
 
