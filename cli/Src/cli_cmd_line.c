@@ -757,27 +757,24 @@ static void list_long_option_candidates(const cli_command_t *cmd,
 	cmd_line_redraw();
 }
 
-static void cycle_all_option_highlight(void)
+static int get_option_repl_start(void)
 {
-	const cli_command_t *cmd = candidate_ctx.cmd;
-	if (!cmd)
-		return;
-
-	normalize_highlight_index((int)cmd->option_count);
-	const cli_option_t *target = &cmd->options[candidate_ctx.highlight_index];
-
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-
 	int tok_start = candidate_ctx.repl_start;
 	if (tok_start < 0 || tok_start > cmd_line.size)
 		tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	return tok_start;
+}
+
+static int apply_option_to_cmdline(const cli_option_t *opt, int tok_start)
+{
+	char *new_buf = cli_mpool_alloc();
+	if (!new_buf) {
+		pr_err("out of memory\r\n");
+		return -1;
+	}
 
 	memcpy(new_buf, cmd_line.buf, tok_start);
-	int repl_len = build_option_token(target, new_buf + tok_start);
+	int repl_len = build_option_token(opt, new_buf + tok_start);
 	int new_size = tok_start + repl_len;
 	if (new_size < CMD_LINE_BUF_SIZE - 1)
 		new_buf[new_size++] = ' ';
@@ -787,15 +784,42 @@ static void cycle_all_option_highlight(void)
 	cmd_line.size = new_size;
 	cmd_line.pos = new_size;
 	cli_mpool_free(new_buf);
+	return 0;
+}
 
+static void candidate_ctx_restore_after_list(int active, int cycling,
+					      int saved_repl_start,
+					      int saved_highlight)
+{
+	candidate_ctx.active = active;
+	candidate_ctx.cycling = cycling;
+	candidate_ctx.repl_start = saved_repl_start;
+	candidate_ctx.highlight_index = saved_highlight;
+}
+
+static void refresh_all_option_highlight(const cli_command_t *cmd)
+{
 	int saved_repl_start = candidate_ctx.repl_start;
 	int saved_highlight = candidate_ctx.highlight_index;
 	list_all_options(cmd, candidate_ctx.prefix, candidate_ctx.prefix_len,
 			 candidate_ctx.highlight_index);
-	candidate_ctx.active = 2;
-	candidate_ctx.cycling = 2;
-	candidate_ctx.repl_start = saved_repl_start;
-	candidate_ctx.highlight_index = saved_highlight;
+	candidate_ctx_restore_after_list(2, 2, saved_repl_start, saved_highlight);
+}
+
+static void cycle_all_option_highlight(void)
+{
+	const cli_command_t *cmd = candidate_ctx.cmd;
+	if (!cmd)
+		return;
+
+	normalize_highlight_index((int)cmd->option_count);
+	const cli_option_t *target = &cmd->options[candidate_ctx.highlight_index];
+
+	int tok_start = get_option_repl_start();
+	if (apply_option_to_cmdline(target, tok_start) < 0)
+		return;
+
+	refresh_all_option_highlight(cmd);
 }
 
 static void cycle_long_option_highlight(void)
@@ -826,10 +850,7 @@ static void cycle_long_option_highlight(void)
 	list_long_option_candidates(cmd, candidate_ctx.prefix,
 				    candidate_ctx.prefix_len,
 				    candidate_ctx.highlight_index);
-	candidate_ctx.active = 3;
-	candidate_ctx.cycling = 2;
-	candidate_ctx.repl_start = saved_repl_start;
-	candidate_ctx.highlight_index = saved_highlight;
+	candidate_ctx_restore_after_list(3, 2, saved_repl_start, saved_highlight);
 }
 
 static void replace_long_option_only(const char *long_opt, int long_len)
