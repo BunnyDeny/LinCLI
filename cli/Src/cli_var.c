@@ -198,10 +198,14 @@ int cli_var_set(const cli_var_t *var, const char *value)
  * set 命令行处理：set <varname> <value...>
  * ============================================================ */
 
-int cli_var_set_by_cmdline(int argc, char **argv)
+/* ============================================================
+ * 内部：set 子命令处理
+ * ============================================================ */
+
+static int var_set_cmd(int argc, char **argv)
 {
 	if (argc < 3) {
-		pr_err("usage: set <varname> <value>\r\n");
+		pr_err("usage: var_set <varname> <value>\r\n");
 		return -1;
 	}
 
@@ -241,18 +245,39 @@ int cli_var_set_by_cmdline(int argc, char **argv)
 }
 
 /* ============================================================
- * vars 命令：列出所有变量
+ * 变量命令统一分派入口
  * ============================================================ */
 
-static int vars_handler(void *_args)
+int cli_var_dispatch(int argc, char **argv)
 {
-	(void)_args;
-	cli_var_list_all();
-	return 0;
-}
+	if (argc < 1)
+		return -1;
 
-CLI_COMMAND_NO_STRUCT(vars, "vars", "List all exported variables",
-		      vars_handler);
+	if (strcmp(argv[0], "var_set") == 0)
+		return var_set_cmd(argc, argv);
+
+	if (strcmp(argv[0], "var_rd") == 0) {
+		if (argc < 2) {
+			pr_err("usage: var_rd <varname>\r\n");
+			return -1;
+		}
+		const cli_var_t *var = cli_var_find(argv[1]);
+		if (!var) {
+			pr_err("unknown variable: %s\r\n", argv[1]);
+			return -1;
+		}
+		cli_var_print(var);
+		return 0;
+	}
+
+	if (strcmp(argv[0], "var_ls") == 0) {
+		cli_var_list_all();
+		return 0;
+	}
+
+	pr_err("unknown var command: %s\r\n", argv[0]);
+	return -1;
+}
 
 void cli_var_list_all(void)
 {

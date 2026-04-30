@@ -83,7 +83,7 @@ void cli_var_print(const cli_var_t *var);
 int cli_var_set(const cli_var_t *var, const char *value);
 void cli_var_list_all(void);
 
-/* 用于 cmd_dispose.c 中 set 命令的处理 */
-int cli_var_set_by_cmdline(int argc, char **argv);
+/* 变量命令统一分派入口（cmd_dispose.c 调用） */
+int cli_var_dispatch(int argc, char **argv);
 
 #endif
