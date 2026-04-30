@@ -83,7 +83,9 @@ void cli_var_print(const cli_var_t *var);
 int cli_var_set(const cli_var_t *var, const char *value);
 void cli_var_list_all(void);
 
-/* 变量命令统一分派入口（cmd_dispose.c 调用） */
-int cli_var_dispatch(int argc, char **argv);
+/* 打印与修改（var 命令 handler 内部使用） */
+void cli_var_print(const cli_var_t *var);
+int cli_var_set(const cli_var_t *var, const char *value);
+const cli_var_t *cli_var_find(const char *name);
 
 #endif

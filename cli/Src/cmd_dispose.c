@@ -22,7 +22,6 @@
 #include "cli_io.h"
 #include "cli_cmd_line.h"
 #include "cli_mpool.h"
-#include "cli_var.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
@@ -813,11 +812,6 @@ int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
 	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
 	all_printk("\r\n");
 	all_printk("\033[K");
-	if (argc >= 1 && strncmp(argv[0], "var_", 4) == 0) {
-		int ret = cli_var_dispatch(argc, argv);
-		*cmd_ret = ret;
-		return dispose_exit;
-	}
 	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, cmd_ret);
 	if (!cmd_def)
 		return dispose_exit;

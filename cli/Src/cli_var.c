@@ -195,89 +195,55 @@ int cli_var_set(const cli_var_t *var, const char *value)
 }
 
 /* ============================================================
- * set 命令行处理：set <varname> <value...>
+ * var 命令：基于选项的变量读写（符合 LinCLI 框架哲学）
  * ============================================================ */
 
-/* ============================================================
- * 内部：set 子命令处理
- * ============================================================ */
+struct var_args {
+	char *read;
+	char *write;
+	char *val;
+};
 
-static int var_set_cmd(int argc, char **argv)
+static int var_handler(void *_args)
 {
-	if (argc < 3) {
-		pr_err("usage: var_set <varname> <value>\r\n");
-		return -1;
-	}
+	struct var_args *args = _args;
 
-	const cli_var_t *var = cli_var_find(argv[1]);
-	if (!var) {
-		pr_err("unknown variable: %s\r\n", argv[1]);
-		return -1;
-	}
-
-	if (argc == 3)
-		return cli_var_set(var, argv[2]);
-
-	/* 合并 argv[2..argc-1] 作为值（处理带空格的字符串） */
-	size_t total = 0;
-	for (int i = 2; i < argc; i++)
-		total += strlen(argv[i]) + (i > 2 ? 1 : 0);
-
-	char *buf = cli_mpool_alloc();
-	if (!buf) {
-		pr_err("out of memory\r\n");
-		return -1;
-	}
-
-	int pos = 0;
-	for (int i = 2; i < argc; i++) {
-		if (i > 2)
-			buf[pos++] = ' ';
-		int len = (int)strlen(argv[i]);
-		memcpy(buf + pos, argv[i], len);
-		pos += len;
-	}
-	buf[pos] = '\0';
-
-	int ret = cli_var_set(var, buf);
-	cli_mpool_free(buf);
-	return ret;
-}
-
-/* ============================================================
- * 变量命令统一分派入口
- * ============================================================ */
-
-int cli_var_dispatch(int argc, char **argv)
-{
-	if (argc < 1)
-		return -1;
-
-	if (strcmp(argv[0], "var_set") == 0)
-		return var_set_cmd(argc, argv);
-
-	if (strcmp(argv[0], "var_rd") == 0) {
-		if (argc < 2) {
-			pr_err("usage: var_rd <varname>\r\n");
-			return -1;
-		}
-		const cli_var_t *var = cli_var_find(argv[1]);
+	if (args->read) {
+		const cli_var_t *var = cli_var_find(args->read);
 		if (!var) {
-			pr_err("unknown variable: %s\r\n", argv[1]);
+			pr_err("unknown variable: %s\r\n", args->read);
 			return -1;
 		}
 		cli_var_print(var);
 		return 0;
 	}
 
-	if (strcmp(argv[0], "var_ls") == 0) {
-		cli_var_list_all();
-		return 0;
+	if (args->write) {
+		if (!args->val) {
+			pr_err("missing --val for write\r\n");
+			return -1;
+		}
+		const cli_var_t *var = cli_var_find(args->write);
+		if (!var) {
+			pr_err("unknown variable: %s\r\n", args->write);
+			return -1;
+		}
+		return cli_var_set(var, args->val);
 	}
 
-	pr_err("unknown var command: %s\r\n", argv[0]);
+	pr_err("usage: var -r <name>  or  var -w <name> --val <value>\r\n");
 	return -1;
 }
+
+CLI_COMMAND(var_cmd, "var", "Read/write exported variables", var_handler,
+	    (struct var_args *)0,
+	    OPTION('r', "read", STRING, "Read variable value", struct var_args,
+		   read, 0, NULL, "write", false),
+	    OPTION('w', "write", STRING, "Write variable name", struct var_args,
+		   write, 0, NULL, "read", false),
+	    OPTION(0, "val", STRING, "Value to write", struct var_args, val, 0,
+		   "write", NULL, false),
+	    END_OPTIONS);
 
 void cli_var_list_all(void)
 {
