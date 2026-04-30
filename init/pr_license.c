@@ -29,12 +29,6 @@ static int show_handler(void *_args)
 {
 	struct show_args *args = _args;
 
-	if (args->warranty == false && args->conditions == false) {
-		pr_err("please input the option \'-c/--conditions\' or "
-		       "\'-w/--warranty\' for command \'show\'\r\n");
-		return -1;
-	}
-
 	if (args->warranty) {
 		all_printk(
 			"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY\r\n");

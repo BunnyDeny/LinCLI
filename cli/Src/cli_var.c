@@ -224,10 +224,6 @@ static int var_handler(void *_args)
 	}
 
 	if (args->write) {
-		if (!args->val) {
-			pr_err("missing --val for write\r\n");
-			return -1;
-		}
 		const cli_var_t *var = cli_var_find(args->write);
 		if (!var) {
 			pr_err("unknown variable: %s\r\n", args->write);

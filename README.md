@@ -67,10 +67,6 @@ static int led_handler(void *_args)
 {
 	struct led_args *args = _args;
 
-	if (!args->on && !args->off) {
-		pr_err("please specify --on or --off\r\n");
-		return -1;
-	}
 	if (args->on) {
 		cli_printk("LED ON");
 		if (args->brightness > 0)
@@ -84,7 +80,7 @@ static int led_handler(void *_args)
 }
 ```
 
-注意这里**没有**用 `else` 把 `on` 和 `off` 写成互斥分支，而是直接暴力判断 `if (args->on)` 和 `if (args->off)`。因为框架在调用 handler 之前，会先检查互斥和依赖关系——这些规则是在下一步注册命令时，通过 `OPTION` 宏的 `conflicts` 和 `depends` 参数配置的。你不需要在 handler 里重复做这些校验，只需要各自处理自己的业务逻辑即可。
+注意这里**没有**用 `else` 把 `on` 和 `off` 写成互斥分支，而是直接暴力判断 `if (args->on)` 和 `if (args->off)`。框架在调用 handler 之前，已经帮你做完了所有选项校验——包括互斥、依赖、required、重复选项检测等。你不需要在 handler 里再做任何校验，只需要专注于业务逻辑即可。
 
 > **默认值保证**：框架在每次解析命令前，都会把 `struct led_args` 所占的内存**全部清零**。因此，如果用户没有输入某个选项，对应的字段一定是 `0`（`bool` 为 `false`，`int` 为 `0`，指针为 `NULL`，数组长度为 `0`）。任何选项都是如此，handler 里可以放心地按"未指定 = 0"来写逻辑。
 
@@ -163,9 +159,10 @@ lin@linCli>
 
 ```bash
 lin@linCli> led --on
-[ERR] option - /--on depends on brightness but not provided
 [ERR] command parsing failed: led
-...
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 lin@linCli>
 ```
 
@@ -173,9 +170,10 @@ lin@linCli>
 
 ```bash
 lin@linCli> led -b 80
-[ERR] option -b/--brightness depends on on but not provided
 [ERR] command parsing failed: led
-...
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 lin@linCli>
 ```
 
@@ -183,9 +181,10 @@ lin@linCli>
 
 ```bash
 lin@linCli> led --on --off
-[ERR] option - /--on conflicts with off, cannot be used together
 [ERR] command parsing failed: led
-...
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 lin@linCli>
 ```
 

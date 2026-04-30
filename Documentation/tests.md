@@ -68,9 +68,9 @@ lin@linCli>
 
 ```bash
 lin@linCli> ta -n 1 2 3
-[ERR] 选项 -n/--nums 依赖 verbose 但未提供
-[ERR] 命令解析失败: ta
-...
+[ERR] command parsing failed: ta
+usage: ta [-v] [-n <nums...>]
+[ERR] try 'ta -h' or 'ta --help' for more information.
 lin@linCli>
 ```
 
@@ -104,9 +104,9 @@ lin@linCli>
 
 ```bash
 lin@linCli> tr
-[ERR] 缺少必需选项: -f/--file
-[ERR] 命令解析失败: tr
-...
+[ERR] command parsing failed: tr
+usage: tr -f <file>
+[ERR] try 'tr -h' or 'tr --help' for more information.
 lin@linCli>
 ```
 
@@ -130,9 +130,9 @@ lin@linCli>
 
 ```bash
 lin@linCli> tcf -v -n 1 2 3
-[ERR] 选项 -n/--nums 与 verbose 互斥，不能同时使用
-[ERR] 命令解析失败: tcf
-...
+[ERR] command parsing failed: tcf
+usage: tcf [-v] [-n <nums...>]
+[ERR] try 'tcf -h' or 'tcf --help' for more information.
 lin@linCli>
 ```
 

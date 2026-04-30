@@ -208,16 +208,20 @@ lin@linCli>
 
 ```bash
 lin@linCli> led --on
-[ERR] option - /--on depends on brightness but not provided
 [ERR] command parsing failed: led
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 ```
 
 ### 互斥冲突（同时开和关）
 
 ```bash
 lin@linCli> led --on --off
-[ERR] option - /--on conflicts with off, cannot be used together
 [ERR] command parsing failed: led
+usage: led --on [-b <brightness>]
+       led --off
+[ERR] try 'led -h' or 'led --help' for more information.
 ```
 
 ### 自动生成帮助
