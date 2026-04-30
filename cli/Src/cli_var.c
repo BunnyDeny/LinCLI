@@ -199,15 +199,23 @@ int cli_var_set(const cli_var_t *var, const char *value)
  * var 命令：基于选项的变量读写（符合 LinCLI 框架哲学）
  * ============================================================ */
 
+void cli_var_list_all(void);
+
 struct var_args {
 	char *read;
 	char *write;
 	char *val;
+	bool list;
 };
 
 static int var_handler(void *_args)
 {
 	struct var_args *args = _args;
+
+	if (args->list) {
+		cli_var_list_all();
+		return 0;
+	}
 
 	if (args->read) {
 		const cli_var_t *var = cli_var_find(args->read);
@@ -232,16 +240,19 @@ static int var_handler(void *_args)
 		return cli_var_set(var, args->val);
 	}
 
-	pr_err("usage: var -r <name>  or  var -w <name> --val <value>\r\n");
+	pr_err("usage: var -r <name>  or  var -w <name> --val <value>"
+	       "  or  var -l\r\n");
 	return -1;
 }
 
 CLI_COMMAND(var_cmd, "var", "Read/write exported variables", var_handler,
 	    (struct var_args *)0,
 	    OPTION('r', "read", STRING, "Read variable value", struct var_args,
-		   read, 0, NULL, "write", false),
+		   read, 0, NULL, "write list", false),
 	    OPTION('w', "write", STRING, "Write variable name", struct var_args,
-		   write, 0, NULL, "read", false),
+		   write, 0, NULL, "read list", false),
+	    OPTION('l', "list", BOOL, "List all exported variables", struct var_args,
+		   list, 0, NULL, "read write", false),
 	    OPTION(0, "val", STRING, "Value to write", struct var_args, val, 0,
 		   "write", NULL, false),
 	    END_OPTIONS);
@@ -249,9 +260,9 @@ CLI_COMMAND(var_cmd, "var", "Read/write exported variables", var_handler,
 void cli_var_list_all(void)
 {
 	const cli_var_t *var;
-	all_printk("\r\n%-20s %-10s %-24s %s\r\n", "NAME", "TYPE",
-		   "VALUE", "ATTR");
-	all_printk("---------------------------------------------------------"
+	all_printk("\r\n%-20s %-10s %-24s %-4s %s\r\n", "NAME", "TYPE",
+		   "VALUE", "ATTR", "DOC");
+	all_printk("------------------------------------------------------------------"
 		   "\r\n");
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
@@ -295,8 +306,8 @@ void cli_var_list_all(void)
 				"STRING" :
 				"UNKNOWN";
 
-		all_printk("%-20s %-10s %-24s %s\r\n", var->name, type_str,
-			   value_buf, attr_buf);
+		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name, type_str,
+			   value_buf, attr_buf, var->doc ? var->doc : "");
 	}
 }
 
