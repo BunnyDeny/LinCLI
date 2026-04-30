@@ -91,7 +91,9 @@ static int led_handler(void *_args)
 ### 第 3 步：用 `CLI_COMMAND` 注册命令
 
 ```c
-CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
+CLI_COMMAND(led, "led", "Control LED",
+    USAGE("led --on [-b <brightness>]", "led --off"),
+    led_handler, (struct led_args *)0,
     OPTION(0, "on",  BOOL, "Turn LED on",  struct led_args, on,  0, "brightness", "off", false),
     OPTION(0, "off", BOOL, "Turn LED off", struct led_args, off, 0, NULL,         "on",  false),
     OPTION('b', "brightness", INT, "Brightness 0-100", struct led_args, brightness, 0, "on", NULL, false),
@@ -100,13 +102,14 @@ CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
 
 ### 宏参数详解
 
-#### `CLI_COMMAND(name, cmd_str, doc_str, parse_cb, arg_struct_ptr, ...)`
+#### `CLI_COMMAND(name, cmd_str, brief_str, _usage_arr, parse_cb, arg_struct_ptr, ...)`
 
 | 参数 | 含义 |
 |------|------|
 | `name` | **C 标识符名**。宏会用它生成内部静态符号（如 `_cli_cmd_def_led`、`_cli_options_led`），不会暴露给用户。 |
 | `cmd_str` | **命令字符串**。用户在终端里实际输入的名字，如 `"led"`。 |
-| `doc_str` | **帮助文本**。执行 `led --help` 时显示的第一行描述。 |
+| `brief_str` | **命令简介**。执行 `led --help` 时显示的第一行描述。 |
+| `_usage_arr` | **用法字符串数组**。通过 `USAGE(...)` 宏定义，如 `USAGE("led --on [-b <brightness>]", "led --off")`。解析失败时框架会自动打印这些用法提示。 |
 | `parse_cb` | **处理函数**。类型必须是 `int (*)(void *)`，框架会把填充好的参数结构体指针传给它。 |
 | `arg_struct_ptr` | **类型推导指针**。通常写 `(struct led_args *)0`，宏内部用 `typeof(*arg_struct_ptr)` 推导结构体类型和大小。**不能写 `NULL`**。 |
 | `...` | **选项列表**。由若干 `OPTION(...)` 组成，最后以 `END_OPTIONS` 结尾。 |
@@ -200,7 +203,7 @@ lin@linCli>
 
 ## 内置帮助信息
 
-LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `doc_str` 以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
+LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `brief_str`、用法列表以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
 
 以 `led` 命令为例：
 
@@ -208,6 +211,8 @@ LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用�
 lin@linCli> led --help
  command     : led
  description : Control LED
+ usage       : led --on [-b <brightness>]
+               led --off
  option      :
   - , --off              Turn LED off
   - , --on               Turn LED on [depends:brightness] [conflicts:off]
@@ -235,8 +240,9 @@ static int string_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(ts, "ts", "Test STRING option", string_handler,
-	    (struct string_args *)0,
+CLI_COMMAND(ts, "ts", "Test STRING option",
+	    USAGE("ts [-m <msg>]"),
+	    string_handler, (struct string_args *)0,
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg, 0, NULL, NULL, false),
 	    END_OPTIONS);
 CMD_ALIAS(echo, "ts --msg");
@@ -274,6 +280,7 @@ lin@linCli>
 lin@linCli> echo -h
  command     : ts
  description : Test STRING option
+ usage       : ts [-m <msg>]
  option      :
   -m, --msg              Message text
 

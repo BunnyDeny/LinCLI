@@ -165,7 +165,9 @@ static int led_handler(void *_args)
     return 0;
 }
 
-CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
+CLI_COMMAND(led, "led", "Control LED",
+    USAGE("led --on [-b <brightness>]", "led --off"),
+    led_handler, (struct led_args *)0,
     OPTION(0, "on",  BOOL, "Turn LED on",  struct led_args, on,  0, "brightness", "off", false),
     OPTION(0, "off", BOOL, "Turn LED off", struct led_args, off, 0, NULL,         "on",  false),
     OPTION('b', "brightness", INT, "Brightness 0-100", struct led_args, brightness, 0, "on", NULL, false),
@@ -224,6 +226,8 @@ lin@linCli> led --on --off
 lin@linCli> led --help
  command     : led
  description : Control LED
+ usage       : led --on [-b <brightness>]
+               led --off
  option      :
       - , --off              Turn LED off
       - , --on               Turn LED on [depends:brightness] [conflicts:off]
@@ -242,6 +246,7 @@ Flash 擦写 2 秒？电机回零 5 秒？用 `CLI_COMMAND_ASYNC` 注册三阶�
 
 ```c
 CLI_COMMAND_ASYNC(upgrade, "upgrade", "OTA firmware upgrade",
+    USAGE("upgrade [options]"),
     upgrade_entry, upgrade_task, upgrade_exit,
     (struct upgrade_args *)0, ...);
 ```
