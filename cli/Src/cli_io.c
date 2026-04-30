@@ -273,8 +273,9 @@ static int level_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(level, "level", "Set log level filter", level_handler,
-	    (struct level_args *)0,
+CLI_COMMAND(level, "level", "Set log level filter",
+	    USAGE("level [--emerg|--alert|--crit|--err|--warning|--notice|--info|--debug]"),
+	    level_handler, (struct level_args *)0,
 	    OPTION(0, "emerg", BOOL, "Set log level to EMERG (0)",
 		   struct level_args, emerg, 0, NULL, NULL, false),
 	    OPTION(0, "alert", BOOL, "Set log level to ALERT (1)",

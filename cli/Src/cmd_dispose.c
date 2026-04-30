@@ -664,10 +664,15 @@ static void free_help_marks(char *req_mark, char *dep_mark)
 		cli_mpool_free(dep_mark);
 }
 
-static void print_cmd_header(const cli_command_t *cmd)
+static void print_cmd_brief(const cli_command_t *cmd)
 {
 	all_printk(" command     : %s\r\n", cmd->name);
-	all_printk(" description : %s\r\n", cmd->doc);
+	all_printk(" description : %s\r\n", cmd->brief);
+	if (cmd->usage && cmd->usage_count > 0) {
+		all_printk(" usage       : %s\r\n", cmd->usage[0]);
+		for (int i = 1; i < cmd->usage_count; i++)
+			all_printk("               %s\r\n", cmd->usage[i]);
+	}
 	all_printk(" option      :\r\n");
 }
 
@@ -689,7 +694,7 @@ static void cli_print_help(const cli_command_t *cmd)
 	if (!alloc_help_marks(&req_mark, &dep_mark))
 		return;
 
-	print_cmd_header(cmd);
+	print_cmd_brief(cmd);
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		cli_option_t *opt = &cmd->options[i];
 		build_opt_marks(opt, req_mark, dep_mark,
@@ -791,13 +796,24 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
  * 新增：命令解析准备与清理（取代 dispose_mec 状态机）
  * ============================================================ */
 
+static void cli_print_usage(const cli_command_t *cmd)
+{
+	if (!cmd || !cmd->usage || cmd->usage_count <= 0)
+		return;
+	all_printk("usage: %s\r\n", cmd->usage[0]);
+	for (int i = 1; i < cmd->usage_count; i++)
+		all_printk("       %s\r\n", cmd->usage[i]);
+}
+
 static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
 			   int *cmd_ret)
 {
 	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
 		pr_err("command parsing failed: %s\r\n", argv[0]);
-		cli_print_help(cmd_def);
+		cli_print_usage(cmd_def);
+		pr_err("try '%s -h' or '%s --help' for more information.\r\n",
+		       cmd_def->name, cmd_def->name);
 		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
 		return status;

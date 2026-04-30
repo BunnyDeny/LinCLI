@@ -53,8 +53,9 @@ static int callback_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(tc, "tc", "Test CALLBACK option", callback_handler,
-	    (struct cb_args *)0,
+CLI_COMMAND(tc, "tc", "Test CALLBACK option",
+	    USAGE("tc [-c <cfg>]"),
+	    callback_handler, (struct cb_args *)0,
 	    OPTION('c', "cfg", CALLBACK, "Raw config string", struct cb_args,
 		   raw, 0, NULL, NULL, false),
 	    END_OPTIONS);

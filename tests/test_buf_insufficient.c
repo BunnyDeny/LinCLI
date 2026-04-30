@@ -64,8 +64,9 @@ static int big1_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(big1, "big1", "Test insufficient shared buffer", big1_handler,
-	    (struct big1_args *)0,
+CLI_COMMAND(big1, "big1", "Test insufficient shared buffer",
+	    USAGE("big1 [-a]"),
+	    big1_handler, (struct big1_args *)0,
 	    OPTION('a', "a", BOOL, "A", struct big1_args, padding, 0, NULL,
 		   NULL, false),
 	    END_OPTIONS);
@@ -88,6 +89,7 @@ static int big2_handler(void *_args)
 }
 
 CLI_COMMAND_WITH_BUF(big2, "big2", "Test insufficient private buffer",
+		     USAGE("big2 [-x]"),
 		     big2_handler, (struct big2_args *)0, big2_buf,
 		     sizeof(big2_buf),
 		     OPTION('x', "x", BOOL, "X", struct big2_args, padding, 0,

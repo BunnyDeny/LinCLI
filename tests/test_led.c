@@ -66,7 +66,9 @@ static int led_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(led, "led", "Control LED", led_handler, (struct led_args *)0,
+CLI_COMMAND(led, "led", "Control LED",
+	    USAGE("led --on [-b <brightness>]", "led --off"),
+	    led_handler, (struct led_args *)0,
 	    OPTION(0, "off", BOOL, "Turn LED off", struct led_args, off, 0,
 		   NULL, "brightness", false),
 	    OPTION(0, "on", BOOL, "Turn LED on", struct led_args, on, 0,

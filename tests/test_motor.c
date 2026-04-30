@@ -55,8 +55,9 @@ static void motor_exit(void *_args)
 	cli_printk("Motor command done.\r\n");
 }
 
-CLI_COMMAND_ASYNC(motor, "motor", "Ramp motor to target RPM", motor_entry,
-		  motor_task, motor_exit, (struct motor_args *)0,
+CLI_COMMAND_ASYNC(motor, "motor", "Ramp motor to target RPM",
+		  USAGE("motor -r <rpm>"),
+		  motor_entry, motor_task, motor_exit, (struct motor_args *)0,
 		  OPTION('r', "rpm", INT, "Target RPM", struct motor_args,
 			 target_rpm, 0, NULL, NULL, true),
 		  END_OPTIONS);

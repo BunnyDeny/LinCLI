@@ -63,8 +63,9 @@ static int array_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(ta, "ta", "Test INT_ARRAY option with depends", array_handler,
-	    (struct array_args *)0,
+CLI_COMMAND(ta, "ta", "Test INT_ARRAY option with depends",
+	    USAGE("ta [-v] [-n <nums...>]"),
+	    array_handler, (struct array_args *)0,
 	    OPTION('v', "verbose", BOOL, "Enable verbose", struct array_args,
 		   verbose, 0, NULL, NULL, false),
 	    OPTION('n', "nums", INT_ARRAY, "Number list", struct array_args,

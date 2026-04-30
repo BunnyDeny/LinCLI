@@ -241,8 +241,9 @@ static int var_handler(void *_args)
 	return -1;
 }
 
-CLI_COMMAND(var_cmd, "var", "Read/write exported variables", var_handler,
-	    (struct var_args *)0,
+CLI_COMMAND(var_cmd, "var", "Read/write exported variables",
+	    USAGE("var -r <name>", "var -w <name> --val <value>", "var -l"),
+	    var_handler, (struct var_args *)0,
 	    OPTION('r', "read", STRING, "Read variable name", struct var_args,
 		   read, 0, NULL, "write list", false),
 	    OPTION('w', "write", STRING, "Write variable name", struct var_args,
