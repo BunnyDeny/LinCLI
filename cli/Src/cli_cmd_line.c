@@ -1591,6 +1591,140 @@ static void get_first_word_bounds(int *cmd_start, int *first_word_end)
 		(*first_word_end)++;
 }
 
+/* ============================================================
+ *  字符串选项值候选补全
+ * ============================================================ */
+
+static void get_prev_token_bounds(int tok_start, int *prev_start,
+				  int *prev_len)
+{
+	int i = tok_start - 1;
+	while (i >= 0 && cmd_line.buf[i] == ' ')
+		i--;
+	int end = i;
+	while (i >= 0 && cmd_line.buf[i] != ' ')
+		i--;
+	*prev_start = i + 1;
+	*prev_len = end - i;
+}
+
+static cli_option_t *find_string_option_by_token(const cli_command_t *cmd,
+						 int start, int len)
+{
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		cli_option_t *opt = &cmd->options[i];
+		if (opt->type == CLI_TYPE_STRING &&
+		    is_token_match_option(start, len, opt))
+			return opt;
+	}
+	return NULL;
+}
+
+static bool is_value_completion(const cli_command_t *cmd,
+				const char *prefix, int prefix_len)
+{
+	if (prefix_len > 0 && prefix[0] == '-')
+		return false;
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	int prev_start, prev_len;
+	get_prev_token_bounds(tok_start, &prev_start, &prev_len);
+	if (prev_len <= 0)
+		return false;
+	cli_option_t *opt = find_string_option_by_token(cmd, prev_start,
+							prev_len);
+	return opt && opt->candidate_argc > 0;
+}
+
+static int find_value_match(char **argv, int argc, const char *prefix,
+			    int prefix_len, char **first_match)
+{
+	int cnt = 0;
+	for (int i = 0; i < argc; i++) {
+		if (strncmp(argv[i], prefix, prefix_len) == 0) {
+			if (cnt == 0)
+				*first_match = argv[i];
+			cnt++;
+		}
+	}
+	return cnt;
+}
+
+static int compute_value_lcp(char **argv, int argc, const char *prefix,
+			     int prefix_len, char *first_match)
+{
+	int lcp_len = (int)strlen(first_match);
+	for (int i = 0; i < argc; i++) {
+		if (strncmp(argv[i], prefix, prefix_len) != 0)
+			continue;
+		int cpl = str_common_prefix_len(first_match, argv[i]);
+		if (cpl < lcp_len)
+			lcp_len = cpl;
+	}
+	return lcp_len;
+}
+
+static void list_value_candidates(char **argv, int argc,
+				  const char *prefix, int prefix_len)
+{
+	int old_rows = candidate_ctx.rows;
+	clear_and_up(old_rows, old_rows);
+	int cows = 0;
+	for (int i = 0; i < argc; i++) {
+		if (strncmp(argv[i], prefix, prefix_len) != 0)
+			continue;
+		cli_out_push((_u8 *)"\r\n", 2);
+		cli_out_push((_u8 *)argv[i], strlen(argv[i]));
+		cows++;
+		cli_out_sync();
+	}
+	candidate_ctx.rows = cows;
+	for (int i = 0; i < cows; i++) {
+		cli_out_push((_u8 *)"\033[1A", 4);
+		cli_out_sync();
+	}
+	cmd_line_redraw();
+}
+
+static void do_complete_string_value(cli_option_t *opt,
+				     const char *prefix, int prefix_len)
+{
+	char *first = NULL;
+	int cnt = find_value_match(opt->candidate_argv, opt->candidate_argc,
+				   prefix, prefix_len, &first);
+	if (cnt == 1) {
+		replace_cmdline_token(first, (int)strlen(first), 1);
+	} else if (cnt > 1) {
+		int lcp_len = compute_value_lcp(opt->candidate_argv,
+						opt->candidate_argc,
+						prefix, prefix_len, first);
+		if (lcp_len > prefix_len)
+			replace_cmdline_token(first, lcp_len, 0);
+		else
+			list_value_candidates(opt->candidate_argv,
+					      opt->candidate_argc,
+					      prefix, prefix_len);
+	} else {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+	}
+}
+
+static void complete_string_value(const cli_command_t *cmd,
+				  const char *prefix, int prefix_len)
+{
+	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	int prev_start, prev_len;
+	get_prev_token_bounds(tok_start, &prev_start, &prev_len);
+	cli_option_t *opt = find_string_option_by_token(cmd, prev_start,
+							prev_len);
+	if (!opt || opt->candidate_argc <= 0) {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+		return;
+	}
+	do_complete_string_value(opt, prefix, prefix_len);
+}
+
 static int try_complete_option(const char *prefix, int prefix_len,
 			       int cmd_start, int first_word_end)
 {
@@ -1606,6 +1740,8 @@ static int try_complete_option(const char *prefix, int prefix_len,
 	if (!cmd) {
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
+	} else if (is_value_completion(cmd, prefix, prefix_len)) {
+		complete_string_value(cmd, prefix, prefix_len);
 	} else {
 		complete_option(cmd, prefix, prefix_len);
 	}
