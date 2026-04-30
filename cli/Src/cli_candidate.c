@@ -7,10 +7,11 @@
  * 注册几个字符串类型命令选项候选（用于 Tab 补全）
  * ============================================================ */
 
-static char *log_file_argv[] = {"app.log", "debug.log", "system.log", NULL};
+static char *log_file_argv[] = {"app.log", "app.cfg", "app.txt",
+					  "debug.log", "system.log", NULL};
 static char *ts_msg_argv[] = {"hello", "world", NULL};
 
-CLI_CANDIDATE(log_file, "log", "file", 3, log_file_argv);
+CLI_CANDIDATE(log_file, "log", "file", 5, log_file_argv);
 CLI_CANDIDATE(ts_msg, "ts", "msg", 2, ts_msg_argv);
 
 /* ============================================================
