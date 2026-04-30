@@ -9,10 +9,10 @@
 
 static char *log_file_argv[] = {"app.log", "app.cfg", "app.txt",
 					  "debug.log", "system.log", NULL};
-static char *ts_msg_argv[] = {"hello", "world", "hello world", NULL};
+static char *ts_msg_argv[] = {"hello", "world", NULL};
 
 CLI_CANDIDATE(log_file, "log", "file", 5, log_file_argv);
-CLI_CANDIDATE(ts_msg, "ts", "msg", 3, ts_msg_argv);
+CLI_CANDIDATE(ts_msg, "ts", "msg", 2, ts_msg_argv);
 
 /* ============================================================
  * 将 CLI_CANDIDATE 注册的候选数据填充到对应命令选项中
