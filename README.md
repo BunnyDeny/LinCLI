@@ -68,10 +68,7 @@ static int led_handler(void *_args)
 	struct led_args *args = _args;
 
 	if (args->on) {
-		cli_printk("LED ON");
-		if (args->brightness > 0)
-			cli_printk(", brightness=%d", args->brightness);
-		cli_printk("\r\n");
+		cli_printk("LED ON, brightness=%d\r\n", args->brightness);
 	}
 	if (args->off) {
 		cli_printk("LED OFF\r\n");
