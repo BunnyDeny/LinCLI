@@ -12,10 +12,10 @@
 #define _CLI_CONFIG_H_
 
 /* 是否编译 tests 文件夹下的测试命令 */
-#define CLI_ENABLE_TESTS 0
+#define CLI_ENABLE_TESTS 1
 
 /*启用尾行模式测试*/
-#define INLINE_TEST_EN 0
+#define INLINE_TEST_EN 1
 
 /*命令历史记录条目数量（嵌入式环境不建议太大）*/
 #define HISTORY_MAX 4
@@ -35,7 +35,7 @@
 /* 版本号 */
 #define CLI_VERSION_MAJOR 1
 #define CLI_VERSION_MINOR 1
-#define CLI_VERSION_PATCH 0
+#define CLI_VERSION_PATCH 1
 
 /* 内存池配置 */
 #define CLI_MPOOL_COUNT 6
