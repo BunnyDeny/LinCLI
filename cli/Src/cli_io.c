@@ -19,6 +19,9 @@
 #include "cli_io.h"
 #include "cli_critical.h"
 #include "cmd_dispose.h"
+#include "cli_cmd_line.h"
+#include "cli_completion.h"
+#include "cli_mpool.h"
 #include <stdarg.h>
 #include <string.h>
 //#include <unistd.h>
@@ -293,3 +296,143 @@ CLI_COMMAND(level, "level", "Set log level filter",
 	    OPTION(0, "debug", BOOL, "Set log level to DEBUG (7)",
 		   struct level_args, debug, 0, NULL, NULL, false),
 	    END_OPTIONS);
+
+/* ============================================================
+ *  cli_printk 辅助函数（从 cli_io.c 迁移而来）
+ * ============================================================ */
+
+static char buffer[CLI_PRINTK_BUF_SIZE];
+
+
+static const char *prefix_gen(const char *level)
+{
+	char lv = level[0];
+	const char *prefix;
+	switch (lv) {
+	case '0':
+		prefix = pre_EMERG_gen();
+		break;
+	case '1':
+		prefix = pre_ALERT_gen();
+		break;
+	case '2':
+		prefix = pre_CRIT_gen();
+		break;
+	case '3':
+		prefix = pre_ERR_gen();
+		break;
+	case '4':
+		prefix = pre_WARNING_gen();
+		break;
+	case '5':
+		prefix = pre_NOTICE_gen();
+		break;
+	case '6':
+		prefix = pre_INFO_gen();
+		break;
+	case '7':
+		prefix = pre_DEBUG_gen();
+		break;
+	case 'c':
+		prefix = pre_CONT_gen();
+		break;
+	default:
+		prefix = pre_DEFAULT_gen();
+		break;
+	}
+	return prefix;
+}
+
+static inline int is_kern_level(char c)
+{
+	return (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
+		c == '5' || c == '6' || c == '7' || c == 'c');
+}
+
+
+/* ============================================================
+ *  cli_printk（从 cli_io.c 迁移至此，直接访问 cmd_line 状态）
+ * ============================================================ */
+
+extern int scheduler_is_in_get_char(void);
+
+static bool printk_should_drop(const char *pre)
+{
+	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
+		if (pre[0] > log_level[0])
+			return true;
+	}
+	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
+	    strcmp("8", log_level))
+		return true;
+	return false;
+}
+
+static int printk_format_and_send(const char *pre_str, int raw_len)
+{
+	if (is_kern_level(buffer[0]))
+		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
+	int pre_len = strlen(pre_str);
+	if (raw_len <= 0 || pre_len < 0)
+		return 0;
+	memmove(buffer + pre_len, buffer, raw_len + 1);
+	memcpy(buffer, pre_str, pre_len);
+	strcat(buffer, COLOR_NONE);
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	int status = cli_out_push((_u8 *)buffer,
+				  pre_len + raw_len + strlen(COLOR_NONE));
+	if (status < 0)
+		return status;
+	if (cli_out_sync())
+		return CLI_ERR_IO_SYNC;
+	return 0;
+}
+
+int cli_printk(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	char pre[2] = { buffer[0], '\0' };
+	if (printk_should_drop(pre))
+		return 0;
+
+	int in_interactive = scheduler_is_in_get_char();
+	if (in_interactive)
+		cli_out_push((_u8 *)"\r\033[K", 4);
+
+	const char *_pre = prefix_gen(pre);
+	int status = printk_format_and_send(_pre, len);
+	if (status < 0)
+		return status;
+
+	if (in_interactive) {
+		if (candidate_ctx.active)
+			candidate_redraw();
+		else
+			cmd_line_redraw();
+	}
+	return len;
+}
+
+
+/* ============================================================
+ *  内存池占用情况打印（分配失败时自动调用，不申请内存）
+ * ============================================================ */
+
+void cli_mpool_dump_usage(void)
+{
+	const char *owners[CLI_MPOOL_COUNT];
+	int used_count = 0;
+
+	cli_mpool_get_usage(owners, &used_count);
+
+	pr_crit("[mpool] exhausted! %d/%d blocks used\r\n", used_count,
+		CLI_MPOOL_COUNT);
+	for (int i = 0; i < used_count; i++) {
+		pr_crit("[mpool]   [%d] %s\r\n", i,
+			owners[i] ? owners[i] : "unknown");
+	}
+}

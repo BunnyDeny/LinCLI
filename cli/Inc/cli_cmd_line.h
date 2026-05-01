@@ -33,4 +33,7 @@ extern struct origin_cmd origin_cmd;
 int cli_cmd_line_init(void);
 int cli_cmd_line_task(char ch);
 
+
+void cmd_line_redraw(void);
+void candidate_redraw(void);
 #endif
