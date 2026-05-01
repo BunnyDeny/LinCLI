@@ -34,16 +34,18 @@ git merge --no-ff dev
 
 这代表一个正式小版本的发布。
 
+**注意**：合并过程中若出现 `include/cli_config.h` 冲突，保留 `MINOR` 升级后的值、`PATCH = 0`，然后重新提交完成合并。
+
 ### 发布后动作
 
-合并到 main 并完成版本号升级后，必须执行以下两步：
+合并完成后，**必须**在 merge 结果上执行以下两步：
 
-1. **打 tag**：在 main 分支上创建版本标签
+1. **打 tag**：在 merge 完成后的 main 分支上创建版本标签
    ```bash
    git tag v$(MAJOR).$(MINOR).0
    git push origin v$(MAJOR).$(MINOR).0
    ```
-   例如 `v1.4.0`。
+   例如 `v1.4.0`。tag 必须打在 merge 之后的 commit 上，不得提前。
 
 2. **编写 release 文档**：在 `/tmp/` 目录下创建 `release-v{MAJOR}.{MINOR}.0.md`，汇总该小版本在 dev 分支上的全部变更。文档写完后必须提醒用户文档已就绪。
 
