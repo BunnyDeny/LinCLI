@@ -89,5 +89,3 @@ Objects/*.d
 *.uvoptx
 *.uvopt
 
-# AI 工具 skill（项目级，不入库）
-.agents/
