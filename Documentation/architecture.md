@@ -22,11 +22,13 @@
 
 `cli.ld` 中定义了若干自定义段：
 
-- `.cli_commands` — 存放所有注册的命令定义
-- `.cli_cmd_line` — 存放命令行状态机的状态节点
-- `.scheduler`    — 存放调度器任务
-- `.my_init_d`    — 存放初始化函数
-- `.alias_cmd`    — 存放命令别名
+- `.cli_commands`   — 存放所有注册的命令定义
+- `.cli_cmd_line`  — 存放命令行状态机的状态节点
+- `.scheduler`     — 存放调度器任务
+- `.my_init_d`     — 存放初始化函数
+- `.alias_cmd`     — 存放命令别名
+- `.cli_vars`      — 存放通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量描述符
+- `.cli_var_types` — 存放通过 `CLI_VAR_TYPE` 注册的自定义类型操作回调
 
 每个自定义段内部采用**三段式布局**（`.0.start`、`.1`、`.1.end`）：
 - `.0.start` 与 `.1.end` 是 `init/section_markers.c` 中定义的标记数组，值为 `NULL`，分别位于段的首尾；

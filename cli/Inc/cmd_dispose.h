@@ -40,6 +40,7 @@ typedef enum {
 	CLI_TYPE_INT_ARRAY, // 整数数组
 	CLI_TYPE_DOUBLE, // 浮点数
 	CLI_TYPE_CALLBACK, // 自定义回调处理
+	CLI_TYPE_CUSTOM, // 自定义变量类型（cli_var 专用）
 } cli_type_t;
 
 typedef struct cli_option {

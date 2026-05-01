@@ -38,6 +38,16 @@ LR_IROM1 0x08000000 0x00010000  {    ; load region size_region
     *(.alias_cmd.1)
     *(.alias_cmd.1.end)
   }
+  ER_CLI_VARS +0 {
+    *(.cli_vars.0.start)
+    *(.cli_vars.1)
+    *(.cli_vars.1.end)
+  }
+  ER_CLI_VAR_TYPES +0 {
+    *(.cli_var_types.0.start)
+    *(.cli_var_types.1)
+    *(.cli_var_types.1.end)
+  }
   ER_RO_REST +0 {
     .ANY (+RO)
     .ANY (+XO)

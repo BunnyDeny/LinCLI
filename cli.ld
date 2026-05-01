@@ -33,3 +33,8 @@
     KEEP(*(.cli_vars.1))
     KEEP(*(.cli_vars.1.end))
   }
+  .cli_var_types : {
+    KEEP(*(.cli_var_types.0.start))
+    KEEP(*(.cli_var_types.1))
+    KEEP(*(.cli_var_types.1.end))
+  }
