@@ -48,6 +48,12 @@ const cli_var_t *const _cli_vars_start[1]
 const cli_var_t *const _cli_vars_end[1]
 	__attribute__((used, section(".cli_vars.1.end"))) = { NULL };
 
+/* .cli_var_types */
+const cli_var_type_t *const _cli_var_types_start[1]
+	__attribute__((used, section(".cli_var_types.0.start"))) = { NULL };
+const cli_var_type_t *const _cli_var_types_end[1]
+	__attribute__((used, section(".cli_var_types.1.end"))) = { NULL };
+
 /* .alias_cmd */
 struct alias_cmd *const _alias_cmd_start[1]
 	__attribute__((used, section(".alias_cmd.0.start"))) = { NULL };

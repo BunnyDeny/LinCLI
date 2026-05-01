@@ -32,6 +32,21 @@ const cli_var_t *cli_var_find(const char *name)
 }
 
 /* ============================================================
+ * 查找自定义类型
+ * ============================================================ */
+
+static const cli_var_type_t *cli_var_type_find(const char *name)
+{
+	const cli_var_type_t *type;
+	_FOR_EACH_CLI_VAR_TYPE(_cli_var_types_start, _cli_var_types_end, type)
+	{
+		if (type->name && strcmp(type->name, name) == 0)
+			return type;
+	}
+	return NULL;
+}
+
+/* ============================================================
  * 打印变量值
  * ============================================================ */
 
@@ -60,6 +75,21 @@ void cli_var_print(const cli_var_t *var)
 {
 	if (!var)
 		return;
+
+	if (var->type == CLI_TYPE_CUSTOM && var->type_name) {
+		const cli_var_type_t *type = cli_var_type_find(var->type_name);
+		if (type && type->ops.to_string) {
+			char buf[64];
+			type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+			all_printk("%s (%s) = %s\r\n", var->name, var->type_name,
+				   buf);
+			return;
+		}
+		all_printk("%s (%s) = <unprintable>\r\n", var->name,
+			   var->type_name);
+		return;
+	}
+
 	switch (var->type) {
 	case CLI_TYPE_INT:
 		print_int(var);
@@ -92,6 +122,32 @@ int cli_var_set(const cli_var_t *var, const char *value)
 	if (var->readonly) {
 		pr_err("'%s' is read-only\r\n", var->name);
 		return -1;
+	}
+
+	if (var->type == CLI_TYPE_CUSTOM && var->type_name) {
+		const cli_var_type_t *type = cli_var_type_find(var->type_name);
+		if (!type) {
+			pr_err("unknown custom type '%s' for variable '%s'\r\n",
+				var->type_name, var->name);
+			return -1;
+		}
+		if (!type->ops.from_string) {
+			pr_err("type '%s' does not support write\r\n",
+				var->type_name);
+			return -1;
+		}
+		if (type->ops.from_string(var->addr, var->size, value) < 0)
+			return -1;
+		/* 打印确认 */
+		all_printk("%s = ", var->name);
+		if (type->ops.to_string) {
+			char buf[64];
+			type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+			all_printk("%s\r\n", buf);
+		} else {
+			all_printk("<ok>\r\n");
+		}
+		return 0;
 	}
 
 	switch (var->type) {
@@ -251,6 +307,18 @@ void cli_var_list_all(void)
 			snprintf(value_buf, sizeof(value_buf), "\"%s\"",
 				 (char *)var->addr);
 			break;
+		case CLI_TYPE_CUSTOM:
+			if (var->type_name) {
+				const cli_var_type_t *type = cli_var_type_find(var->type_name);
+				if (type && type->ops.to_string) {
+					type->ops.to_string(var->addr, var->size,
+							    value_buf,
+							    sizeof(value_buf));
+					break;
+				}
+			}
+			snprintf(value_buf, sizeof(value_buf), "?");
+			break;
 		default:
 			snprintf(value_buf, sizeof(value_buf), "?");
 			break;
@@ -261,6 +329,8 @@ void cli_var_list_all(void)
 			(var->type == CLI_TYPE_DOUBLE) ? "DOUBLE" :
 			(var->type == CLI_TYPE_BOOL)   ? "BOOL" :
 			(var->type == CLI_TYPE_STRING) ? "STRING" :
+			(var->type == CLI_TYPE_CUSTOM && var->type_name)
+							 ? var->type_name :
 							 "UNKNOWN";
 
 		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name, type_str,
