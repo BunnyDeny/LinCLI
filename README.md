@@ -514,6 +514,8 @@ lin@linCli> level
 
 - **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象，支持在线查看和修改 `INT` / `DOUBLE` / `BOOL` / `STRING` 类型的变量，无需重新编译。此外还支持**用户自定义类型**，你可以为任意结构体注册序列化/反序列化规则，让 `var` 命令直接读写结构体成员。非常适合现场 PID 调参、开关调试、状态监控和复杂配置结构体的在线整定。
 
+- **[环境变量系统](Documentation/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用。支持运行时通过 `env -s` 动态修改值，比 `alias` 更灵活。可替换命令行任意位置的 token，并能与 alias、命令链、Tab 补全等功能协同工作。适合动态切换公共前缀、参数模板等场景。
+
 - **[Tab 补全候选列表](Documentation/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 
 - **[尾行模式打印支持](Documentation/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
