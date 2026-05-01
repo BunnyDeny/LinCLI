@@ -57,9 +57,15 @@ void cli_var_print(const cli_var_t *var)
 
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (type && type->ops.to_string) {
-		char buf[64];
-		type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+		char *buf = cli_mpool_alloc();
+		if (!buf) {
+			all_printk("%s (%s) = <oom>\r\n", var->name,
+				   var->type_name);
+			return;
+		}
+		type->ops.to_string(var->addr, var->size, buf, CLI_MPOOL_SIZE);
 		all_printk("%s (%s) = %s\r\n", var->name, var->type_name, buf);
+		cli_mpool_free(buf);
 	} else {
 		all_printk("%s (%s) = <unprintable>\r\n", var->name,
 			   var->type_name);
@@ -69,6 +75,41 @@ void cli_var_print(const cli_var_t *var)
 /* ============================================================
  * 解析并写入变量值
  * ============================================================ */
+
+static const cli_var_type_t *cli_var_set_lookup_type(const cli_var_t *var)
+{
+	const cli_var_type_t *type = cli_var_type_find(var->type_name);
+	if (!type) {
+		pr_err("unknown type '%s' for variable '%s'\r\n",
+			var->type_name, var->name);
+		return NULL;
+	}
+	if (!type->ops.from_string) {
+		pr_err("type '%s' does not support write\r\n",
+			var->type_name);
+		return NULL;
+	}
+	return type;
+}
+
+static int cli_var_set_print_confirm(const cli_var_t *var,
+				     const cli_var_type_t *type)
+{
+	all_printk("%s = ", var->name);
+	if (type->ops.to_string) {
+		char *buf = cli_mpool_alloc();
+		if (!buf) {
+			all_printk("<oom>\r\n");
+			return -1;
+		}
+		type->ops.to_string(var->addr, var->size, buf, CLI_MPOOL_SIZE);
+		all_printk("%s\r\n", buf);
+		cli_mpool_free(buf);
+	} else {
+		all_printk("<ok>\r\n");
+	}
+	return 0;
+}
 
 int cli_var_set(const cli_var_t *var, const char *value)
 {
@@ -85,30 +126,13 @@ int cli_var_set(const cli_var_t *var, const char *value)
 		return -1;
 	}
 
-	const cli_var_type_t *type = cli_var_type_find(var->type_name);
-	if (!type) {
-		pr_err("unknown type '%s' for variable '%s'\r\n",
-			var->type_name, var->name);
+	const cli_var_type_t *type = cli_var_set_lookup_type(var);
+	if (!type)
 		return -1;
-	}
-	if (!type->ops.from_string) {
-		pr_err("type '%s' does not support write\r\n",
-			var->type_name);
-		return -1;
-	}
 	if (type->ops.from_string(var->addr, var->size, value) < 0)
 		return -1;
 
-	/* 打印确认 */
-	all_printk("%s = ", var->name);
-	if (type->ops.to_string) {
-		char buf[64];
-		type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
-		all_printk("%s\r\n", buf);
-	} else {
-		all_printk("<ok>\r\n");
-	}
-	return 0;
+	return cli_var_set_print_confirm(var, type);
 }
 
 /* ============================================================
@@ -124,33 +148,43 @@ struct var_args {
 	bool list;
 };
 
+static int var_handle_list(void)
+{
+	cli_var_list_all();
+	return 0;
+}
+
+static int var_handle_read(const char *name)
+{
+	const cli_var_t *var = cli_var_find(name);
+	if (!var) {
+		pr_err("unknown variable: %s\r\n", name);
+		return -1;
+	}
+	cli_var_print(var);
+	return 0;
+}
+
+static int var_handle_write(const char *name, const char *val)
+{
+	const cli_var_t *var = cli_var_find(name);
+	if (!var) {
+		pr_err("unknown variable: %s\r\n", name);
+		return -1;
+	}
+	return cli_var_set(var, val);
+}
+
 static int var_handler(void *_args)
 {
 	struct var_args *args = _args;
 
-	if (args->list) {
-		cli_var_list_all();
-		return 0;
-	}
-
-	if (args->read) {
-		const cli_var_t *var = cli_var_find(args->read);
-		if (!var) {
-			pr_err("unknown variable: %s\r\n", args->read);
-			return -1;
-		}
-		cli_var_print(var);
-		return 0;
-	}
-
-	if (args->write) {
-		const cli_var_t *var = cli_var_find(args->write);
-		if (!var) {
-			pr_err("unknown variable: %s\r\n", args->write);
-			return -1;
-		}
-		return cli_var_set(var, args->val);
-	}
+	if (args->list)
+		return var_handle_list();
+	if (args->read)
+		return var_handle_read(args->read);
+	if (args->write)
+		return var_handle_write(args->write, args->val);
 
 	pr_err("usage: var -r <name>  or  var -w <name> --val <value>"
 	       "  or  var -l\r\n");
@@ -170,6 +204,57 @@ CLI_COMMAND(var_cmd, "var", "Read/write exported variables",
 		   "write", NULL, false),
 	    END_OPTIONS);
 
+/* ============================================================
+ * 列表辅助函数
+ * ============================================================ */
+
+static void cli_var_format_attr(const cli_var_t *var, char *buf, size_t size)
+{
+	if (var->readonly)
+		snprintf(buf, size, "RO");
+	else
+		buf[0] = '\0';
+}
+
+static void cli_var_format_value(const cli_var_t *var, char *buf, size_t size)
+{
+	if (!var->type_name) {
+		snprintf(buf, size, "?");
+		return;
+	}
+	const cli_var_type_t *type = cli_var_type_find(var->type_name);
+	if (type && type->ops.to_string) {
+		type->ops.to_string(var->addr, var->size, buf, size);
+	} else {
+		snprintf(buf, size, "?");
+	}
+}
+
+static void cli_var_print_entry(const cli_var_t *var, const char *value_buf,
+				const char *attr_buf)
+{
+	all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name,
+		   var->type_name ? var->type_name : "UNKNOWN",
+		   value_buf, attr_buf, var->doc ? var->doc : "");
+}
+
+static int cli_var_alloc_entry_bufs(char **value_buf, char **attr_buf)
+{
+	*value_buf = cli_mpool_alloc();
+	*attr_buf = cli_mpool_alloc();
+	if (!*value_buf || !*attr_buf) {
+		if (*value_buf)
+			cli_mpool_free(*value_buf);
+		if (*attr_buf)
+			cli_mpool_free(*attr_buf);
+		all_printk("<oom>\r\n");
+		return -1;
+	}
+	(*value_buf)[0] = '\0';
+	(*attr_buf)[0] = '\0';
+	return 0;
+}
+
 void cli_var_list_all(void)
 {
 	const cli_var_t *var;
@@ -181,27 +266,17 @@ void cli_var_list_all(void)
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
 	{
-		char value_buf[32] = { 0 };
-		char attr_buf[16] = { 0 };
+		char *value_buf;
+		char *attr_buf;
+		if (cli_var_alloc_entry_bufs(&value_buf, &attr_buf) < 0)
+			continue;
 
-		if (var->readonly)
-			snprintf(attr_buf, sizeof(attr_buf), "RO");
+		cli_var_format_attr(var, attr_buf, CLI_MPOOL_SIZE);
+		cli_var_format_value(var, value_buf, CLI_MPOOL_SIZE);
+		cli_var_print_entry(var, value_buf, attr_buf);
 
-		if (var->type_name) {
-			const cli_var_type_t *type = cli_var_type_find(var->type_name);
-			if (type && type->ops.to_string) {
-				type->ops.to_string(var->addr, var->size,
-						    value_buf, sizeof(value_buf));
-			} else {
-				snprintf(value_buf, sizeof(value_buf), "?");
-			}
-		} else {
-			snprintf(value_buf, sizeof(value_buf), "?");
-		}
-
-		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name,
-			   var->type_name ? var->type_name : "UNKNOWN",
-			   value_buf, attr_buf, var->doc ? var->doc : "");
+		cli_mpool_free(value_buf);
+		cli_mpool_free(attr_buf);
 	}
 }
 
@@ -216,9 +291,8 @@ static char *var_write_names[MAX_CLI_VAR_CANDS + 1];
 static int var_read_count;
 static int var_write_count;
 
-static void cli_var_candidate_init(void *arg)
+static void cli_var_collect_candidates(void)
 {
-	(void)arg;
 	const cli_var_t *var;
 	var_read_count = 0;
 	var_write_count = 0;
@@ -231,23 +305,35 @@ static void cli_var_candidate_init(void *arg)
 		if (!var->readonly && var_write_count < MAX_CLI_VAR_CANDS)
 			var_write_names[var_write_count++] = (char *)var->name;
 	}
+}
+
+static void cli_var_attach_candidates(const cli_command_t *cmd)
+{
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		cli_option_t *opt = &cmd->options[i];
+		if (opt->long_opt &&
+		    strcmp(opt->long_opt, "read") == 0) {
+			opt->candidate_argc = var_read_count;
+			opt->candidate_argv = var_read_names;
+		} else if (opt->long_opt &&
+			   strcmp(opt->long_opt, "write") == 0) {
+			opt->candidate_argc = var_write_count;
+			opt->candidate_argv = var_write_names;
+		}
+	}
+}
+
+static void cli_var_candidate_init(void *arg)
+{
+	(void)arg;
+	cli_var_collect_candidates();
+
 	const cli_command_t *cmd;
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd || !cmd->name || strcmp(cmd->name, "var") != 0)
 			continue;
-		for (size_t i = 0; i < cmd->option_count; i++) {
-			cli_option_t *opt = &cmd->options[i];
-			if (opt->long_opt &&
-			    strcmp(opt->long_opt, "read") == 0) {
-				opt->candidate_argc = var_read_count;
-				opt->candidate_argv = var_read_names;
-			} else if (opt->long_opt &&
-				   strcmp(opt->long_opt, "write") == 0) {
-				opt->candidate_argc = var_write_count;
-				opt->candidate_argv = var_write_names;
-			}
-		}
+		cli_var_attach_candidates(cmd);
 	}
 }
 _EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL, cli_var_candidate_init);
@@ -316,6 +402,8 @@ static int builtin_bool_to_str(const void *addr, size_t size, char *buf,
 
 static int builtin_string_from_str(void *addr, size_t size, const char *str)
 {
+	if (size == 0)
+		return -1;
 	size_t len = strlen(str);
 	if (len >= size) {
 		pr_warn("string truncated: %zu -> %zu chars\r\n", len,

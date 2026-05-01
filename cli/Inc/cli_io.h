@@ -77,7 +77,6 @@
 #define KERN_INFO "6"
 #define KERN_DEBUG "7"
 #define KERN_DEFAULT ""
-#define KERN_CONT "c"
 
 extern char log_level[3];
 extern _u8 cli_in_push_lock;
@@ -93,7 +92,6 @@ int all_printk(const char *fmt, ...);
 #define pr_notice(fmt, ...) cli_printk(KERN_NOTICE fmt, ##__VA_ARGS__)
 #define pr_info(fmt, ...) cli_printk(KERN_INFO fmt, ##__VA_ARGS__)
 #define pr_debug(fmt, ...) cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
-#define pr_cont(fmt, ...) cli_printk(KERN_CONT fmt, ##__VA_ARGS__)
 
 #ifdef DEBUG
 #define pr_devel(fmt, ...) cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
