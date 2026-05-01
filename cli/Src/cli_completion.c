@@ -22,10 +22,10 @@
 
 struct candidate_ctx candidate_ctx = { 0 };
 
-void candidate_ctx_save(int active, const char *prefix, int prefix_len,
+void candidate_ctx_save(cand_active_t active, const char *prefix, int prefix_len,
 			       const cli_command_t *cmd)
 {
-	if (candidate_ctx.active != active)
+	if (candidate_ctx.active != (cand_active_t)active)
 		candidate_ctx.repl_start = -1;
 	candidate_ctx.active = active;
 	if (prefix && prefix_len > 0) {
@@ -40,15 +40,15 @@ void candidate_ctx_save(int active, const char *prefix, int prefix_len,
 	}
 	candidate_ctx.cmd = cmd;
 	candidate_ctx.highlight_index = 0;
-	candidate_ctx.cycling = 0;
+	candidate_ctx.cycling = CAND_CYCLING_NONE;
 	candidate_ctx.rows = 0;
 	candidate_ctx.cols = 0;
 }
 
 void candidate_ctx_clear(void)
 {
-	candidate_ctx.active = 0;
-	candidate_ctx.cycling = 0;
+	candidate_ctx.active = CAND_ACTIVE_NONE;
+	candidate_ctx.cycling = CAND_CYCLING_NONE;
 	candidate_ctx.rows = 0;
 	candidate_ctx.cols = 0;
 	candidate_ctx.repl_start = -1;
@@ -324,8 +324,8 @@ void cycle_cmd_candidate_highlight(void)
 	display_candidates(candidate_ctx.prefix, candidate_ctx.prefix_len,
 			   DISPLAY_MAX_COWS, candidate_ctx.highlight_index);
 	candidate_list_redraw(candidate_ctx.rows);
-	candidate_ctx.active = 1;
-	candidate_ctx.cycling = 1;
+	candidate_ctx.active = CAND_ACTIVE_CMD;
+	candidate_ctx.cycling = CAND_CYCLING_CMD;
 }
 
 void complete_multi_cmd(const cli_command_t *first_match,
@@ -752,7 +752,7 @@ void complete_option(const cli_command_t *cmd, const char *prefix,
 
 void candidate_redraw_cmd(void)
 {
-	if (candidate_ctx.cycling == 1) {
+	if (candidate_ctx.cycling == CAND_CYCLING_CMD) {
 		display_candidates(candidate_ctx.prefix,
 				   candidate_ctx.prefix_len, DISPLAY_MAX_COWS,
 				   candidate_ctx.highlight_index);
@@ -775,7 +775,7 @@ void candidate_redraw_all_opts(void)
 				 candidate_ctx.prefix_len, -1);
 	candidate_ctx.highlight_index = saved_highlight;
 	candidate_ctx.cycling = saved_cycling;
-	candidate_ctx.active = 2;
+	candidate_ctx.active = CAND_ACTIVE_ALL_OPTS;
 }
 
 void candidate_redraw_long_opts(void)
@@ -793,22 +793,72 @@ void candidate_redraw_long_opts(void)
 					    candidate_ctx.prefix_len, -1);
 	candidate_ctx.highlight_index = saved_highlight;
 	candidate_ctx.cycling = saved_cycling;
-	candidate_ctx.active = 3;
+	candidate_ctx.active = CAND_ACTIVE_LONG_OPTS;
 }
 
 void candidate_redraw_values(void);
 
+static const struct cli_completer cmd_completer = {
+	.active = CAND_ACTIVE_CMD,
+	.cycling = CAND_CYCLING_CMD,
+	.cycle = cycle_cmd_candidate_highlight,
+	.redraw = candidate_redraw_cmd,
+};
+
+static const struct cli_completer all_opts_completer = {
+	.active = CAND_ACTIVE_ALL_OPTS,
+	.cycling = CAND_CYCLING_OPT,
+	.cycle = cycle_all_option_highlight,
+	.redraw = candidate_redraw_all_opts,
+};
+
+static const struct cli_completer long_opts_completer = {
+	.active = CAND_ACTIVE_LONG_OPTS,
+	.cycling = CAND_CYCLING_OPT,
+	.cycle = cycle_long_option_highlight,
+	.redraw = candidate_redraw_long_opts,
+};
+
+static const struct cli_completer values_completer = {
+	.active = CAND_ACTIVE_VALUES,
+	.cycling = CAND_CYCLING_OPT,
+	.cycle = cycle_value_highlight,
+	.redraw = candidate_redraw_values,
+};
+
+static const struct cli_completer *const completers[] = {
+	[CAND_ACTIVE_NONE] = NULL,
+	[CAND_ACTIVE_CMD] = &cmd_completer,
+	[CAND_ACTIVE_ALL_OPTS] = &all_opts_completer,
+	[CAND_ACTIVE_LONG_OPTS] = &long_opts_completer,
+	[CAND_ACTIVE_VALUES] = &values_completer,
+};
+
+const struct cli_completer *get_completer(void)
+{
+	return completers[candidate_ctx.active];
+}
+
+void completer_cycle(void)
+{
+	const struct cli_completer *c = get_completer();
+	if (c) {
+		candidate_ctx.cycling = c->cycling;
+		c->cycle();
+	}
+}
+
+void completer_redraw(void)
+{
+	const struct cli_completer *c = get_completer();
+	if (!c) return;
+	if (c->active != CAND_ACTIVE_CMD && !candidate_ctx.cmd) return;
+	c->redraw();
+}
+
 void candidate_redraw(void)
 {
-	if (candidate_ctx.active == 1) {
-		candidate_redraw_cmd();
-	} else if (candidate_ctx.active == 2 && candidate_ctx.cmd) {
-		candidate_redraw_all_opts();
-	} else if (candidate_ctx.active == 3 && candidate_ctx.cmd) {
-		candidate_redraw_long_opts();
-	} else if (candidate_ctx.active == 4 && candidate_ctx.cmd) {
-		candidate_redraw_values();
-	}
+	completer_redraw();
 }
 
 void cycle_value_highlight(void);
@@ -1025,8 +1075,8 @@ void cycle_value_highlight(void)
 		tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	replace_token_at(tok_start, target, (int)strlen(target), 1);
 	refresh_value_highlight(target);
-	candidate_ctx.active = 4;
-	candidate_ctx.cycling = 2;
+	candidate_ctx.active = CAND_ACTIVE_VALUES;
+	candidate_ctx.cycling = CAND_CYCLING_OPT;
 }
 
 void candidate_redraw_values(void)
@@ -1041,7 +1091,7 @@ void candidate_redraw_values(void)
 			saved_cycling == 2 ? saved_highlight : -1);
 	candidate_ctx.highlight_index = saved_highlight;
 	candidate_ctx.cycling = saved_cycling;
-	candidate_ctx.active = 4;
+	candidate_ctx.active = CAND_ACTIVE_VALUES;
 }
 
 void do_complete_string_value(cli_option_t *opt,
@@ -1084,7 +1134,7 @@ void complete_string_value(const cli_command_t *cmd,
 	}
 	candidate_ctx.opt = opt;
 	do_complete_string_value(opt, prefix, prefix_len);
-	if (candidate_ctx.active == 4)
+	if (candidate_ctx.active == CAND_ACTIVE_VALUES)
 		candidate_ctx.repl_start = tok_start;
 }
 

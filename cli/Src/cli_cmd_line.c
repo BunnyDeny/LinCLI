@@ -103,7 +103,7 @@ _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 static int valid_char_task(void *pch)
 {
 	char ch = *((char *)pch);
-	if (candidate_ctx.active) {
+	if (candidate_ctx.active != CAND_ACTIVE_NONE) {
 		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
 		candidate_ctx_clear();
 		cmd_line_redraw();
@@ -141,9 +141,9 @@ static int invalid_char_task(void *pch)
 		next_state = "enter";
 		break;
 	case '\t':
-		if (candidate_ctx.cycling) {
+		if (candidate_ctx.cycling != CAND_CYCLING_NONE) {
 			next_state = "tab_cycle";
-		} else if (candidate_ctx.active) {
+		} else if (candidate_ctx.active != CAND_ACTIVE_NONE) {
 			next_state = "tab_cycle_enter";
 		} else {
 			next_state = "tab_complete";
@@ -170,50 +170,50 @@ _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
 
 static bool is_opt_cycle_active(void)
 {
-	int a = candidate_ctx.active;
+	cand_active_t a = candidate_ctx.active;
 	return a == 2 || a == 3;
 }
 
 static char *esc_resolve_horizontal(char seq)
 {
-	bool is_cycle = candidate_ctx.cycling;
+	cand_cycling_t is_cycle = candidate_ctx.cycling;
 	if (seq == 'D') { // left
-		if (candidate_ctx.active == 1 && is_cycle)
+		if (candidate_ctx.active == CAND_ACTIVE_CMD && is_cycle)
 			return "cmd_cycle_left";
 		if (is_opt_cycle_active() && is_cycle)
 			return "opt_cycle_left";
-		if (candidate_ctx.active == 4)
+		if (candidate_ctx.active == CAND_ACTIVE_VALUES)
 			return "value_cycle_prev";
 		return "cursor_left";
 	}
 	// right
-	if (candidate_ctx.active == 1 && is_cycle)
+	if (candidate_ctx.active == CAND_ACTIVE_CMD && is_cycle)
 		return "cmd_cycle_right";
 	if (is_opt_cycle_active() && is_cycle)
 		return "opt_cycle_right";
-	if (candidate_ctx.active == 4)
+	if (candidate_ctx.active == CAND_ACTIVE_VALUES)
 		return "value_cycle_next";
 	return "cursor_right";
 }
 
 static char *esc_resolve_vertical(char seq)
 {
-	bool is_cycle = candidate_ctx.cycling;
+	cand_cycling_t is_cycle = candidate_ctx.cycling;
 	if (seq == 'A') { // up
-		if (candidate_ctx.active == 1 && is_cycle)
+		if (candidate_ctx.active == CAND_ACTIVE_CMD && is_cycle)
 			return "cmd_cycle_up";
 		if (is_opt_cycle_active() && is_cycle)
 			return "opt_cycle_up";
-		if (candidate_ctx.active == 4)
+		if (candidate_ctx.active == CAND_ACTIVE_VALUES)
 			return "value_cycle_prev";
 		return "history_up";
 	}
 	// down
-	if (candidate_ctx.active == 1 && is_cycle)
+	if (candidate_ctx.active == CAND_ACTIVE_CMD && is_cycle)
 		return "cmd_cycle_down";
 	if (is_opt_cycle_active() && is_cycle)
 		return "opt_cycle_down";
-	if (candidate_ctx.active == 4)
+	if (candidate_ctx.active == CAND_ACTIVE_VALUES)
 		return "value_cycle_next";
 	return "history_down";
 }
@@ -310,7 +310,7 @@ _EXPORT_STATE_SYMBOL(cursor_right, NULL, cursor_right_task, NULL,
 static int cmd_cycle_left_task(void *pch)
 {
 	candidate_ctx.highlight_index--;
-	cycle_cmd_candidate_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(cmd_cycle_left, NULL, cmd_cycle_left_task, NULL,
@@ -319,7 +319,7 @@ _EXPORT_STATE_SYMBOL(cmd_cycle_left, NULL, cmd_cycle_left_task, NULL,
 static int cmd_cycle_right_task(void *pch)
 {
 	candidate_ctx.highlight_index++;
-	cycle_cmd_candidate_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(cmd_cycle_right, NULL, cmd_cycle_right_task, NULL,
@@ -328,7 +328,7 @@ _EXPORT_STATE_SYMBOL(cmd_cycle_right, NULL, cmd_cycle_right_task, NULL,
 static int cmd_cycle_up_task(void *pch)
 {
 	candidate_ctx.highlight_index -= candidate_ctx.cols;
-	cycle_cmd_candidate_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(cmd_cycle_up, NULL, cmd_cycle_up_task, NULL,
@@ -337,7 +337,7 @@ _EXPORT_STATE_SYMBOL(cmd_cycle_up, NULL, cmd_cycle_up_task, NULL,
 static int cmd_cycle_down_task(void *pch)
 {
 	candidate_ctx.highlight_index += candidate_ctx.cols;
-	cycle_cmd_candidate_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(cmd_cycle_down, NULL, cmd_cycle_down_task, NULL,
@@ -350,10 +350,7 @@ _EXPORT_STATE_SYMBOL(cmd_cycle_down, NULL, cmd_cycle_down_task, NULL,
 static int opt_cycle_left_task(void *pch)
 {
 	candidate_ctx.highlight_index--;
-	if (candidate_ctx.active == 2)
-		cycle_all_option_highlight();
-	else if (candidate_ctx.active == 3)
-		cycle_long_option_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(opt_cycle_left, NULL, opt_cycle_left_task, NULL,
@@ -362,10 +359,7 @@ _EXPORT_STATE_SYMBOL(opt_cycle_left, NULL, opt_cycle_left_task, NULL,
 static int opt_cycle_right_task(void *pch)
 {
 	candidate_ctx.highlight_index++;
-	if (candidate_ctx.active == 2)
-		cycle_all_option_highlight();
-	else if (candidate_ctx.active == 3)
-		cycle_long_option_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(opt_cycle_right, NULL, opt_cycle_right_task, NULL,
@@ -374,10 +368,7 @@ _EXPORT_STATE_SYMBOL(opt_cycle_right, NULL, opt_cycle_right_task, NULL,
 static int opt_cycle_up_task(void *pch)
 {
 	candidate_ctx.highlight_index -= candidate_ctx.cols;
-	if (candidate_ctx.active == 2)
-		cycle_all_option_highlight();
-	else if (candidate_ctx.active == 3)
-		cycle_long_option_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(opt_cycle_up, NULL, opt_cycle_up_task, NULL,
@@ -386,10 +377,7 @@ _EXPORT_STATE_SYMBOL(opt_cycle_up, NULL, opt_cycle_up_task, NULL,
 static int opt_cycle_down_task(void *pch)
 {
 	candidate_ctx.highlight_index += candidate_ctx.cols;
-	if (candidate_ctx.active == 2)
-		cycle_all_option_highlight();
-	else if (candidate_ctx.active == 3)
-		cycle_long_option_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(opt_cycle_down, NULL, opt_cycle_down_task, NULL,
@@ -402,11 +390,11 @@ _EXPORT_STATE_SYMBOL(opt_cycle_down, NULL, opt_cycle_down_task, NULL,
 
 static int value_cycle_prev_task(void *pch)
 {
-	if (candidate_ctx.cycling == 0)
+	if (candidate_ctx.cycling == CAND_CYCLING_NONE)
 		candidate_ctx.highlight_index = -1;
 	else
 		candidate_ctx.highlight_index--;
-	cycle_value_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(value_cycle_prev, NULL, value_cycle_prev_task, NULL,
@@ -414,11 +402,11 @@ _EXPORT_STATE_SYMBOL(value_cycle_prev, NULL, value_cycle_prev_task, NULL,
 
 static int value_cycle_next_task(void *pch)
 {
-	if (candidate_ctx.cycling == 0)
+	if (candidate_ctx.cycling == CAND_CYCLING_NONE)
 		candidate_ctx.highlight_index = 0;
 	else
 		candidate_ctx.highlight_index++;
-	cycle_value_highlight();
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(value_cycle_next, NULL, value_cycle_next_task, NULL,
@@ -529,19 +517,7 @@ _EXPORT_STATE_SYMBOL(tab_complete, NULL, tab_complete_task, NULL,
 
 static int tab_cycle_enter_task(void *pch)
 {
-	if (candidate_ctx.active == 1) {
-		candidate_ctx.cycling = 1;
-		cycle_cmd_candidate_highlight();
-	} else if (candidate_ctx.active == 2) {
-		candidate_ctx.cycling = 2;
-		cycle_all_option_highlight();
-	} else if (candidate_ctx.active == 3) {
-		candidate_ctx.cycling = 2;
-		cycle_long_option_highlight();
-	} else if (candidate_ctx.active == 4) {
-		candidate_ctx.cycling = 2;
-		cycle_value_highlight();
-	}
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(tab_cycle_enter, NULL, tab_cycle_enter_task, NULL,
@@ -554,15 +530,7 @@ _EXPORT_STATE_SYMBOL(tab_cycle_enter, NULL, tab_cycle_enter_task, NULL,
 static int tab_cycle_task(void *pch)
 {
 	candidate_ctx.highlight_index++;
-	if (candidate_ctx.active == 1) {
-		cycle_cmd_candidate_highlight();
-	} else if (candidate_ctx.active == 2) {
-		cycle_all_option_highlight();
-	} else if (candidate_ctx.active == 3) {
-		cycle_long_option_highlight();
-	} else if (candidate_ctx.active == 4) {
-		cycle_value_highlight();
-	}
+	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(tab_cycle, NULL, tab_cycle_task, NULL, ".cli_cmd_line");
@@ -591,7 +559,7 @@ _EXPORT_STATE_SYMBOL(delete, NULL, delete_task, NULL, ".cli_cmd_line");
 static int backspace_handler(void *pch)
 {
 	int status;
-	if (candidate_ctx.active) {
+	if (candidate_ctx.active != CAND_ACTIVE_NONE) {
 		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
 		candidate_ctx_clear();
 		cmd_line_redraw();
@@ -639,7 +607,7 @@ static void enter_entry(void *pch)
 }
 static int enter_press(void *pch)
 {
-	if (candidate_ctx.active) {
+	if (candidate_ctx.active != CAND_ACTIVE_NONE) {
 		clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
 		candidate_ctx_clear();
 		cmd_line_redraw();
