@@ -342,3 +342,55 @@ CLI_COMMAND(env, "env", "Manage environment variables",
 	    OPTION(0, "read", STRING, "Read environment variable",
 		   struct env_args, read, 0, NULL, "list set", false),
 	    END_OPTIONS);
+
+/* ============================================================
+ *  运行时填充 env 命令 --read / --set 选项的候选列表
+ * ============================================================ */
+
+#define MAX_CLI_ENV_CANDS 64
+
+static char *env_names[MAX_CLI_ENV_CANDS + 1];
+static int env_name_count;
+
+static void cli_env_collect_candidates(void)
+{
+	cli_env_t *env;
+	env_name_count = 0;
+	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
+	{
+		if (!env || !env->name || env->id < 0)
+			continue;
+		if (env_name_count < MAX_CLI_ENV_CANDS)
+			env_names[env_name_count++] = (char *)env->name;
+	}
+}
+
+static void cli_env_attach_candidates(const cli_command_t *cmd)
+{
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		cli_option_t *opt = &cmd->options[i];
+		if (!opt->long_opt)
+			continue;
+		if (strcmp(opt->long_opt, "read") == 0 ||
+		    strcmp(opt->long_opt, "set") == 0) {
+			opt->candidate_argc = env_name_count;
+			opt->candidate_argv = env_names;
+		}
+	}
+}
+
+static void cli_env_candidate_init(void *arg)
+{
+	(void)arg;
+	cli_env_collect_candidates();
+
+	const cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd || !cmd->name || strcmp(cmd->name, "env") != 0)
+			continue;
+		cli_env_attach_candidates(cmd);
+	}
+}
+_EXPORT_INIT_SYMBOL(cli_env_candidate_init, 25, NULL,
+		    cli_env_candidate_init);
