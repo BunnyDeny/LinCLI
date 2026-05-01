@@ -84,8 +84,6 @@ void cli_var_print(const cli_var_t *var)
  * 解析并写入变量值
  * ============================================================ */
 
-
-
 int cli_var_set(const cli_var_t *var, const char *value)
 {
 	if (!var || !value)
@@ -225,7 +223,7 @@ void cli_var_list_all(void)
 	all_printk("\r\n%-20s %-10s %-24s %-4s %s\r\n", "NAME", "TYPE", "VALUE",
 		   "ATTR", "DOC");
 	all_printk(
-		"------------------------------------------------------------------"
+		"--------------------------------------------------------------------------"
 		"\r\n");
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
@@ -316,4 +314,3 @@ static void cli_var_candidate_init(void *arg)
 	}
 }
 _EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL, cli_var_candidate_init);
-
