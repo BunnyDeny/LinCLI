@@ -199,6 +199,16 @@ example_project/LinCLI_1_0_stm32f103c8t6_keil5_mdk_examply_project/
     KEEP(*(.alias_cmd.1))
     KEEP(*(.alias_cmd.1.end))
   } >FLASH
+  .cli_vars : {
+    KEEP(*(.cli_vars.0.start))
+    KEEP(*(.cli_vars.1))
+    KEEP(*(.cli_vars.1.end))
+  } >FLASH
+  .cli_var_types : {
+    KEEP(*(.cli_var_types.0.start))
+    KEEP(*(.cli_var_types.1))
+    KEEP(*(.cli_var_types.1.end))
+  } >FLASH
 ```
 
 然后在 MCU 的链接脚本中通过 `INCLUDE cli.ld` 引入上述定义。以下以 STM32 工程为例：
@@ -274,6 +284,16 @@ Keil MDK 使用 `.sct`（分散加载文件）作为链接脚本。核心思路�
     *(.alias_cmd.0.start)
     *(.alias_cmd.1)
     *(.alias_cmd.1.end)
+  }
+  ER_CLI_VARS +0 {
+    *(.cli_vars.0.start)
+    *(.cli_vars.1)
+    *(.cli_vars.1.end)
+  }
+  ER_CLI_VAR_TYPES +0 {
+    *(.cli_var_types.0.start)
+    *(.cli_var_types.1)
+    *(.cli_var_types.1.end)
   }
   ER_RO_REST +0 {
     .ANY (+RO)
