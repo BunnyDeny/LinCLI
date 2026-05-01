@@ -100,31 +100,36 @@ cli_mpool_free(buf);
 
 遵循项目根目录 `.clang-format` 配置。不得引入与其冲突的格式。
 
-## 6. 关键宏语义
+## 6. 项目文档与接口学习
 
-### CLI_COMMAND 注册命令
+在修改代码、添加功能或回答用户问题之前，**必须**详细阅读以下文档，从用户视角理解框架的功能接口：
 
-```c
-CLI_COMMAND(name, cmd_str, brief_str, _usage_arr, parse_cb, arg_struct_ptr, ...)
-```
+### 必读文档
 
-- `name`：C 标识符，仅用于生成内部静态符号
-- `cmd_str`：终端实际输入的命令名
-- `arg_struct_ptr`：必须传 `(struct xxx *)0`，严禁传 NULL
+1. **README.md** — 项目总览、快速开始、命令注册示例
+2. **Documentation/*.md** — 所有专题文档：
+   - `architecture.md` — 架构与核心机制
+   - `async_commands.md` — 非阻塞命令
+   - `init.md` — 开机初始化
+   - `porting.md` — MCU 移植
+   - `customization.md` — 日志定制
+   - `cli_var.md` — 变量系统
+   - `candidates.md` — Tab 补全候选
+   - `inline_print.md` — 尾行模式
+   - `tests.md` — 测试用例说明
 
-### OPTION 定义选项
+### 必读测试用例
 
-统一 10 参数：
+`tests/` 目录下的每个 `.c` 文件都是**用户接口的完整示例程序**：
 
-```c
-OPTION(short_opt, long_opt, TYPE, help, stype, field, max_args, depends, conflicts, required)
-```
+- `test_bool.c`、`test_int.c`、`test_double.c`、`test_string.c` — 基础选项类型用法
+- `test_int_array.c`、`test_conflicts.c`、`test_required.c` — 高级选项特性
+- `test_callback.c`、`test_with_buf.c` — 自定义缓冲区与回调
+- `test_auto_cmd.c` — 开机自动执行命令
+- `test_led.c`、`test_motor.c` — 完整命令示例（含异步命令）
+- `test_log.c` — 日志过滤测试
+- `test_key_interaction.c` — 键盘交互测试
+- `test_init_d.c` — 初始化函数测试
+- `test_cli_var.c` — 变量系统测试
 
-- `depends`：空格分隔的长选项名列表，必须全部出现本选项才合法
-- `conflicts`：空格分隔的长选项名列表，任一出现则本选项非法
-- 互斥是单向声明的，只需在其中一个选项的 `conflicts` 中声明即可
-
-### 链接脚本段自动收集
-
-- `.cli_commands`、`.cli_vars`、`.scheduler` 等段通过 `__attribute__((section(...)))` 自动收集
-- 开发者只需写宏，无需在 `main()` 中手动注册
+**规则**：每份测试代码都展示了用户如何注册命令、定义选项、写 handler。新增功能前必须参考同类测试用例，确保新接口与已有风格一致。
