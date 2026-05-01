@@ -326,20 +326,20 @@ static int env_handler(void *_args)
 	if (args->read)
 		return cli_env_handle_read(args->read);
 
-	pr_err("usage: env --list | env --set <name=value> | env --read <name>\r\n");
+	pr_err("usage: env -l | env -s <name=value> | env -r <name>\r\n");
 	return -1;
 }
 
 CLI_COMMAND(env, "env", "Manage environment variables",
-	    USAGE("env --list", "env --set <name=value>",
-		  "env --read <name>"),
+	    USAGE("env -l", "env -s <name=value>",
+		  "env -r <name>"),
 	    env_handler, (struct env_args *)0,
-	    OPTION(0, "list", BOOL, "List all environment variables",
+	    OPTION('l', "list", BOOL, "List all environment variables",
 		   struct env_args, list, 0, NULL, "set read", false),
-	    OPTION(0, "set", STRING,
+	    OPTION('s', "set", STRING,
 		   "Set environment variable (name=value)", struct env_args,
 		   set, 0, NULL, "list read", false),
-	    OPTION(0, "read", STRING, "Read environment variable",
+	    OPTION('r', "read", STRING, "Read environment variable",
 		   struct env_args, read, 0, NULL, "list set", false),
 	    END_OPTIONS);
 
