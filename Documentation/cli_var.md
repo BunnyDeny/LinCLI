@@ -157,6 +157,68 @@ CLI_VAR_CUSTOM_RO(g_target, "g_target", "point", "Target point (read-only)");
 - `CLI_VAR_CUSTOM_RO` 是**变量粒度**的控制，同类型的其他变量仍可写。
 - `from_str = NULL` 是**类型粒度**的控制，影响所有该类型的变量。
 
+### 自定义回调的鲁棒性：警惕 `sscanf` 的贪婪解析
+
+很多开发者写自定义 `from_string` 回调时会自然地用 `sscanf`：
+
+```c
+/* 不安全的写法 */
+static int point_from_str(void *addr, size_t size, const char *str)
+{
+    point_t *p = addr;
+    if (sscanf(str, "%d,%d", &p->x, &p->y) != 2)
+        return -1;
+    return 0;
+}
+```
+
+这有一个隐蔽的陷阱：`sscanf` 的 `%d` 是**贪婪匹配**的，它只会解析到第一个非数字字符就停止，**不会检查后面是否还有垃圾字符**。如果你输入 `10,20abc`，`sscanf` 会成功返回 `2`，把 `x=10, y=20` 写入内存，然后框架显示 `point = (10,20)`——用户完全不知道自己的输入其实不合法。
+
+**正确的做法**：在 `sscanf` 格式字符串末尾加上 `%n`，记录实际消耗的字符数，然后检查输入字符串是否被完全消耗：
+
+```c
+static int point_from_str(void *addr, size_t size, const char *str)
+{
+    point_t *p = addr;
+    int n = 0;
+    if (sscanf(str, "%d,%d%n", &p->x, &p->y, &n) != 2) {
+        pr_err("point format must be x,y (e.g. 10,20)\r\n");
+        return -1;
+    }
+    /* 关键：检查尾部是否还有多余字符 */
+    if (str[n] != '\0') {
+        pr_err("point format must be x,y (e.g. 10,20)\r\n");
+        return -1;
+    }
+    return 0;
+}
+```
+
+同样适用于多字段结构体：
+
+```c
+static int pid_from_str(void *addr, size_t size, const char *str)
+{
+    pid_params_t *pid = addr;
+    int n = 0;
+    if (sscanf(str, "%d,%d,%d%n", &pid->kp, &pid->ki, &pid->kd, &n) != 3) {
+        pr_err("pid format must be kp,ki,kd (e.g. 2000,100,50)\r\n");
+        return -1;
+    }
+    if (str[n] != '\0') {
+        pr_err("pid format must be kp,ki,kd (e.g. 2000,100,50)\r\n");
+        return -1;
+    }
+    return 0;
+}
+```
+
+> **为什么框架内建类型不会有这个问题？**
+>
+> 框架的 `INT` / `DOUBLE` 内建类型底层调用的是 `cli_parse_int()` / `cli_parse_double()`，这两个函数内部使用 `strtol()` / `strtod()` 并严格检查 `endptr`，确保输入字符串被**完全消耗**后才会返回成功。因此 `var -w g_loop_count --val 300a0` 会直接报错 `"300a0" is not a valid integer`。
+>
+> 自定义类型由用户自己实现解析逻辑，框架只负责把原始字符串透传进来，因此**鲁棒性需要用户自行保证**。
+
 ---
 
 ## 终端操作

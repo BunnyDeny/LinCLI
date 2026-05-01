@@ -37,7 +37,13 @@ typedef struct {
 static int point_from_str(void *addr, size_t size, const char *str)
 {
 	point_t *p = addr;
-	if (sscanf(str, "%d,%d", &p->x, &p->y) != 2) {
+	int n = 0;
+	if (sscanf(str, "%d,%d%n", &p->x, &p->y, &n) != 2) {
+		pr_err("point format must be x,y (e.g. 10,20)\r\n");
+		return -1;
+	}
+	/* 检查尾部是否还有多余字符（防止 10,20abc 被静默接受） */
+	if (str[n] != '\0') {
 		pr_err("point format must be x,y (e.g. 10,20)\r\n");
 		return -1;
 	}
@@ -76,7 +82,13 @@ typedef struct {
 static int pid_from_str(void *addr, size_t size, const char *str)
 {
 	pid_params_t *pid = addr;
-	if (sscanf(str, "%d,%d,%d", &pid->kp, &pid->ki, &pid->kd) != 3) {
+	int n = 0;
+	if (sscanf(str, "%d,%d,%d%n", &pid->kp, &pid->ki, &pid->kd, &n) != 3) {
+		pr_err("pid format must be kp,ki,kd (e.g. 2000,100,50)\r\n");
+		return -1;
+	}
+	/* 检查尾部是否还有多余字符（防止 1000,2000,300a0 被静默接受） */
+	if (str[n] != '\0') {
 		pr_err("pid format must be kp,ki,kd (e.g. 2000,100,50)\r\n");
 		return -1;
 	}
