@@ -34,6 +34,19 @@ git merge --no-ff dev
 
 这代表一个正式小版本的发布。
 
+### 发布后动作
+
+合并到 main 并完成版本号升级后，必须执行以下两步：
+
+1. **打 tag**：在 main 分支上创建版本标签
+   ```bash
+   git tag v$(MAJOR).$(MINOR).0
+   git push origin v$(MAJOR).$(MINOR).0
+   ```
+   例如 `v1.4.0`。
+
+2. **编写 release 文档**：在 `/tmp/` 目录下创建 `release-v{MAJOR}.{MINOR}.0.md`，汇总该小版本在 dev 分支上的全部变更。文档写完后必须提醒用户文档已就绪。
+
 ## 2. 提交日志语言
 
 所有 Git 提交日志必须使用中文。禁止使用英文提交信息。
