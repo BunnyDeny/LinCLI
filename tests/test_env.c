@@ -23,6 +23,11 @@ CLI_ENV(GREETING, "Hello LinCLI");
 CLI_ENV(PROJECT_NAME, "LinCLI-Framework");
 CLI_ENV(EMPTY_VAR, "");
 
+/* 特殊字符测试 */
+CLI_ENV(TEST_DASH, "hello -v");
+CLI_ENV(TEST_CHAIN, "echo hello && echo world");
+CLI_ENV(TEST_MIX, "hello-world");
+
 /* 纯整数名字，应被运行时忽略 */
 CLI_ENV(123, "should_be_ignored");
 
