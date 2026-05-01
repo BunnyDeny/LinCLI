@@ -648,6 +648,46 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\test_led.c</FilePath>
             </File>
+            <File>
+              <FileName>test_cli_var.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\test_cli_var.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\test_motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_candidate.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\cli\Src\cli_candidate.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_completion.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\cli\Src\cli_completion.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_edit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\cli\Src\cli_edit.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_history.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\cli\Src\cli_history.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_parse.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\cli\Src\cli_parse.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_var.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\cli\Src\cli_var.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
