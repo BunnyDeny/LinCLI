@@ -32,7 +32,7 @@ const cli_var_t *cli_var_find(const char *name)
 }
 
 /* ============================================================
- * 查找自定义类型
+ * 查找类型（含内建类型与自定义类型）
  * ============================================================ */
 
 static const cli_var_type_t *cli_var_type_find(const char *name)
@@ -50,63 +50,19 @@ static const cli_var_type_t *cli_var_type_find(const char *name)
  * 打印变量值
  * ============================================================ */
 
-static void print_int(const cli_var_t *var)
-{
-	all_printk("%s (INT) = %d\r\n", var->name, *(int *)var->addr);
-}
-
-static void print_double(const cli_var_t *var)
-{
-	all_printk("%s (DOUBLE) = %.6f\r\n", var->name, *(double *)var->addr);
-}
-
-static void print_bool(const cli_var_t *var)
-{
-	all_printk("%s (BOOL) = %s\r\n", var->name,
-		   *(bool *)var->addr ? "true" : "false");
-}
-
-static void print_string(const cli_var_t *var)
-{
-	all_printk("%s (STRING) = \"%s\"\r\n", var->name, (char *)var->addr);
-}
-
 void cli_var_print(const cli_var_t *var)
 {
-	if (!var)
+	if (!var || !var->type_name)
 		return;
 
-	if (var->type == CLI_TYPE_CUSTOM && var->type_name) {
-		const cli_var_type_t *type = cli_var_type_find(var->type_name);
-		if (type && type->ops.to_string) {
-			char buf[64];
-			type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
-			all_printk("%s (%s) = %s\r\n", var->name, var->type_name,
-				   buf);
-			return;
-		}
+	const cli_var_type_t *type = cli_var_type_find(var->type_name);
+	if (type && type->ops.to_string) {
+		char buf[64];
+		type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+		all_printk("%s (%s) = %s\r\n", var->name, var->type_name, buf);
+	} else {
 		all_printk("%s (%s) = <unprintable>\r\n", var->name,
 			   var->type_name);
-		return;
-	}
-
-	switch (var->type) {
-	case CLI_TYPE_INT:
-		print_int(var);
-		break;
-	case CLI_TYPE_DOUBLE:
-		print_double(var);
-		break;
-	case CLI_TYPE_BOOL:
-		print_bool(var);
-		break;
-	case CLI_TYPE_STRING:
-		print_string(var);
-		break;
-	default:
-		all_printk("%s (type=%d) = <unprintable>\r\n", var->name,
-			   var->type);
-		break;
 	}
 }
 
@@ -124,92 +80,33 @@ int cli_var_set(const cli_var_t *var, const char *value)
 		return -1;
 	}
 
-	if (var->type == CLI_TYPE_CUSTOM && var->type_name) {
-		const cli_var_type_t *type = cli_var_type_find(var->type_name);
-		if (!type) {
-			pr_err("unknown custom type '%s' for variable '%s'\r\n",
-				var->type_name, var->name);
-			return -1;
-		}
-		if (!type->ops.from_string) {
-			pr_err("type '%s' does not support write\r\n",
-				var->type_name);
-			return -1;
-		}
-		if (type->ops.from_string(var->addr, var->size, value) < 0)
-			return -1;
-		/* 打印确认 */
-		all_printk("%s = ", var->name);
-		if (type->ops.to_string) {
-			char buf[64];
-			type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
-			all_printk("%s\r\n", buf);
-		} else {
-			all_printk("<ok>\r\n");
-		}
-		return 0;
-	}
-
-	switch (var->type) {
-	case CLI_TYPE_INT: {
-		int val;
-		if (cli_parse_int(value, &val) < 0)
-			return -1;
-		*(int *)var->addr = val;
-		break;
-	}
-	case CLI_TYPE_DOUBLE: {
-		double val;
-		if (cli_parse_double(value, &val) < 0)
-			return -1;
-		*(double *)var->addr = val;
-		break;
-	}
-	case CLI_TYPE_BOOL: {
-		if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0)
-			*(bool *)var->addr = true;
-		else if (strcmp(value, "false") == 0 || strcmp(value, "0") == 0)
-			*(bool *)var->addr = false;
-		else {
-			pr_err("bool value must be true/false or 1/0\r\n");
-			return -1;
-		}
-		break;
-	}
-	case CLI_TYPE_STRING: {
-		size_t len = strlen(value);
-		if (len >= var->size) {
-			pr_warn("'%s' truncated: %zu -> %zu chars\r\n",
-				var->name, len, var->size - 1);
-			len = var->size - 1;
-		}
-		memcpy(var->addr, value, len);
-		((char *)var->addr)[len] = '\0';
-		break;
-	}
-	default:
-		pr_err("type not supported for variable write\r\n");
+	if (!var->type_name) {
+		pr_err("variable '%s' has no type\r\n", var->name);
 		return -1;
 	}
 
+	const cli_var_type_t *type = cli_var_type_find(var->type_name);
+	if (!type) {
+		pr_err("unknown type '%s' for variable '%s'\r\n",
+			var->type_name, var->name);
+		return -1;
+	}
+	if (!type->ops.from_string) {
+		pr_err("type '%s' does not support write\r\n",
+			var->type_name);
+		return -1;
+	}
+	if (type->ops.from_string(var->addr, var->size, value) < 0)
+		return -1;
+
 	/* 打印确认 */
 	all_printk("%s = ", var->name);
-	switch (var->type) {
-	case CLI_TYPE_INT:
-		all_printk("%d\r\n", *(int *)var->addr);
-		break;
-	case CLI_TYPE_DOUBLE:
-		all_printk("%.6f\r\n", *(double *)var->addr);
-		break;
-	case CLI_TYPE_BOOL:
-		all_printk("%s\r\n", *(bool *)var->addr ? "true" : "false");
-		break;
-	case CLI_TYPE_STRING:
-		all_printk("\"%s\"\r\n", (char *)var->addr);
-		break;
-	default:
+	if (type->ops.to_string) {
+		char buf[64];
+		type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+		all_printk("%s\r\n", buf);
+	} else {
 		all_printk("<ok>\r\n");
-		break;
 	}
 	return 0;
 }
@@ -290,50 +187,20 @@ void cli_var_list_all(void)
 		if (var->readonly)
 			snprintf(attr_buf, sizeof(attr_buf), "RO");
 
-		switch (var->type) {
-		case CLI_TYPE_INT:
-			snprintf(value_buf, sizeof(value_buf), "%d",
-				 *(int *)var->addr);
-			break;
-		case CLI_TYPE_DOUBLE:
-			snprintf(value_buf, sizeof(value_buf), "%.4f",
-				 *(double *)var->addr);
-			break;
-		case CLI_TYPE_BOOL:
-			snprintf(value_buf, sizeof(value_buf), "%s",
-				 *(bool *)var->addr ? "true" : "false");
-			break;
-		case CLI_TYPE_STRING:
-			snprintf(value_buf, sizeof(value_buf), "\"%s\"",
-				 (char *)var->addr);
-			break;
-		case CLI_TYPE_CUSTOM:
-			if (var->type_name) {
-				const cli_var_type_t *type = cli_var_type_find(var->type_name);
-				if (type && type->ops.to_string) {
-					type->ops.to_string(var->addr, var->size,
-							    value_buf,
-							    sizeof(value_buf));
-					break;
-				}
+		if (var->type_name) {
+			const cli_var_type_t *type = cli_var_type_find(var->type_name);
+			if (type && type->ops.to_string) {
+				type->ops.to_string(var->addr, var->size,
+						    value_buf, sizeof(value_buf));
+			} else {
+				snprintf(value_buf, sizeof(value_buf), "?");
 			}
+		} else {
 			snprintf(value_buf, sizeof(value_buf), "?");
-			break;
-		default:
-			snprintf(value_buf, sizeof(value_buf), "?");
-			break;
 		}
 
-		const char *type_str =
-			(var->type == CLI_TYPE_INT)    ? "INT" :
-			(var->type == CLI_TYPE_DOUBLE) ? "DOUBLE" :
-			(var->type == CLI_TYPE_BOOL)   ? "BOOL" :
-			(var->type == CLI_TYPE_STRING) ? "STRING" :
-			(var->type == CLI_TYPE_CUSTOM && var->type_name)
-							 ? var->type_name :
-							 "UNKNOWN";
-
-		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name, type_str,
+		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name,
+			   var->type_name ? var->type_name : "UNKNOWN",
 			   value_buf, attr_buf, var->doc ? var->doc : "");
 	}
 }
@@ -384,3 +251,91 @@ static void cli_var_candidate_init(void *arg)
 	}
 }
 _EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL, cli_var_candidate_init);
+
+/* ============================================================
+ * 内建类型回调实现
+ * ============================================================
+ *
+ * INT / DOUBLE / BOOL / STRING 统一基于 cli_var_type_ops_t 实现，
+ * 通过 CLI_VAR_TYPE 宏注册到 .cli_var_types 段。
+ * 对用户完全透明，CLI_VAR() 宏底层走的就是这套机制。
+ */
+
+static int builtin_int_from_str(void *addr, size_t size, const char *str)
+{
+	int val;
+	if (cli_parse_int(str, &val) < 0)
+		return -1;
+	*(int *)addr = val;
+	return 0;
+}
+
+static int builtin_int_to_str(const void *addr, size_t size, char *buf,
+			      size_t buf_size)
+{
+	snprintf(buf, buf_size, "%d", *(const int *)addr);
+	return 0;
+}
+
+static int builtin_double_from_str(void *addr, size_t size, const char *str)
+{
+	double val;
+	if (cli_parse_double(str, &val) < 0)
+		return -1;
+	*(double *)addr = val;
+	return 0;
+}
+
+static int builtin_double_to_str(const void *addr, size_t size, char *buf,
+				 size_t buf_size)
+{
+	snprintf(buf, buf_size, "%.6f", *(const double *)addr);
+	return 0;
+}
+
+static int builtin_bool_from_str(void *addr, size_t size, const char *str)
+{
+	if (strcmp(str, "true") == 0 || strcmp(str, "1") == 0)
+		*(bool *)addr = true;
+	else if (strcmp(str, "false") == 0 || strcmp(str, "0") == 0)
+		*(bool *)addr = false;
+	else {
+		pr_err("bool value must be true/false or 1/0\r\n");
+		return -1;
+	}
+	return 0;
+}
+
+static int builtin_bool_to_str(const void *addr, size_t size, char *buf,
+			       size_t buf_size)
+{
+	snprintf(buf, buf_size, "%s",
+		 *(const bool *)addr ? "true" : "false");
+	return 0;
+}
+
+static int builtin_string_from_str(void *addr, size_t size, const char *str)
+{
+	size_t len = strlen(str);
+	if (len >= size) {
+		pr_warn("string truncated: %zu -> %zu chars\r\n", len,
+			size - 1);
+		len = size - 1;
+	}
+	memcpy(addr, str, len);
+	((char *)addr)[len] = '\0';
+	return 0;
+}
+
+static int builtin_string_to_str(const void *addr, size_t size, char *buf,
+				 size_t buf_size)
+{
+	snprintf(buf, buf_size, "\"%s\"", (const char *)addr);
+	return 0;
+}
+
+/* 注册内建类型到 .cli_var_types 段 */
+CLI_VAR_TYPE(INT, builtin_int_from_str, builtin_int_to_str);
+CLI_VAR_TYPE(DOUBLE, builtin_double_from_str, builtin_double_to_str);
+CLI_VAR_TYPE(BOOL, builtin_bool_from_str, builtin_bool_to_str);
+CLI_VAR_TYPE(STRING, builtin_string_from_str, builtin_string_to_str);
