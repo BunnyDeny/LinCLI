@@ -41,39 +41,6 @@ struct origin_cmd origin_cmd = {
 
 struct tStateEngine cmd_line_mec;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* ============================================================
  *  状态机任务函数
  * ============================================================ */
@@ -97,8 +64,6 @@ static int cmd_line_start_task(void *pch)
 }
 _EXPORT_STATE_SYMBOL(cmd_line_start, NULL, cmd_line_start_task, NULL,
 		     ".cli_cmd_line");
-
-
 
 static int valid_char_task(void *pch)
 {
@@ -462,29 +427,9 @@ _EXPORT_STATE_SYMBOL(history_down, NULL, history_down_task, NULL,
  * Tab 补全状态（仅处理首次补全）
  * ------------------------------------------------------------ */
 
-
-
-
-
 /* ============================================================
  *  字符串选项值候选补全
  * ============================================================ */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static int tab_complete_task(void *pch)
 {
@@ -553,8 +498,6 @@ static int delete_task(void *pch)
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
 _EXPORT_STATE_SYMBOL(delete, NULL, delete_task, NULL, ".cli_cmd_line");
-
-
 
 static int backspace_handler(void *pch)
 {
