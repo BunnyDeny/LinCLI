@@ -26,6 +26,7 @@
 #include "cli_auto_cmd.h"
 #include "cli_mpool.h"
 #include "cli_var.h"
+#include "cli_env.h"
 
 struct tStateEngine scheduler_eng;
 extern struct tState *const _scheduler_start[];
@@ -129,6 +130,9 @@ struct scheduler_cmd_ctx {
 
 	/* 别名替换缓冲区，在 cmd_run_exit 中释放 */
 	char *alias_buf;
+
+	/* 环境变量替换缓冲区，在 cmd_run_exit 中释放 */
+	char *env_buf;
 };
 
 static struct scheduler_cmd_ctx cmd_ctx;
@@ -194,6 +198,11 @@ void scheduler_cmd_run_exit(void *private)
 		cli_mpool_free(cmd_ctx.alias_buf);
 		cmd_ctx.alias_buf = NULL;
 	}
+
+	if (cmd_ctx.env_buf) {
+		cli_mpool_free(cmd_ctx.env_buf);
+		cmd_ctx.env_buf = NULL;
+	}
 }
 
 _EXPORT_STATE_SYMBOL(scheduler_cmd_run, scheduler_cmd_run_entry,
@@ -256,6 +265,20 @@ int scheduler_auto_run_task(void *private)
 				origin_cmd.size = repl_len;
 			}
 		}
+	}
+
+	char *env_buf = cli_mpool_alloc();
+	if (env_buf) {
+		int ret = cli_env_replace(origin_cmd.buf, env_buf,
+					  CLI_MPOOL_SIZE);
+		if (ret == CLI_OK) {
+			int env_len = strlen(env_buf);
+			if (env_len < CMD_LINE_BUF_SIZE) {
+				memcpy(origin_cmd.buf, env_buf, env_len + 1);
+				origin_cmd.size = env_len;
+			}
+		}
+		cli_mpool_free(env_buf);
 	}
 
 	status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.cmd_def,
@@ -349,20 +372,39 @@ int scheduler_dispose_task(void *arg)
 
 	current_cmd = alias_replace(current_cmd, alias_buf, CLI_MPOOL_SIZE);
 
+	char *env_buf = cli_mpool_alloc();
+	if (!env_buf) {
+		pr_err("out of memory\r\n");
+		cli_mpool_free(alias_buf);
+		goto chain_failed;
+	}
+	int env_ret = cli_env_replace(current_cmd, env_buf, CLI_MPOOL_SIZE);
+	if (env_ret == CLI_OK) {
+		current_cmd = env_buf;
+	} else {
+		cli_mpool_free(env_buf);
+		env_buf = NULL;
+	}
+
 	status = cmd_parse_prepare(current_cmd, &cmd_ctx.cmd_def,
 				   &cmd_ctx.cmd_ret);
 	if (status < 0) {
 		cli_mpool_free(alias_buf);
+		if (env_buf)
+			cli_mpool_free(env_buf);
 		/* 解析失败，中断命令链 */
 		goto chain_failed;
 	}
 	if (status == dispose_exit) {
 		cli_mpool_free(alias_buf);
+		if (env_buf)
+			cli_mpool_free(env_buf);
 		/* 无需执行，继续下一个（下次调度直接再来） */
 		return CLI_OK;
 	}
 
 	cmd_ctx.alias_buf = alias_buf;
+	cmd_ctx.env_buf = env_buf;
 	strncpy(cmd_ctx.next_state, "scheduler_dispose",
 		sizeof(cmd_ctx.next_state));
 	return state_switch(&scheduler_eng, "scheduler_cmd_run");

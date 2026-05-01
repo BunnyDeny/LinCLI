@@ -11,6 +11,7 @@
 #include "init_d.h"
 #include "cli_candidate.h"
 #include "cli_var.h"
+#include "cli_env.h"
 
 /* .cli_commands */
 const cli_command_t *const _cli_commands_start[1]
@@ -53,6 +54,12 @@ const cli_var_type_t *const _cli_var_types_start[1]
 	__attribute__((used, section(".cli_var_types.0.start"))) = { NULL };
 const cli_var_type_t *const _cli_var_types_end[1]
 	__attribute__((used, section(".cli_var_types.1.end"))) = { NULL };
+
+/* .cli_envs */
+const cli_env_t *const _cli_envs_start[1]
+	__attribute__((used, section(".cli_envs.0.start"))) = { NULL };
+const cli_env_t *const _cli_envs_end[1]
+	__attribute__((used, section(".cli_envs.1.end"))) = { NULL };
 
 /* .alias_cmd */
 struct alias_cmd *const _alias_cmd_start[1]

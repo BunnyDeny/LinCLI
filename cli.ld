@@ -38,3 +38,8 @@
     KEEP(*(.cli_var_types.1))
     KEEP(*(.cli_var_types.1.end))
   }
+  .cli_envs : {
+    KEEP(*(.cli_envs.0.start))
+    KEEP(*(.cli_envs.1))
+    KEEP(*(.cli_envs.1.end))
+  }
