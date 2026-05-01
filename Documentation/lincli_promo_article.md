@@ -302,6 +302,26 @@ const char * const cli_auto_cmds[] = {
 
 告别 `main()` 里的 init 堆积。用 `_EXPORT_INIT_SYMBOL` 宏把初始化函数放入 `.my_init_d` 段，支持按优先级排序执行。加新模块？**不需要碰 `main.c`。**
 
+### 变量导出与自定义类型
+
+现场调参时，你不再需要重新编译烧录。用 `CLI_VAR` 宏把代码中的全局变量直接导出为 CLI 对象：
+
+```c
+static double g_kp = 2.5;
+CLI_VAR(g_kp, "g_kp", DOUBLE, "PID Kp parameter");
+```
+
+终端里直接读写：
+
+```bash
+> var -r g_kp
+g_kp (DOUBLE) = 2.500000
+> var -w g_kp --val 3.5
+g_kp = 3.500000
+```
+
+内建的 `INT` / `DOUBLE` / `BOOL` / `STRING` 开箱即用；如果不够，你还可以为**任意结构体**注册自定义序列化规则，让 `var` 命令直接读写 `point_t`、`pid_params_t` 等复杂类型——同样基于链接段收集，同样零手动注册。
+
 ---
 
 ## 六、从 PC 仿真到 MCU 量产：一条串口线的距离

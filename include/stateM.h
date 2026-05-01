@@ -86,11 +86,12 @@ struct tState {
  *
  * @details
  * Usage example:
- * 1. Define section and start/end symbols in the linker script:
+ * 1. Define section and start/end symbols in the linker script
+ *    (using the triple-section layout employed by this project):
  *    .scheduler : {
- *        _scheduler_start = .;
- *        *(.scheduler)
- *        _scheduler_end = .;
+ *        KEEP(*(.scheduler.0.start))
+ *        KEEP(*(.scheduler.1))
+ *        KEEP(*(.scheduler.1.end))
  *    }
  * 2. Use this macro to export the state, note that obj should not have quotes:
  *    _EXPORT_STATE_SYMBOL(scheduler_idle, scheduler_idle_entry, scheduler_idle_task, NULL, ".scheduler");
