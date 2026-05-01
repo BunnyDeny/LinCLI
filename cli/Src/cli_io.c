@@ -191,11 +191,6 @@ __attribute__((weak)) const char *pre_DEFAULT_gen(void)
 	return "";
 }
 
-__attribute__((weak)) const char *pre_CONT_gen(void)
-{
-	return COLOR_CYAN "[CONT] ";
-}
-
 int all_printk(const char *fmt, ...)
 {
 	int status;
@@ -332,9 +327,6 @@ static const char *prefix_gen(const char *level)
 	case '7':
 		prefix = pre_DEBUG_gen();
 		break;
-	case 'c':
-		prefix = pre_CONT_gen();
-		break;
 	default:
 		prefix = pre_DEFAULT_gen();
 		break;
@@ -344,8 +336,7 @@ static const char *prefix_gen(const char *level)
 
 static inline int is_kern_level(char c)
 {
-	return (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
-		c == '5' || c == '6' || c == '7' || c == 'c');
+	return (c >= '0' && c <= '7');
 }
 
 /* ============================================================
@@ -360,8 +351,7 @@ static bool printk_should_drop(const char *pre)
 		if (pre[0] > log_level[0])
 			return true;
 	}
-	if ((!is_kern_level(pre[0]) || !strcmp(pre, KERN_CONT)) &&
-	    strcmp("8", log_level))
+	if (!is_kern_level(pre[0]) && strcmp("8", log_level))
 		return true;
 	return false;
 }

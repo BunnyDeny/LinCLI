@@ -15,7 +15,6 @@
 #define pr_notice(fmt, ...) cli_printk(KERN_NOTICE fmt, ##__VA_ARGS__)
 #define pr_info(fmt, ...)   cli_printk(KERN_INFO fmt, ##__VA_ARGS__)
 #define pr_debug(fmt, ...)  cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
-#define pr_cont(fmt, ...)   cli_printk(KERN_CONT fmt, ##__VA_ARGS__)
 ```
 
 #### 日志级别含义
@@ -30,7 +29,6 @@
 | `pr_notice` | 5 | 正常但重要 |
 | `pr_info`   | 6 | 一般信息 |
 | `pr_debug`  | 7 | 调试信息 |
-| `pr_cont`   | c | 继续上一条日志（不换行） |
 
 #### 日志过滤
 
@@ -65,7 +63,7 @@ const char *pre_INFO_gen(void)
 }
 ```
 
-可供覆盖的函数列表：`pre_EMERG_gen`、`pre_ALERT_gen`、`pre_CRIT_gen`、`pre_ERR_gen`、`pre_WARNING_gen`、`pre_NOTICE_gen`、`pre_INFO_gen`、`pre_DEBUG_gen`、`pre_DEFAULT_gen`、`pre_CONT_gen`。
+可供覆盖的函数列表：`pre_EMERG_gen`、`pre_ALERT_gen`、`pre_CRIT_gen`、`pre_ERR_gen`、`pre_WARNING_gen`、`pre_NOTICE_gen`、`pre_INFO_gen`、`pre_DEBUG_gen`、`pre_DEFAULT_gen`。
 
 ### 命令提示符样式
 
