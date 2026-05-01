@@ -25,7 +25,7 @@ struct candidate_ctx candidate_ctx = { 0 };
 void candidate_ctx_save(cand_active_t active, const char *prefix, int prefix_len,
 			       const cli_command_t *cmd)
 {
-	if (candidate_ctx.active != (cand_active_t)active)
+	if (candidate_ctx.active != active)
 		candidate_ctx.repl_start = -1;
 	candidate_ctx.active = active;
 	if (prefix && prefix_len > 0) {
@@ -192,7 +192,7 @@ void list_cmd_candidates(const char *prefix, int prefix_len)
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
-	candidate_ctx_save(1, prefix, prefix_len, NULL);
+	candidate_ctx_save(CAND_ACTIVE_CMD, prefix, prefix_len, NULL);
 	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS, -1);
 	for (int i = 0; i < candidate_ctx.rows; i++) {
 		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
@@ -393,7 +393,7 @@ void list_all_options(const cli_command_t *cmd, const char *prefix,
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
-	candidate_ctx_save(2, prefix, prefix_len, cmd);
+	candidate_ctx_save(CAND_ACTIVE_ALL_OPTS, prefix, prefix_len, cmd);
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		display_one_option(&cmd->options[i], (int)i, highlight_idx,
@@ -449,7 +449,7 @@ void list_long_option_candidates(const cli_command_t *cmd,
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
-	candidate_ctx_save(3, name_prefix, name_prefix_len, cmd);
+	candidate_ctx_save(CAND_ACTIVE_LONG_OPTS, name_prefix, name_prefix_len, cmd);
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		cli_option_t *opt = &cmd->options[i];
@@ -513,7 +513,7 @@ void refresh_all_option_highlight(const cli_command_t *cmd)
 	int saved_highlight = candidate_ctx.highlight_index;
 	list_all_options(cmd, candidate_ctx.prefix, candidate_ctx.prefix_len,
 			 candidate_ctx.highlight_index);
-	candidate_ctx_restore_after_list(2, 2, saved_repl_start,
+	candidate_ctx_restore_after_list(CAND_ACTIVE_ALL_OPTS, CAND_CYCLING_OPT, saved_repl_start,
 					 saved_highlight);
 }
 
@@ -547,7 +547,7 @@ void refresh_long_option_highlight(const cli_command_t *cmd,
 	list_long_option_candidates(cmd, candidate_ctx.prefix,
 				    candidate_ctx.prefix_len,
 				    candidate_ctx.highlight_index);
-	candidate_ctx_restore_after_list(3, 2, saved_repl_start,
+	candidate_ctx_restore_after_list(CAND_ACTIVE_LONG_OPTS, CAND_CYCLING_OPT, saved_repl_start,
 					 saved_highlight);
 }
 
@@ -767,7 +767,7 @@ void candidate_redraw_all_opts(void)
 {
 	int saved_highlight = candidate_ctx.highlight_index;
 	int saved_cycling = candidate_ctx.cycling;
-	if (saved_cycling == 2)
+	if (saved_cycling == CAND_CYCLING_OPT)
 		list_all_options(candidate_ctx.cmd, candidate_ctx.prefix,
 				 candidate_ctx.prefix_len, saved_highlight);
 	else
@@ -782,7 +782,7 @@ void candidate_redraw_long_opts(void)
 {
 	int saved_highlight = candidate_ctx.highlight_index;
 	int saved_cycling = candidate_ctx.cycling;
-	if (saved_cycling == 2)
+	if (saved_cycling == CAND_CYCLING_OPT)
 		list_long_option_candidates(candidate_ctx.cmd,
 					    candidate_ctx.prefix,
 					    candidate_ctx.prefix_len,
@@ -965,7 +965,7 @@ void list_value_candidates(char **argv, int argc,
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
-	candidate_ctx_save(4, prefix, prefix_len, candidate_ctx.cmd);
+	candidate_ctx_save(CAND_ACTIVE_VALUES, prefix, prefix_len, candidate_ctx.cmd);
 	int cows = 0;
 	for (int i = 0; i < argc; i++) {
 		if (strncmp(argv[i], prefix, prefix_len) != 0)
@@ -1026,7 +1026,7 @@ void list_value_candidates_with_highlight(char **argv, int argc,
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
-	candidate_ctx_save(4, prefix, prefix_len, candidate_ctx.cmd);
+	candidate_ctx_save(CAND_ACTIVE_VALUES, prefix, prefix_len, candidate_ctx.cmd);
 	int cows = 0;
 	for (int i = 0; i < argc; i++) {
 		if (strncmp(argv[i], prefix, prefix_len) != 0)
@@ -1052,7 +1052,7 @@ void refresh_value_highlight(char *match)
 			opt->candidate_argv, opt->candidate_argc,
 			candidate_ctx.prefix, candidate_ctx.prefix_len,
 			candidate_ctx.highlight_index);
-	candidate_ctx_restore_after_list(4, 2, saved_repl_start,
+	candidate_ctx_restore_after_list(CAND_ACTIVE_VALUES, CAND_CYCLING_OPT, saved_repl_start,
 					 saved_highlight);
 }
 

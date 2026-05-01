@@ -136,7 +136,7 @@ _EXPORT_STATE_SYMBOL(invalid_char, NULL, invalid_char_task, NULL,
 static bool is_opt_cycle_active(void)
 {
 	cand_active_t a = candidate_ctx.active;
-	return a == 2 || a == 3;
+	return a == CAND_ACTIVE_ALL_OPTS || a == CAND_ACTIVE_LONG_OPTS;
 }
 
 static char *esc_resolve_horizontal(char seq)

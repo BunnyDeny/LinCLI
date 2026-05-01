@@ -303,7 +303,6 @@ CLI_COMMAND(level, "level", "Set log level filter",
 
 static char buffer[CLI_PRINTK_BUF_SIZE];
 
-
 static const char *prefix_gen(const char *level)
 {
 	char lv = level[0];
@@ -348,7 +347,6 @@ static inline int is_kern_level(char c)
 	return (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
 		c == '5' || c == '6' || c == '7' || c == 'c');
 }
-
 
 /* ============================================================
  *  cli_printk（从 cli_io.c 迁移至此，直接访问 cmd_line 状态）
@@ -416,7 +414,6 @@ int cli_printk(const char *fmt, ...)
 	}
 	return len;
 }
-
 
 /* ============================================================
  *  内存池占用情况打印（分配失败时自动调用，不申请内存）
