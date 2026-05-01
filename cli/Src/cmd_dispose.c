@@ -22,6 +22,7 @@
 #include "cli_io.h"
 #include "cli_cmd_line.h"
 #include "cli_mpool.h"
+#include "cli_parse.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
@@ -48,17 +49,22 @@ static const cli_command_t *cli_command_find(const char *_name)
 /**
  * @brief 将一行输入字符串按空白字符切分为 argc/argv 形式。
  */
+static inline bool is_space(char c)
+{
+	return c == ' ' || c == '\t';
+}
+
 static int tokenize(char *line, char **argv, int max_argv)
 {
 	int argc = 0;
 	char *p = line;
 	while (*p && argc < max_argv) {
-		while (*p == ' ' || *p == '\t')
+		while (is_space(*p))
 			p++;
 		if (!*p)
 			break;
 		argv[argc++] = p;
-		while (*p && *p != ' ' && *p != '\t')
+		while (*p && !is_space(*p))
 			p++;
 		if (*p)
 			*p++ = '\0';
@@ -174,39 +180,7 @@ static int parse_option_switch(const cli_command_t *cmd, const char *arg,
 	return 0;
 }
 
-static int cli_parse_int(const char *arg, int *out)
-{
-	char *endptr;
-	errno = 0;
-	long val = strtol(arg, &endptr, 10);
-	if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
-		pr_err("'%s' out of integer range\r\n", arg);
-		return CLI_ERR_INT_RANGE;
-	}
-	if (endptr == arg || *endptr != '\0') {
-		pr_err("'%s' not a valid integer\r\n", arg);
-		return CLI_ERR_INT_FMT;
-	}
-	*out = (int)val;
-	return 0;
-}
 
-static int cli_parse_double(const char *arg, double *out)
-{
-	char *endptr;
-	errno = 0;
-	double val = strtod(arg, &endptr);
-	if (errno == ERANGE) {
-		pr_err("'%s' out of floating-point range\r\n", arg);
-		return CLI_ERR_DOUBLE_RANGE;
-	}
-	if (endptr == arg || *endptr != '\0') {
-		pr_err("'%s' not a valid floating-point number\r\n", arg);
-		return CLI_ERR_DOUBLE_FMT;
-	}
-	*out = val;
-	return 0;
-}
 
 static int *ensure_int_array(cli_option_t *opt, void *arg_struct,
 			     struct parse_state *state)
@@ -301,20 +275,6 @@ static int parse_option_value(const char *arg, void *arg_struct,
 	if (state->cur_opt->type != CLI_TYPE_INT_ARRAY)
 		state->cur_opt = NULL;
 	return CLI_OK;
-}
-
-static int validate_end_state(struct parse_state *state)
-{
-	if (state->cur_opt && state->cur_opt->type != CLI_TYPE_BOOL &&
-	    state->cur_opt_argc == 0) {
-		pr_err("option -%c/--%s missing argument\r\n",
-		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
-						   ' ',
-		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
-						  "");
-		return CLI_ERR_MISSING_ARG;
-	}
-	return 0;
 }
 
 static int validate_required(const cli_command_t *cmd, const bool *opt_seen)
@@ -494,7 +454,7 @@ static int validate_parsed_result(const cli_command_t *cmd,
 				  const bool *opt_seen)
 {
 	int ret;
-	ret = validate_end_state(state);
+	ret = check_prev_opt_missing_arg(state);
 	if (ret < 0)
 		return ret;
 	ret = validate_required(cmd, opt_seen);

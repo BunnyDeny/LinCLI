@@ -7,6 +7,7 @@
 #include "cli_io.h"
 #include "cli_errno.h"
 #include "cli_mpool.h"
+#include "cli_parse.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
 #include <stdio.h>
@@ -83,39 +84,7 @@ void cli_var_print(const cli_var_t *var)
  * 解析并写入变量值
  * ============================================================ */
 
-static int parse_int_value(const char *str, int *out)
-{
-	char *endptr;
-	errno = 0;
-	long val = strtol(str, &endptr, 0);
-	if (endptr == str || *endptr != '\0') {
-		pr_err("'%s' is not a valid integer\r\n", str);
-		return -1;
-	}
-	if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
-		pr_err("'%s' out of integer range\r\n", str);
-		return -1;
-	}
-	*out = (int)val;
-	return 0;
-}
 
-static int parse_double_value(const char *str, double *out)
-{
-	char *endptr;
-	errno = 0;
-	double val = strtod(str, &endptr);
-	if (endptr == str || *endptr != '\0') {
-		pr_err("'%s' is not a valid number\r\n", str);
-		return -1;
-	}
-	if (errno == ERANGE) {
-		pr_err("'%s' out of floating-point range\r\n", str);
-		return -1;
-	}
-	*out = val;
-	return 0;
-}
 
 int cli_var_set(const cli_var_t *var, const char *value)
 {
@@ -130,14 +99,14 @@ int cli_var_set(const cli_var_t *var, const char *value)
 	switch (var->type) {
 	case CLI_TYPE_INT: {
 		int val;
-		if (parse_int_value(value, &val) < 0)
+		if (cli_parse_int(value, &val) < 0)
 			return -1;
 		*(int *)var->addr = val;
 		break;
 	}
 	case CLI_TYPE_DOUBLE: {
 		double val;
-		if (parse_double_value(value, &val) < 0)
+		if (cli_parse_double(value, &val) < 0)
 			return -1;
 		*(double *)var->addr = val;
 		break;
