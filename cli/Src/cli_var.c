@@ -57,9 +57,15 @@ void cli_var_print(const cli_var_t *var)
 
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (type && type->ops.to_string) {
-		char buf[64];
-		type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+		char *buf = cli_mpool_alloc();
+		if (!buf) {
+			all_printk("%s (%s) = <oom>\r\n", var->name,
+				   var->type_name);
+			return;
+		}
+		type->ops.to_string(var->addr, var->size, buf, CLI_MPOOL_SIZE);
 		all_printk("%s (%s) = %s\r\n", var->name, var->type_name, buf);
+		cli_mpool_free(buf);
 	} else {
 		all_printk("%s (%s) = <unprintable>\r\n", var->name,
 			   var->type_name);
@@ -102,9 +108,14 @@ int cli_var_set(const cli_var_t *var, const char *value)
 	/* 打印确认 */
 	all_printk("%s = ", var->name);
 	if (type->ops.to_string) {
-		char buf[64];
-		type->ops.to_string(var->addr, var->size, buf, sizeof(buf));
+		char *buf = cli_mpool_alloc();
+		if (!buf) {
+			all_printk("<oom>\r\n");
+			return -1;
+		}
+		type->ops.to_string(var->addr, var->size, buf, CLI_MPOOL_SIZE);
 		all_printk("%s\r\n", buf);
+		cli_mpool_free(buf);
 	} else {
 		all_printk("<ok>\r\n");
 	}
@@ -181,27 +192,38 @@ void cli_var_list_all(void)
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
 	{
-		char value_buf[32] = { 0 };
-		char attr_buf[16] = { 0 };
+		char *value_buf = cli_mpool_alloc();
+		char *attr_buf = cli_mpool_alloc();
+		if (!value_buf || !attr_buf) {
+			if (value_buf)
+				cli_mpool_free(value_buf);
+			if (attr_buf)
+				cli_mpool_free(attr_buf);
+			continue;
+		}
+		value_buf[0] = '\0';
+		attr_buf[0] = '\0';
 
 		if (var->readonly)
-			snprintf(attr_buf, sizeof(attr_buf), "RO");
+			snprintf(attr_buf, CLI_MPOOL_SIZE, "RO");
 
 		if (var->type_name) {
 			const cli_var_type_t *type = cli_var_type_find(var->type_name);
 			if (type && type->ops.to_string) {
 				type->ops.to_string(var->addr, var->size,
-						    value_buf, sizeof(value_buf));
+						    value_buf, CLI_MPOOL_SIZE);
 			} else {
-				snprintf(value_buf, sizeof(value_buf), "?");
+				snprintf(value_buf, CLI_MPOOL_SIZE, "?");
 			}
 		} else {
-			snprintf(value_buf, sizeof(value_buf), "?");
+			snprintf(value_buf, CLI_MPOOL_SIZE, "?");
 		}
 
 		all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name,
 			   var->type_name ? var->type_name : "UNKNOWN",
 			   value_buf, attr_buf, var->doc ? var->doc : "");
+		cli_mpool_free(value_buf);
+		cli_mpool_free(attr_buf);
 	}
 }
 
