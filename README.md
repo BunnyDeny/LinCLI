@@ -512,7 +512,7 @@ lin@linCli> level
 
 - **[用户可定制接口](Documentation/customization.md)** — 介绍如何通过弱定义（`weak`）覆盖框架的默认行为，包括日志系统 `cli_printk`、日志过滤与颜色、命令提示符样式等。
 
-- **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象，支持在线查看和修改 `INT` / `DOUBLE` / `BOOL` / `STRING` 类型的变量，无需重新编译。非常适合现场 PID 调参、开关调试和状态监控。
+- **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象，支持在线查看和修改 `INT` / `DOUBLE` / `BOOL` / `STRING` 类型的变量，无需重新编译。此外还支持**用户自定义类型**，你可以为任意结构体注册序列化/反序列化规则，让 `var` 命令直接读写结构体成员。非常适合现场 PID 调参、开关调试、状态监控和复杂配置结构体的在线整定。
 
 - **[Tab 补全候选列表](Documentation/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 
