@@ -11,22 +11,115 @@
 #include "cli_env.h"
 #include "cli_errno.h"
 #include "cli_io.h"
+#include "cli_mpool.h"
 #include "cmd_dispose.h"
+#include "init_d.h"
+#include <stdlib.h>
 #include <string.h>
 
 /* ============================================================
- *  查找环境变量
+ *  纯整数名字检测与注册过滤
  * ============================================================ */
 
-const cli_env_t *cli_env_find(const char *name)
+static bool is_pure_integer_name(const char *name)
 {
-	const cli_env_t *env;
+	if (!name || !name[0])
+		return true;
+	for (int i = 0; name[i]; i++) {
+		if (name[i] < '0' || name[i] > '9')
+			return false;
+	}
+	return true;
+}
+
+static bool cli_env_should_ignore(const cli_env_t *env)
+{
+	if (!env || !env->name)
+		return true;
+	return is_pure_integer_name(env->name);
+}
+
+/* ============================================================
+ *  ID 初始化（由 init_d 在启动时分配）
+ * ============================================================ */
+
+static void cli_env_id_init(void *arg)
+{
+	(void)arg;
+	int id = 0;
+	cli_env_t *env;
 	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
 	{
-		if (env->name && strcmp(env->name, name) == 0)
+		if (cli_env_should_ignore(env))
+			continue;
+		env->id = id++;
+	}
+}
+_EXPORT_INIT_SYMBOL(cli_env_id_init, 20, NULL, cli_env_id_init);
+
+/* ============================================================
+ *  查找与取值
+ * ============================================================ */
+
+cli_env_t *cli_env_find(const char *name)
+{
+	cli_env_t *env;
+	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
+	{
+		if (env && env->name && strcmp(env->name, name) == 0)
 			return env;
 	}
 	return NULL;
+}
+
+cli_env_t *cli_env_find_by_id(int id)
+{
+	cli_env_t *env;
+	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
+	{
+		if (env && env->id == id)
+			return env;
+	}
+	return NULL;
+}
+
+const char *cli_env_get_value(const cli_env_t *env)
+{
+	if (!env)
+		return NULL;
+	if (env->dyn_value)
+		return env->dyn_value;
+	return env->value;
+}
+
+/* ============================================================
+ *  设置环境变量值
+ * ============================================================ */
+
+int cli_env_set(cli_env_t *env, const char *new_value)
+{
+	if (!env || !new_value)
+		return CLI_ERR_NULL;
+
+	if (env->dyn_value) {
+		cli_mpool_free(env->dyn_value);
+		env->dyn_value = NULL;
+	}
+
+	char *buf = cli_mpool_alloc();
+	if (!buf) {
+		pr_err("out of memory\r\n");
+		return -1;
+	}
+
+	size_t len = strlen(new_value);
+	if (len >= CLI_MPOOL_SIZE)
+		len = CLI_MPOOL_SIZE - 1;
+	memcpy(buf, new_value, len);
+	buf[len] = '\0';
+
+	env->dyn_value = buf;
+	return 0;
 }
 
 /* ============================================================
@@ -72,6 +165,21 @@ static int append_value(char *dst, size_t dst_size, int dst_pos,
 			     (int)strlen(value));
 }
 
+static const char *lookup_env_value(const char *name_buf)
+{
+	if (is_pure_integer_name(name_buf)) {
+		int id = atoi(name_buf);
+		cli_env_t *env = cli_env_find_by_id(id);
+		if (env)
+			return cli_env_get_value(env);
+	} else {
+		cli_env_t *env = cli_env_find(name_buf);
+		if (env)
+			return cli_env_get_value(env);
+	}
+	return NULL;
+}
+
 static int substitute_one(const char *input, int *in_pos, char *out,
 			  size_t out_size, int *out_pos,
 			  char *name_buf, size_t name_buf_size)
@@ -85,9 +193,9 @@ static int substitute_one(const char *input, int *in_pos, char *out,
 	}
 	*in_pos += name_len;
 
-	const cli_env_t *env = cli_env_find(name_buf);
-	if (env && env->value) {
-		*out_pos = append_value(out, out_size, *out_pos, env->value);
+	const char *value = lookup_env_value(name_buf);
+	if (value) {
+		*out_pos = append_value(out, out_size, *out_pos, value);
 	} else {
 		*out_pos = append_to_buf(out, out_size, *out_pos, "$", 1);
 		*out_pos = append_to_buf(out, out_size, *out_pos, name_buf,
@@ -118,12 +226,7 @@ static int do_substitution(const char *input, char *out, size_t out_size)
 
 /* ============================================================
  *  公共接口：环境变量替换
- * ============================================================
- *
- * 将 input 中所有 $NAME 形式的引用替换为对应环境变量的值。
- * 未定义的变量保留原样（包括 $ 符号）。
- * 只做一轮非递归替换。
- */
+ * ============================================================ */
 
 int cli_env_replace(const char *input, char *out, size_t out_size)
 {
@@ -134,27 +237,108 @@ int cli_env_replace(const char *input, char *out, size_t out_size)
 }
 
 /* ============================================================
- *  env 命令：列出所有环境变量
+ *  env 命令实现
  * ============================================================ */
 
 static void cli_env_list_all(void)
 {
-	const cli_env_t *env;
-	all_printk("\r\n%-20s %s\r\n", "NAME", "VALUE");
+	cli_env_t *env;
+	all_printk("\r\n%-4s %-20s %s\r\n", "ID", "NAME", "VALUE");
 	all_printk("--------------------------------------------\r\n");
 	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
 	{
-		all_printk("%-20s %s\r\n", env->name,
-			   env->value ? env->value : "");
+		if (!env || !env->name || env->id < 0)
+			continue;
+		all_printk("%-4d %-20s %s\r\n", env->id, env->name,
+			   cli_env_get_value(env));
 	}
 }
 
-static int env_handler(void *_args)
+static int cli_env_handle_read(const char *name)
 {
-	(void)_args;
-	cli_env_list_all();
+	cli_env_t *env = cli_env_find(name);
+	if (!env) {
+		pr_err("unknown environment variable: %s\r\n", name);
+		return -1;
+	}
+	all_printk("%s = %s\r\n", env->name, cli_env_get_value(env));
 	return 0;
 }
 
-CLI_COMMAND_NO_STRUCT(env, "env", "list all environment variables",
-		      env_handler);
+static bool cli_env_parse_set_str(const char *set_str, char *name_buf,
+				  size_t name_buf_size, const char **value_out)
+{
+	const char *eq = strchr(set_str, '=');
+	if (!eq) {
+		pr_err("format must be name=value\r\n");
+		return false;
+	}
+
+	size_t name_len = eq - set_str;
+	if (name_len >= name_buf_size) {
+		pr_err("name too long\r\n");
+		return false;
+	}
+
+	memcpy(name_buf, set_str, name_len);
+	name_buf[name_len] = '\0';
+	*value_out = eq + 1;
+	return true;
+}
+
+static int cli_env_handle_set(const char *set_str)
+{
+	char name_buf[32];
+	const char *value;
+
+	if (!cli_env_parse_set_str(set_str, name_buf, sizeof(name_buf),
+				   &value))
+		return -1;
+
+	if (is_pure_integer_name(name_buf)) {
+		pr_err("name cannot be a pure integer\r\n");
+		return -1;
+	}
+
+	cli_env_t *env = cli_env_find(name_buf);
+	if (!env) {
+		pr_err("unknown environment variable: %s\r\n", name_buf);
+		return -1;
+	}
+
+	return cli_env_set(env, value);
+}
+
+struct env_args {
+	bool list;
+	char *set;
+	char *read;
+};
+
+static int env_handler(void *_args)
+{
+	struct env_args *args = _args;
+
+	if (args->list)
+		return cli_env_list_all(), 0;
+	if (args->set)
+		return cli_env_handle_set(args->set);
+	if (args->read)
+		return cli_env_handle_read(args->read);
+
+	pr_err("usage: env --list | env --set <name=value> | env --read <name>\r\n");
+	return -1;
+}
+
+CLI_COMMAND(env, "env", "Manage environment variables",
+	    USAGE("env --list", "env --set <name=value>",
+		  "env --read <name>"),
+	    env_handler, (struct env_args *)0,
+	    OPTION(0, "list", BOOL, "List all environment variables",
+		   struct env_args, list, 0, NULL, "set read", false),
+	    OPTION(0, "set", STRING,
+		   "Set environment variable (name=value)", struct env_args,
+		   set, 0, NULL, "list read", false),
+	    OPTION(0, "read", STRING, "Read environment variable",
+		   struct env_args, read, 0, NULL, "list set", false),
+	    END_OPTIONS);

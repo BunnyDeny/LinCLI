@@ -23,12 +23,16 @@ CLI_ENV(GREETING, "Hello LinCLI");
 CLI_ENV(PROJECT_NAME, "LinCLI-Framework");
 CLI_ENV(EMPTY_VAR, "");
 
+/* 纯整数名字，应被运行时忽略 */
+CLI_ENV(123, "should_be_ignored");
+
 /* ============================================================
  *  techo 命令：用于验证环境变量替换效果
  *
  *  示例：
  *    techo --msg $GREETING
  *    techo --msg $PROJECT_NAME
+ *    techo --msg $0        (按 ID 引用 GREETING)
  * ============================================================ */
 
 struct techo_args {
