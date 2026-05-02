@@ -207,7 +207,7 @@ int cli_user_cmd_permitted(const cli_command_t *cmd)
 		return 0;
 	if (current_user->role == CLI_USER_ROLE_ROOT)
 		return 1;
-	if (strcmp(cmd->name, "su") == 0 || strcmp(cmd->name, "help") == 0)
+	if (strcmp(cmd->name, "su") == 0)
 		return 1;
 	for (int i = 0; i < current_user->cmd_count; i++) {
 		if (current_user->cmds[i] &&
