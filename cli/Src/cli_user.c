@@ -140,6 +140,29 @@ static int su_read_input(void)
 	return CLI_CONTINUE;
 }
 
+static int su_find_target(const char *username)
+{
+	const cli_user_t *user;
+	FOR_EACH_CLI_USER(user)
+	{
+		if (user && strcmp(user->username, username) == 0) {
+			su_target = user;
+			return 0;
+		}
+	}
+	pr_err("user '%s' not found\r\n", username);
+	return -1;
+}
+
+static int su_prompt_password(void)
+{
+	if (!su_prompted) {
+		all_printk("Password: ");
+		su_prompted = true;
+	}
+	return su_read_input();
+}
+
 static int su_task(void *_args)
 {
 	struct su_args *args = _args;
@@ -152,25 +175,9 @@ static int su_task(void *_args)
 		pr_err("usage: su -l | su -c <username>\r\n");
 		return -1;
 	}
-	if (!su_target) {
-		const cli_user_t *user;
-		FOR_EACH_CLI_USER(user)
-		{
-			if (user && strcmp(user->username, args->change) == 0) {
-				su_target = user;
-				break;
-			}
-		}
-		if (!su_target) {
-			pr_err("user '%s' not found\r\n", args->change);
-			return -1;
-		}
-	}
-	if (!su_prompted) {
-		all_printk("Password: ");
-		su_prompted = true;
-	}
-	return su_read_input();
+	if (!su_target && su_find_target(args->change) < 0)
+		return -1;
+	return su_prompt_password();
 }
 
 static void su_exit(void *_args)
