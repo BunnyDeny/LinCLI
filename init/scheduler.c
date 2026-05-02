@@ -32,6 +32,8 @@ struct tStateEngine scheduler_eng;
 extern struct tState *const _scheduler_start[];
 extern struct tState *const _scheduler_end[];
 
+static int scheduler_ticks = 0;
+
 __attribute__((weak)) void cli_prompt_print(void)
 {
 	all_printk(COLOR_BOLD COLOR_GREEN
@@ -532,6 +534,7 @@ int scheduler_task(void)
 	if (status < 0) {
 		return status;
 	}
+	scheduler_ticks++;
 	if (cli_out_sync()) {
 		return -2;
 	}
@@ -542,3 +545,10 @@ int scheduler_task(void)
 #endif
 	return 0;
 }
+
+/* ============================================================
+ *  Default system-info variables
+ * ============================================================ */
+
+CLI_VAR_RO(scheduler_ticks, "scheduler_ticks", INT,
+	   "Scheduler main-loop tick counter");
