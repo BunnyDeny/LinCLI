@@ -20,10 +20,8 @@
  * ============================================================ */
 
 CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
-CLI_USER(guest, "guest", "guest", CLI_USER_ROLE_NORMAL,
-	 USER_CMDS("help", "version", "env"));
-CLI_USER(operator, "op", "op_pass", CLI_USER_ROLE_NORMAL,
-	 USER_CMDS("log", "ts"));
+CLI_USER(lin, "lin", "lin123", CLI_USER_ROLE_NORMAL,
+	 USER_CMDS("help", "_echo"));
 
 /* ============================================================
  *  当前登录用户全局指针（默认 root）
