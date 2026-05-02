@@ -12,6 +12,7 @@
 #include "cli_candidate.h"
 #include "cli_var.h"
 #include "cli_env.h"
+#include "cli_user.h"
 
 /* .cli_commands */
 const cli_command_t *const _cli_commands_start[1]
@@ -60,5 +61,11 @@ cli_env_t *const _cli_envs_start[1]
 	__attribute__((used, section(".cli_envs.0.start"))) = { NULL };
 cli_env_t *const _cli_envs_end[1]
 	__attribute__((used, section(".cli_envs.1.end"))) = { NULL };
+
+/* .cli_users */
+const cli_user_t *const _cli_users_start[1]
+	__attribute__((used, section(".cli_users.0.start"))) = { NULL };
+const cli_user_t *const _cli_users_end[1]
+	__attribute__((used, section(".cli_users.1.end"))) = { NULL };
 
 
