@@ -27,8 +27,8 @@
 #define CLI_VER_STR(_major, _minor, _patch) \
 	_CLI_VER_STR(_major, _minor, _patch)
 
-CLI_ENV(VER, CLI_VER_STR(CLI_VERSION_MAJOR, CLI_VERSION_MINOR,
-			   CLI_VERSION_PATCH));
+CLI_ENV(VER, "LinCLI v" CLI_VER_STR(CLI_VERSION_MAJOR, CLI_VERSION_MINOR,
+					  CLI_VERSION_PATCH));
 CLI_ENV(BUILD, __DATE__ " " __TIME__);
 CLI_ENV(echo, "_echo --msg");
 
