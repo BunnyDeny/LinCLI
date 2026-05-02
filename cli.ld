@@ -39,3 +39,8 @@
     KEEP(*(.cli_envs.1))
     KEEP(*(.cli_envs.1.end))
   }
+  .cli_users : {
+    KEEP(*(.cli_users.0.start))
+    KEEP(*(.cli_users.1))
+    KEEP(*(.cli_users.1.end))
+  }

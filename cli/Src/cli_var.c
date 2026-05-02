@@ -233,7 +233,7 @@ static void cli_var_format_value(const cli_var_t *var, char *buf, size_t size)
 static void cli_var_print_entry(const cli_var_t *var, const char *value_buf,
 				const char *attr_buf)
 {
-	all_printk("%-20s %-10s %-24s %-4s %s\r\n", var->name,
+	all_printk("%-20s %-16s %-20s %-4s %s\r\n", var->name,
 		   var->type_name ? var->type_name : "UNKNOWN",
 		   value_buf, attr_buf, var->doc ? var->doc : "");
 }
@@ -258,10 +258,10 @@ static int cli_var_alloc_entry_bufs(char **value_buf, char **attr_buf)
 void cli_var_list_all(void)
 {
 	const cli_var_t *var;
-	all_printk("\r\n%-20s %-10s %-24s %-4s %s\r\n", "NAME", "TYPE", "VALUE",
+	all_printk("\r\n%-20s %-16s %-20s %-4s %s\r\n", "NAME", "TYPE", "VALUE",
 		   "ATTR", "DOC");
 	all_printk(
-		"--------------------------------------------------------------------------"
+		"-------------------------------------------------------------------"
 		"\r\n");
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
