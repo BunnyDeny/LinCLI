@@ -31,10 +31,10 @@ const cli_user_t *const _cli_user_default __attribute__((weak)) =
 	&_cli_user_def_admin;
 
 /* ============================================================
- *  当前登录用户全局指针
+ *  当前登录用户全局指针（运行时由 cli_user_init 初始化）
  * ============================================================ */
 
-const cli_user_t *current_user = _cli_user_default;
+const cli_user_t *current_user;
 
 /* ============================================================
  *  辅助函数
