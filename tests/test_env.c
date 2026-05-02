@@ -31,31 +31,4 @@ CLI_ENV(TEST_MIX, "hello-world");
 /* 纯整数名字，应被运行时忽略 */
 CLI_ENV(123, "should_be_ignored");
 
-/* ============================================================
- *  techo 命令：用于验证环境变量替换效果
- *
- *  示例：
- *    techo --msg $GREETING
- *    techo --msg $PROJECT_NAME
- *    techo --msg $0        (按 ID 引用 GREETING)
- * ============================================================ */
-
-struct techo_args {
-	const char *msg;
-};
-
-static int techo_handler(void *_args)
-{
-	struct techo_args *args = _args;
-	cli_printk("%s\r\n", args->msg ? args->msg : "");
-	return 0;
-}
-
-CLI_COMMAND(techo, "techo", "Test echo with env substitution",
-	    USAGE("techo --msg <message>"), techo_handler,
-	    (struct techo_args *)0,
-	    OPTION(0, "msg", STRING, "Message to echo", struct techo_args, msg,
-		   0, NULL, NULL, false),
-	    END_OPTIONS);
-
 #endif /* CLI_ENABLE_TESTS */

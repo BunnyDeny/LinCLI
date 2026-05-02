@@ -14,8 +14,45 @@
 #include "cli_mpool.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
+#include "cli_config.h"
 #include <stdlib.h>
 #include <string.h>
+
+/* ============================================================
+ *  系统内置环境变量（不依赖 CLI_ENABLE_TESTS）
+ * ============================================================ */
+
+#define _CLI_VER_STR(_major, _minor, _patch) \
+	#_major "." #_minor "." #_patch
+#define CLI_VER_STR(_major, _minor, _patch) \
+	_CLI_VER_STR(_major, _minor, _patch)
+
+CLI_ENV(VER, CLI_VER_STR(CLI_VERSION_MAJOR, CLI_VERSION_MINOR,
+			   CLI_VERSION_PATCH));
+CLI_ENV(BUILD, __DATE__ " " __TIME__);
+CLI_ENV(echo, "_echo --msg");
+
+/* ============================================================
+ *  echo 命令：系统内置打印命令
+ * ============================================================ */
+
+struct _echo_args {
+	const char *msg;
+};
+
+static int _echo_handler(void *_args)
+{
+	struct _echo_args *args = _args;
+	cli_printk("[echo] %s\r\n", args->msg ? args->msg : "");
+	return 0;
+}
+
+CLI_COMMAND(_echo, "_echo", "Print message via cli_printk",
+	    USAGE("_echo --msg <message>"), _echo_handler,
+	    (struct _echo_args *)0,
+	    OPTION(0, "msg", STRING, "Message to print", struct _echo_args, msg,
+		   0, NULL, NULL, false),
+	    END_OPTIONS);
 
 /* ============================================================
  *  纯整数名字检测与注册过滤

@@ -34,8 +34,8 @@ CLI_ENV(DEVICE_PREFIX, "sensor-A");
 ### `$NAME` — 按名字引用
 
 ```bash
-lin@linCli> techo --msg $PROJECT
-LinCLI-Framework
+lin@linCli> $echo $PROJECT
+[echo] LinCLI-Framework
 ```
 
 ### `$id` — 按系统 ID 引用
@@ -50,8 +50,8 @@ ID   NAME                 VALUE
 1    BUILD_TYPE           debug
 2    DEVICE_PREFIX        sensor-A
 
-lin@linCli> techo --msg $0
-LinCLI-Framework
+lin@linCli> $echo $0
+[echo] LinCLI-Framework
 ```
 
 > **替换规则**：未定义的变量保留原样。例如 `$UNKNOWN` 找不到对应注册时，会原样输出 `$UNKNOWN`。
@@ -89,8 +89,8 @@ lin@linCli> env -s BUILD_TYPE=release
 lin@linCli> env -r BUILD_TYPE
 BUILD_TYPE = release
 
-lin@linCli> techo --msg $BUILD_TYPE
-release
+lin@linCli> $echo $BUILD_TYPE
+[echo] release
 ```
 
 > **仅支持修改已注册变量**：如果变量未通过 `CLI_ENV` 注册，`env -s` 会报错 `"unknown environment variable: xxx"`。
@@ -128,6 +128,25 @@ lin@linCli> $1
 ```
 
 通过引号包裹整个 `name=value`，`env -s` 的值中可以安全地包含空格和 `&&`。
+
+### `$` 替换与引号的先后顺序
+
+LinCLI 的处理顺序非常直接：**先替换 `$变量`，再按引号分词**。这意味着引号的作用是防止空格和 `&&` 拆分 token，而不是阻止 `$` 替换。
+
+**表象示例**：
+
+```bash
+# 假设 echo = "_echo --msg"，且 echo 的 ID 为 2
+
+lin@linCli> $echo '$2'
+[echo] _echo --msg
+```
+
+直观上你可能以为 `'$2'` 被引号包裹，`$2` 不会被替换——但在 LinCLI 中，`$echo` 和 `$2` **都会被替换**，替换完成后再去掉引号、按 token 切分。最终等效于执行 `_echo --msg '_echo --msg'`。
+
+如果你希望 `$2` 保持字面量原样，当前唯一的办法是确保 ID 为 2 的环境变量未定义（未定义变量会保留原样输出）。
+
+> 💡 **设计意图**：嵌入式场景下，"看到 `$` 就替，替完再分词" 的规则单一、无歧义，代码和心智负担都最小。
 
 ### `CLI_ENV` 宏注册 vs `env -s` 命令行设置
 
