@@ -55,4 +55,4 @@ void pr_logo(void *arg)
 	all_printk("Welcome to LinCLI! Type 'help' to get started.\r\n");
 }
 
-_EXPORT_INIT_SYMBOL(logo, 11, NULL, pr_logo);
+_EXPORT_INIT_SYMBOL(logo, 21, NULL, pr_logo);
