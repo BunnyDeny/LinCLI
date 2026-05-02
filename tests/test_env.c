@@ -47,7 +47,7 @@ struct techo_args {
 static int techo_handler(void *_args)
 {
 	struct techo_args *args = _args;
-	cli_printk("%s\r\n", args->msg ? args->msg : "");
+	cli_printk("[techo] %s\r\n", args->msg ? args->msg : "");
 	return 0;
 }
 
