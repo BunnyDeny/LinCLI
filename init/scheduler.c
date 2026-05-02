@@ -27,6 +27,7 @@
 #include "cli_mpool.h"
 #include "cli_var.h"
 #include "cli_env.h"
+#include "cli_user.h"
 
 struct tStateEngine scheduler_eng;
 extern struct tState *const _scheduler_start[];
@@ -37,9 +38,10 @@ static int scheduler_ticks = 0;
 __attribute__((weak)) void cli_prompt_print(void)
 {
 	all_printk(COLOR_BOLD COLOR_GREEN
-		   "lin" COLOR_NONE COLOR_BOLD
+		   "%s" COLOR_NONE COLOR_BOLD
 		   "@" COLOR_NONE COLOR_BOLD COLOR_CYAN
-		   "linCli" COLOR_NONE COLOR_BOLD COLOR_YELLOW "> " COLOR_NONE);
+		   "linCli" COLOR_NONE COLOR_BOLD COLOR_YELLOW "> " COLOR_NONE,
+		   current_user->username);
 }
 
 void start_entry(void *private)

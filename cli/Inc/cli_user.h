@@ -76,7 +76,7 @@ extern const cli_user_t *const _cli_users_end[];
  */
 
 #define CLI_USER(name, _username, _password, _role, _cmds)             \
-	static const cli_user_t _cli_user_def_##name = {                   \
+	const cli_user_t _cli_user_def_##name = {                          \
 		.username = _username,                                         \
 		.password = _password,                                         \
 		.role = _role,                                                 \
@@ -86,5 +86,11 @@ extern const cli_user_t *const _cli_users_end[];
 	static const cli_user_t *const _cli_user_ptr_##name                \
 		__attribute__((used, section(".cli_users.1"))) =             \
 			&_cli_user_def_##name
+
+/* ============================================================
+ *  当前登录用户全局指针
+ * ============================================================ */
+
+extern const cli_user_t *current_user;
 
 #endif /* _CLI_USER_H_ */
