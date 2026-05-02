@@ -346,6 +346,10 @@ static void scheduler_cleanup(void)
 		cmd_ctx.sub_chain_buf = NULL;
 		cmd_ctx.sub_chain_p = NULL;
 	}
+	if (cmd_ctx.env_buf) {
+		cli_mpool_free(cmd_ctx.env_buf);
+		cmd_ctx.env_buf = NULL;
+	}
 }
 
 static int dispatch_cmd(char *cmd)
@@ -429,16 +433,26 @@ int scheduler_dispose_task(void *arg)
 		env_buf = NULL;
 	}
 
-	if (dispatch_cmd(current_cmd) < 0) {
+	int dispatch_ret = dispatch_cmd(current_cmd);
+	if (dispatch_ret < 0) {
 		if (env_buf)
 			cli_mpool_free(env_buf);
 		goto fail;
+	}
+	if (dispatch_ret == 0) {
+		if (env_buf)
+			cli_mpool_free(env_buf);
+		return CLI_OK;
 	}
 
 	cmd_ctx.env_buf = env_buf;
 	return CLI_OK;
 
 fail:
+	if (cmd_ctx.cmd_def) {
+		cmd_parse_cleanup(cmd_ctx.cmd_def);
+		cmd_ctx.cmd_def = NULL;
+	}
 	scheduler_cleanup();
 	return state_switch(&scheduler_eng, "scheduler_get_char");
 }
