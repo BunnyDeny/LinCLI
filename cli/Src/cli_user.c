@@ -8,9 +8,11 @@
  * (at your option) any later version.
  */
 
+#include <stdbool.h>
 #include "cli_user.h"
 #include "cli_io.h"
 #include "init_d.h"
+#include "cmd_dispose.h"
 
 /* ============================================================
  *  注册测试用户（验证段收集机制）
@@ -38,13 +40,8 @@ static const char *role_str(cli_user_role_t role)
 	}
 }
 
-/* ============================================================
- *  init_d 初始化函数：遍历打印所有注册用户
- * ============================================================ */
-
-void cli_user_init(void *arg)
+static void su_print_users(void)
 {
-	(void)arg;
 	const cli_user_t *user;
 
 	all_printk("\r\n[User Manager] registered users:\r\n");
@@ -67,6 +64,42 @@ void cli_user_init(void *arg)
 			all_printk("\r\n");
 		}
 	}
+}
+
+/* ============================================================
+ *  su 命令：支持 -l 打印所有注册用户
+ * ============================================================ */
+
+struct su_args {
+	bool list;
+};
+
+static int su_handler(void *_args)
+{
+	struct su_args *args = _args;
+
+	if (args->list) {
+		su_print_users();
+		return 0;
+	}
+	pr_err("usage: su -l\r\n");
+	return -1;
+}
+
+CLI_COMMAND(su_cmd, "su", "Switch user or list users",
+	    USAGE("su -l"),
+	    su_handler, (struct su_args *)0,
+	    OPTION('l', "list", BOOL, "List all registered users",
+		   struct su_args, list, 0, NULL, NULL, false),
+	    END_OPTIONS);
+
+/* ============================================================
+ *  init_d 初始化函数（保留，后续扩展使用）
+ * ============================================================ */
+
+void cli_user_init(void *arg)
+{
+	(void)arg;
 }
 
 _EXPORT_INIT_SYMBOL(cli_user_init, 13, NULL, cli_user_init);
