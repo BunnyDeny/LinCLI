@@ -262,6 +262,7 @@ static void cli_user_attach_candidates(const cli_command_t *cmd)
 void cli_user_init(void *arg)
 {
 	(void)arg;
+	current_user = _cli_user_default;
 	cli_user_collect_candidates();
 
 	const cli_command_t *cmd;
