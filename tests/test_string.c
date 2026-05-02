@@ -58,6 +58,4 @@ CLI_COMMAND(ts, "ts", "Test STRING option",
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg,
 		   0, NULL, NULL, false),
 	    END_OPTIONS);
-CMD_ALIAS(echo, "ts --msg");
-
 #endif /* CLI_ENABLE_TESTS */

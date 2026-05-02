@@ -61,10 +61,4 @@ cli_env_t *const _cli_envs_start[1]
 cli_env_t *const _cli_envs_end[1]
 	__attribute__((used, section(".cli_envs.1.end"))) = { NULL };
 
-/* .alias_cmd */
-struct alias_cmd *const _alias_cmd_start[1]
-	__attribute__((used, section(".alias_cmd.0.start"))) = { NULL };
-struct alias_cmd *const _alias_cmd_placeholder[1]
-	__attribute__((used, section(".alias_cmd.1"))) = { NULL };
-struct alias_cmd *const _alias_cmd_end[1]
-	__attribute__((used, section(".alias_cmd.1.end"))) = { NULL };
+

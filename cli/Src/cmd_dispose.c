@@ -907,58 +907,6 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	return cnt;
 }
 
-static int alias_handler(void *_args)
-{
-	struct alias_cmd *alias_cmd;
-	all_printk("\r\n%-20s %-40s\r\n", "ALIAS", "ORIGINAL COMMAND");
-	all_printk(
-		"------------------------------------------------------------\r\n");
-	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
-	{
-		all_printk("%-20s %-40s\r\n", alias_cmd->alias_name,
-			   alias_cmd->original_name);
-	}
-	all_printk(
-		"------------------------------------------------------------\r\n");
-	return 0;
-}
-
-CLI_COMMAND_NO_STRUCT(alias, "alias", "list all the alias cmds", alias_handler);
-
-static bool is_prefix(char *pre, char *str)
-{
-	int idx = 0;
-	while (pre[idx]) {
-		if (pre[idx] != str[idx]) {
-			return false;
-		}
-		idx++;
-	}
-	return true;
-}
-
-char *alias_replace(char *cmd, char *buf, size_t buf_size)
-{
-	struct alias_cmd *alias_cmd;
-	char *p = cmd;
-	while ((*p) && (*p) != ' ' && (*p) != '\t') {
-		p++;
-	}
-	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
-	{
-		if (is_prefix(alias_cmd->alias_name, cmd)) {
-			memset(buf, 0, buf_size);
-			memcpy(buf, alias_cmd->original_name,
-			       strlen(alias_cmd->original_name));
-			if ((*p)) {
-				strncat(buf, p, buf_size - strlen(buf) - 1);
-			}
-			return buf;
-		}
-	}
-	return cmd;
-}
-
 static int help_handler(void *_args)
 {
 	all_printk("\r\n");
