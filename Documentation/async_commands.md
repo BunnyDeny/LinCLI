@@ -1,8 +1,8 @@
-# 异步非阻塞命令
+# 🎯 异步非阻塞命令
 
-## 为什么需要异步命令？
+## 🚀 为什么需要异步命令？
 
-### `scheduler_task()` 在哪里跑？
+### 💡 `scheduler_task()` 在哪里跑？
 
 在裸机 MCU 中，你会在 `main()` 的 `while(1)` 里周期性调用 `scheduler_task()`：
 
@@ -18,13 +18,13 @@ int main(void) {
 
 在 PC 模拟程序中，框架开了一个线程，每 10ms 调用一次 `scheduler_task()`。无论哪种方式，**整个 CLI 的核心就是这一个函数**。
 
-### 阻塞命令会卡住谁？
+### ⚙️ 阻塞命令会卡住谁？
 
 传统 `CLI_COMMAND` 注册的命令使用单一 handler，框架会**同步阻塞式**调用它——handler 不返回，`scheduler_task()` 就不返回，你的 `while(1)` 就卡在那里。这意味着：
 
-- handler 里写 `delay_ms(500)` → `scheduler_task()` 卡住 500ms，你的 `while(1)` 冻结 500ms，其他业务代码全停摆
-- handler 里 `while(!flag)` 空转等待 → CPU 被吃满，ADC 不采样、电机不控制、看门狗不喂
-- 即使命令本身只需要"逐步完成"（如电机缓慢升速），也必须一次性阻塞到底
+- ✅ handler 里写 `delay_ms(500)` → `scheduler_task()` 卡住 500ms，你的 `while(1)` 冻结 500ms，其他业务代码全停摆
+- 🔹 handler 里 `while(!flag)` 空转等待 → CPU 被吃满，ADC 不采样、电机不控制、看门狗不喂
+- 📌 即使命令本身只需要"逐步完成"（如电机缓慢升速），也必须一次性阻塞到底
 
 **非阻塞模式的目的只有一个：不要让命令 handler 独占 CPU，导致 `scheduler_task()` 卡住。**
 
@@ -34,7 +34,7 @@ int main(void) {
 
 ---
 
-## 三阶段接口
+## 📋 三阶段接口
 
 ```c
 void (*cmd_entry)(void *);   // 命令入口，只执行一次
@@ -50,7 +50,7 @@ void (*cmd_exit) (void *);   // 命令出口，只执行一次
 
 ---
 
-## task 返回值语义
+## 🔧 task 返回值语义
 
 `cmd_task` 的返回值决定命令的生命周期：
 
@@ -65,7 +65,7 @@ void (*cmd_exit) (void *);   // 命令出口，只执行一次
 
 ---
 
-## 注册异步命令
+## 💡 注册异步命令
 
 使用 `CLI_COMMAND_ASYNC` 宏：
 
@@ -133,7 +133,7 @@ lin@linCli>
 
 ---
 
-## 与旧命令的对比
+## ⚙️ 与旧命令的对比
 
 | 特性 | `CLI_COMMAND`（旧） | `CLI_COMMAND_ASYNC`（新） |
 |------|---------------------|---------------------------|
@@ -148,7 +148,7 @@ lin@linCli>
 
 ---
 
-## 状态流转
+## 🚀 状态流转
 
 异步命令的执行被封装在 `scheduler_cmd_run` 状态中：
 
@@ -173,13 +173,13 @@ scheduler_cmd_run
         或 scheduler_get_char（回到提示符）
 ```
 
-- `entry` 和 `exit` 利用状态机的 `state_entry` / `state_exit` 机制保证**只执行一次**
-- `task` 每次返回 `CLI_CONTINUE` 时，状态不切换，下次 `scheduler_task()` 轮询继续执行
-- 只有 `task` 返回 `0`、负值或 `> 1` 时，状态机才会离开 `scheduler_cmd_run`，触发 `exit`
+- 🆕 `entry` 和 `exit` 利用状态机的 `state_entry` / `state_exit` 机制保证**只执行一次**
+- 💎 `task` 每次返回 `CLI_CONTINUE` 时，状态不切换，下次 `scheduler_task()` 轮询继续执行
+- ✅ 只有 `task` 返回 `0`、负值或 `> 1` 时，状态机才会离开 `scheduler_cmd_run`，触发 `exit`
 
 ---
 
-## 错误处理
+## 📋 错误处理
 
 当 `cmd_task` 返回负值时，框架在 `exit` 阶段会自动打印错误信息：
 
@@ -195,7 +195,7 @@ lin@linCli>
 
 ---
 
-## 注意事项
+## 🔧 注意事项
 
 1. **`arg_buf` 的生命周期**：`entry` → 所有 `task` → `exit` 期间，`arg_buf` 始终有效。`exit` 结束后框架会自动释放动态分配的缓冲区。不要在命令结束后持有 `arg_buf` 指针。
 
