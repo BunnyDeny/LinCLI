@@ -33,11 +33,6 @@ LR_IROM1 0x08000000 0x00010000  {    ; load region size_region
     *(.my_init_d.1)
     *(.my_init_d.1.end)
   }
-  ER_ALIAS_CMD +0 {
-    *(.alias_cmd.0.start)
-    *(.alias_cmd.1)
-    *(.alias_cmd.1.end)
-  }
   ER_CLI_VARS +0 {
     *(.cli_vars.0.start)
     *(.cli_vars.1)

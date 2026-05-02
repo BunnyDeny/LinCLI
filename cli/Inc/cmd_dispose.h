@@ -75,20 +75,12 @@ typedef struct cli_command {
 	size_t arg_buf_size; // 缓冲区大小
 } cli_command_t;
 
-struct alias_cmd {
-	char *alias_name; // 重命名后的名字，例如 "ll"
-	char *original_name; // 原始命令，例如 "ls -l"
-};
-
 /* ============================================================
  * 链接脚本段收集符号声明
  * ============================================================ */
 
 extern const cli_command_t *const _cli_commands_start[];
 extern const cli_command_t *const _cli_commands_end[];
-
-extern struct alias_cmd *const _alias_cmd_start[];
-extern struct alias_cmd *const _alias_cmd_end[];
 
 #define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd)               \
 	for (const cli_command_t *const *_pp = (_start);        \
@@ -325,25 +317,6 @@ extern struct alias_cmd *const _alias_cmd_end[];
 
 #define END_OPTIONS /* 结束标记，实际为空 */
 
-#define CMD_ALIAS(new, origin)                                             \
-	struct alias_cmd alias_cmd##new = {                                \
-		.alias_name = #new,                                        \
-		.original_name = origin,                                   \
-	};                                                                 \
-	static struct alias_cmd *const alias_cmd_ptr##new                  \
-		__attribute__((used, section(".alias_cmd.1"))) =           \
-			&alias_cmd##new;                                   \
-	_EXPORT_CLI_COMMAND_SYMBOL(cmd_alias##new, #new, NULL, (void *)0,  \
-				   0, NULL, 0,                               \
-				   (int (*)(void *))NULL, NULL,              \
-				   NULL, NULL, NULL, 0,                      \
-				   ".cli_commands")
-
-#define FOR_EACH_ALIAS(_start, _end, alias_cmd)              \
-	for (struct alias_cmd *const *_pp = (_start);        \
-	     _pp < (struct alias_cmd *const *)(_end); _pp++) \
-		if (((alias_cmd) = *_pp) != NULL)
-
 /* ============================================================
  * 新增：非阻塞三阶段命令注册宏
  * ============================================================ */
@@ -375,8 +348,5 @@ void cmd_parse_cleanup(const cli_command_t *cmd_def);
 
 /* 命令链拆分工具 */
 int split_cmd_chain(char *buf, char **cmds, int max_cmds);
-
-/* 别名替换工具 */
-char *alias_replace(char *cmd, char *buf, size_t buf_size);
 
 #endif

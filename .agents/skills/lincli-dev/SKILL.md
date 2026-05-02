@@ -21,29 +21,47 @@ description: LinCLI 嵌入式 CLI 框架项目开发规范。用于指导在该�
 
 ### 合并到 main 分支
 
-使用 `--no-ff` 进行非快进合并：
+#### 第 1 步：在 dev 分支上升级版本号
+
+先切换到 dev，将版本号升级为发布版本：
 
 ```bash
-git merge --no-ff dev
+git checkout dev
 ```
 
-合并时同时执行版本号升级：
+修改 `include/cli_config.h`：
 
 1. `MINOR += 1`
 2. `PATCH = 0`
 
-这代表一个正式小版本的发布。
+例如从 `1.3.15` 改为 `1.4.0`。
 
-### 发布后动作
+然后提交这个版本号改动：
 
-合并到 main 并完成版本号升级后，必须执行以下两步：
+```bash
+git add include/cli_config.h
+git commit -m "chore: 升级版本号至 v1.4.0，准备发布"
+```
 
-1. **打 tag**：在 main 分支上创建版本标签
+#### 第 2 步：切换到 main 并合并
+
+```bash
+git checkout main
+git merge --no-ff dev
+```
+
+由于版本号已在 dev 上提前升级，合并时 `include/cli_config.h` 不会出现冲突。
+
+#### 第 3 步：发布后动作
+
+合并完成后，**必须**在 merge 结果上执行以下两步：
+
+1. **打 tag**：在 merge 完成后的 main 分支上创建版本标签
    ```bash
    git tag v$(MAJOR).$(MINOR).0
    git push origin v$(MAJOR).$(MINOR).0
    ```
-   例如 `v1.4.0`。
+   例如 `v1.4.0`。tag 必须打在 merge 之后的 commit 上，不得提前。
 
 2. **编写 release 文档**：在 `/tmp/` 目录下创建 `release-v{MAJOR}.{MINOR}.0.md`，汇总该小版本在 dev 分支上的全部变更。文档写完后必须提醒用户文档已就绪。
 

@@ -47,26 +47,62 @@ static const cli_command_t *cli_command_find(const char *_name)
 }
 
 /**
- * @brief 将一行输入字符串按空白字符切分为 argc/argv 形式。
+ * @brief 将一行输入字符串切分为 argc/argv 形式。
+ *
+ * 支持单引号 ' 和双引号 " 包裹的字符串作为不可再分的最小单元，
+ * 引号内的内容不会被空白字符或命令链操作符分割。
  */
 static inline bool is_space(char c)
 {
 	return c == ' ' || c == '\t';
 }
 
+static char *skip_spaces(char *p)
+{
+	while (is_space(*p))
+		p++;
+	return p;
+}
+
+static char *extract_quoted(char **p_out)
+{
+	char *p = *p_out;
+	char quote = *p++;
+	char *start = p;
+
+	while (*p && *p != quote)
+		p++;
+	if (*p == quote)
+		*p++ = '\0';
+	*p_out = p;
+	return start;
+}
+
+static char *extract_unquoted(char **p_out)
+{
+	char *p = *p_out;
+	char *start = p;
+
+	while (*p && !is_space(*p))
+		p++;
+	*p_out = p;
+	return start;
+}
+
 static int tokenize(char *line, char **argv, int max_argv)
 {
 	int argc = 0;
 	char *p = line;
+
 	while (*p && argc < max_argv) {
-		while (is_space(*p))
-			p++;
+		p = skip_spaces(p);
 		if (!*p)
 			break;
-		argv[argc++] = p;
-		while (*p && !is_space(*p))
-			p++;
-		if (*p)
+		if (*p == '\'' || *p == '"')
+			argv[argc++] = extract_quoted(&p);
+		else
+			argv[argc++] = extract_unquoted(&p);
+		if (*p && is_space(*p))
 			*p++ = '\0';
 	}
 	return argc;
@@ -809,83 +845,66 @@ void cmd_parse_cleanup(const cli_command_t *cmd_def)
 
 #define CMD_CHAIN_MAX 8
 
+static char *trim_tail_spaces(char *start, char *end)
+{
+	while (end > start && *end == ' ')
+		*end-- = '\0';
+	return end;
+}
+
+static char *skip_quoted_block(char *p)
+{
+	char quote = *p++;
+
+	while (*p && *p != quote)
+		p++;
+	if (*p == quote)
+		p++;
+	return p;
+}
+
+static char *find_chain_split(char *p, char **split_pos)
+{
+	while (*p) {
+		if (*p == '\'' || *p == '"') {
+			p = skip_quoted_block(p);
+		} else if (p[0] == '&' && p[1] == '&') {
+			*split_pos = p;
+			return p;
+		} else {
+			p++;
+		}
+	}
+	*split_pos = NULL;
+	return p;
+}
+
 int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 {
 	int cnt = 0;
 	char *p = buf;
+
 	while (*p && cnt < max_cmds) {
 		while (*p == ' ')
 			p++;
 		if (!*p)
 			break;
 		cmds[cnt++] = p;
-		char *next = strstr(p, "&&");
-		if (next) {
-			*next = '\0';
-			char *end = next - 1;
-			while (end > p && *end == ' ')
-				*end-- = '\0';
-			p = next + 2;
+
+		char *split_pos = NULL;
+		p = find_chain_split(p, &split_pos);
+
+		if (split_pos) {
+			*split_pos = '\0';
+			trim_tail_spaces(cmds[cnt - 1], split_pos - 1);
+			p = split_pos + 2;
 		} else {
 			char *end = p + strlen(p) - 1;
-			while (end > p && *end == ' ')
-				*end-- = '\0';
+			trim_tail_spaces(cmds[cnt - 1], end);
 			break;
 		}
 	}
 	return cnt;
-}
-
-static int alias_handler(void *_args)
-{
-	struct alias_cmd *alias_cmd;
-	all_printk("\r\n%-20s %-40s\r\n", "ALIAS", "ORIGINAL COMMAND");
-	all_printk(
-		"------------------------------------------------------------\r\n");
-	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
-	{
-		all_printk("%-20s %-40s\r\n", alias_cmd->alias_name,
-			   alias_cmd->original_name);
-	}
-	all_printk(
-		"------------------------------------------------------------\r\n");
-	return 0;
-}
-
-CLI_COMMAND_NO_STRUCT(alias, "alias", "list all the alias cmds", alias_handler);
-
-static bool is_prefix(char *pre, char *str)
-{
-	int idx = 0;
-	while (pre[idx]) {
-		if (pre[idx] != str[idx]) {
-			return false;
-		}
-		idx++;
-	}
-	return true;
-}
-
-char *alias_replace(char *cmd, char *buf, size_t buf_size)
-{
-	struct alias_cmd *alias_cmd;
-	char *p = cmd;
-	while ((*p) && (*p) != ' ' && (*p) != '\t') {
-		p++;
-	}
-	FOR_EACH_ALIAS(_alias_cmd_start, _alias_cmd_end, alias_cmd)
-	{
-		if (is_prefix(alias_cmd->alias_name, cmd)) {
-			memset(buf, 0, buf_size);
-			memcpy(buf, alias_cmd->original_name,
-			       strlen(alias_cmd->original_name));
-			if ((*p)) {
-				strncat(buf, p, buf_size - strlen(buf) - 1);
-			}
-			return buf;
-		}
-	}
-	return cmd;
 }
 
 static int help_handler(void *_args)

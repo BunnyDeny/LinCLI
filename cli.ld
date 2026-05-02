@@ -23,11 +23,7 @@
     KEEP(*(.my_init_d.1))
     KEEP(*(.my_init_d.1.end))
   }
-  .alias_cmd : {
-    KEEP(*(.alias_cmd.0.start))
-    KEEP(*(.alias_cmd.1))
-    KEEP(*(.alias_cmd.1.end))
-  }
+
   .cli_vars : {
     KEEP(*(.cli_vars.0.start))
     KEEP(*(.cli_vars.1))
@@ -37,4 +33,9 @@
     KEEP(*(.cli_var_types.0.start))
     KEEP(*(.cli_var_types.1))
     KEEP(*(.cli_var_types.1.end))
+  }
+  .cli_envs : {
+    KEEP(*(.cli_envs.0.start))
+    KEEP(*(.cli_envs.1))
+    KEEP(*(.cli_envs.1.end))
   }

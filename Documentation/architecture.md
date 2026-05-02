@@ -26,7 +26,6 @@
 - `.cli_cmd_line`  — 存放命令行状态机的状态节点
 - `.scheduler`     — 存放调度器任务
 - `.my_init_d`     — 存放初始化函数
-- `.alias_cmd`     — 存放命令别名
 - `.cli_vars`      — 存放通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量描述符
 - `.cli_var_types` — 存放通过 `CLI_VAR_TYPE` 注册的自定义类型操作回调
 
