@@ -133,6 +133,17 @@ const char *cli_env_get_value(const cli_env_t *env)
  *  设置环境变量值
  * ============================================================ */
 
+static void strip_outer_quotes(const char **src_out, size_t *len_out)
+{
+	const char *src = *src_out;
+	size_t len = *len_out;
+	if (len >= 2 && ((src[0] == '\'' && src[len - 1] == '\'') ||
+			 (src[0] == '"' && src[len - 1] == '"'))) {
+		*src_out = src + 1;
+		*len_out = len - 2;
+	}
+}
+
 int cli_env_set(cli_env_t *env, const char *new_value)
 {
 	if (!env || !new_value)
@@ -144,10 +155,12 @@ int cli_env_set(cli_env_t *env, const char *new_value)
 		return -1;
 	}
 
-	size_t len = strlen(new_value);
+	const char *src = new_value;
+	size_t len = strlen(src);
+	strip_outer_quotes(&src, &len);
 	if (len >= CLI_MPOOL_SIZE)
 		len = CLI_MPOOL_SIZE - 1;
-	memcpy(buf, new_value, len);
+	memcpy(buf, src, len);
 	buf[len] = '\0';
 
 	if (env->dyn_value)

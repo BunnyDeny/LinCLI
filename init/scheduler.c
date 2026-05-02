@@ -196,67 +196,74 @@ _EXPORT_STATE_SYMBOL(scheduler_cmd_run, scheduler_cmd_run_entry,
  * 自启动命令状态（改造为异步状态驱动）
  * ============================================================ */
 
-int scheduler_auto_run_task(void *private)
+static bool auto_run_should_exit(void)
 {
-	(void)private;
-	int status;
-
 	if (cmd_ctx.auto_run_idx > 0 && cmd_ctx.cmd_ret < 0) {
 		cmd_ctx.auto_run_idx = 0;
-		return state_switch(&scheduler_eng, "scheduler_get_char");
+		return true;
 	}
-
-	if (!cli_auto_cmds || cli_auto_cmds_count <= 0) {
-		return state_switch(&scheduler_eng, "scheduler_get_char");
-	}
-
+	if (!cli_auto_cmds || cli_auto_cmds_count <= 0)
+		return true;
 	if (cmd_ctx.auto_run_idx >= cli_auto_cmds_count) {
 		cmd_ctx.auto_run_idx = 0;
-		return state_switch(&scheduler_eng, "scheduler_get_char");
+		return true;
 	}
+	return false;
+}
 
-	const char *cmd = cli_auto_cmds[cmd_ctx.auto_run_idx];
-	if (!cmd) {
-		cmd_ctx.auto_run_idx++;
-		return CLI_OK;
-	}
-
+static void auto_run_copy_cmd(const char *cmd)
+{
 	int len = strlen(cmd);
 	if (len >= CMD_LINE_BUF_SIZE)
 		len = CMD_LINE_BUF_SIZE - 1;
 	memset(origin_cmd.buf, 0, CMD_LINE_BUF_SIZE);
 	memcpy(origin_cmd.buf, cmd, len);
 	origin_cmd.size = len;
+}
 
+static void auto_run_env_replace(void)
+{
 	char *env_buf = cli_mpool_alloc();
-	if (env_buf) {
-		int ret = cli_env_replace(origin_cmd.buf, env_buf,
-					  CLI_MPOOL_SIZE);
-		if (ret == CLI_OK) {
-			int env_len = strlen(env_buf);
-			if (env_len < CMD_LINE_BUF_SIZE) {
-				memcpy(origin_cmd.buf, env_buf, env_len + 1);
-				origin_cmd.size = env_len;
-			}
+	if (!env_buf)
+		return;
+	int ret = cli_env_replace(origin_cmd.buf, env_buf, CLI_MPOOL_SIZE);
+	if (ret == CLI_OK) {
+		int env_len = strlen(env_buf);
+		if (env_len < CMD_LINE_BUF_SIZE) {
+			memcpy(origin_cmd.buf, env_buf, env_len + 1);
+			origin_cmd.size = env_len;
 		}
-		cli_mpool_free(env_buf);
 	}
+	cli_mpool_free(env_buf);
+}
 
-	status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.cmd_def,
-				   &cmd_ctx.cmd_ret);
-	if (status < 0) {
+static int auto_run_try_dispatch(void)
+{
+	int status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.cmd_def,
+				       &cmd_ctx.cmd_ret);
+	if (status < 0 || status == dispose_exit) {
 		cmd_ctx.auto_run_idx++;
 		return CLI_OK;
 	}
-	if (status == dispose_exit) {
-		cmd_ctx.auto_run_idx++;
-		return CLI_OK;
-	}
-
 	cmd_ctx.auto_run_idx++;
 	strncpy(cmd_ctx.next_state, "scheduler_auto_run",
 		sizeof(cmd_ctx.next_state));
 	return state_switch(&scheduler_eng, "scheduler_cmd_run");
+}
+
+int scheduler_auto_run_task(void *private)
+{
+	(void)private;
+	if (auto_run_should_exit())
+		return state_switch(&scheduler_eng, "scheduler_get_char");
+	const char *cmd = cli_auto_cmds[cmd_ctx.auto_run_idx];
+	if (!cmd) {
+		cmd_ctx.auto_run_idx++;
+		return CLI_OK;
+	}
+	auto_run_copy_cmd(cmd);
+	auto_run_env_replace();
+	return auto_run_try_dispatch();
 }
 _EXPORT_STATE_SYMBOL(scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
 		     ".scheduler");
@@ -296,18 +303,16 @@ static char *extract_next_cmd(char **p_out)
 
 	char *start = p;
 	while (*p) {
-		if (*p == '\'' || *p == '"') {
+		if (*p == '\'' || *p == '"')
 			p = skip_quoted(p);
-		} else if (p[0] == '&' && p[1] == '&') {
+		else if (p[0] == '&' && p[1] == '&') {
 			*p = '\0';
 			trim_tail(start, p - 1);
 			*p_out = p + 2;
 			return start;
-		} else {
+		} else
 			p++;
-		}
 	}
-
 	char *end = p + strlen(p) - 1;
 	trim_tail(start, end);
 	*p_out = p;
@@ -365,23 +370,15 @@ static int dispatch_cmd(char *cmd)
 	return state_switch(&scheduler_eng, "scheduler_cmd_run");
 }
 
-int scheduler_dispose_task(void *arg)
+static bool should_dispose_exit(void)
 {
-	(void)arg;
-	char *current_cmd = NULL;
-	char *env_buf = NULL;
-	int env_ret;
-
 	if (!cmd_ctx.chain_buf) {
-		if (!origin_cmd.buf[0]) {
-			return state_switch(&scheduler_eng,
-					    "scheduler_get_char");
-		}
+		if (!origin_cmd.buf[0])
+			return true;
 		cmd_ctx.chain_buf = cli_mpool_alloc();
 		if (!cmd_ctx.chain_buf) {
 			pr_err("out of memory\r\n");
-			return state_switch(&scheduler_eng,
-					    "scheduler_get_char");
+			return true;
 		}
 		int len = origin_cmd.size;
 		memcpy(cmd_ctx.chain_buf, origin_cmd.buf, len);
@@ -389,77 +386,115 @@ int scheduler_dispose_task(void *arg)
 		cmd_ctx.chain_p = cmd_ctx.chain_buf;
 		cmd_ctx.cmd_ret = 0;
 	}
-
 	if (cmd_ctx.cmd_ret < 0) {
 		scheduler_cleanup();
-		return state_switch(&scheduler_eng, "scheduler_get_char");
+		return true;
 	}
+	return false;
+}
 
+static char *extract_current_cmd(void)
+{
+	char *cmd = NULL;
 	if (cmd_ctx.sub_chain_p) {
-		current_cmd = extract_next_cmd(&cmd_ctx.sub_chain_p);
-		if (!current_cmd) {
+		cmd = extract_next_cmd(&cmd_ctx.sub_chain_p);
+		if (!cmd) {
 			cli_mpool_free(cmd_ctx.sub_chain_buf);
 			cmd_ctx.sub_chain_buf = NULL;
 			cmd_ctx.sub_chain_p = NULL;
 		}
 	}
-
-	if (!current_cmd) {
-		current_cmd = extract_next_cmd(&cmd_ctx.chain_p);
-		if (!current_cmd) {
+	if (!cmd) {
+		cmd = extract_next_cmd(&cmd_ctx.chain_p);
+		if (!cmd) {
 			scheduler_cleanup();
-			return state_switch(&scheduler_eng,
-					    "scheduler_get_char");
+			return NULL;
 		}
 	}
+	return cmd;
+}
 
-	env_buf = cli_mpool_alloc();
+static bool try_sub_chain(char *env_buf)
+{
+	if (!has_chain_sep(env_buf))
+		return false;
+	if (cmd_ctx.sub_chain_buf) {
+		cli_mpool_free(cmd_ctx.sub_chain_buf);
+		cmd_ctx.sub_chain_buf = NULL;
+		cmd_ctx.sub_chain_p = NULL;
+	}
+	cmd_ctx.sub_chain_buf = env_buf;
+	cmd_ctx.sub_chain_p = cmd_ctx.sub_chain_buf;
+	return true;
+}
+
+static int apply_env_replace(char *current_cmd, char **env_buf_out,
+			      char **cmd_out)
+{
+	char *env_buf = cli_mpool_alloc();
 	if (!env_buf) {
 		pr_err("out of memory\r\n");
-		goto fail;
+		return -1;
 	}
-
-	env_ret = cli_env_replace(current_cmd, env_buf, CLI_MPOOL_SIZE);
-	if (env_ret == CLI_OK && env_buf[0] && has_chain_sep(env_buf)) {
-		if (cmd_ctx.sub_chain_buf) {
-			cli_mpool_free(cmd_ctx.sub_chain_buf);
-			cmd_ctx.sub_chain_buf = NULL;
-			cmd_ctx.sub_chain_p = NULL;
-		}
-		cmd_ctx.sub_chain_buf = env_buf;
-		cmd_ctx.sub_chain_p = cmd_ctx.sub_chain_buf;
-		return CLI_OK;
-	}
-
+	int env_ret = cli_env_replace(current_cmd, env_buf, CLI_MPOOL_SIZE);
+	if (env_ret == CLI_OK && env_buf[0] && try_sub_chain(env_buf))
+		return 1;
 	if (env_ret == CLI_OK && env_buf[0]) {
-		current_cmd = env_buf;
-	} else {
-		cli_mpool_free(env_buf);
-		env_buf = NULL;
+		*env_buf_out = env_buf;
+		*cmd_out = env_buf;
+		return 0;
 	}
+	cli_mpool_free(env_buf);
+	return 0;
+}
 
-	int dispatch_ret = dispatch_cmd(current_cmd);
+static int handle_dispatch_result(int dispatch_ret, char *env_buf)
+{
 	if (dispatch_ret < 0) {
 		if (env_buf)
 			cli_mpool_free(env_buf);
-		goto fail;
+		return -1;
 	}
 	if (dispatch_ret == 0) {
 		if (env_buf)
 			cli_mpool_free(env_buf);
-		return CLI_OK;
+		return 0;
 	}
-
 	cmd_ctx.env_buf = env_buf;
-	return CLI_OK;
+	return 0;
+}
 
-fail:
+static int dispose_fail(void)
+{
 	if (cmd_ctx.cmd_def) {
 		cmd_parse_cleanup(cmd_ctx.cmd_def);
 		cmd_ctx.cmd_def = NULL;
 	}
 	scheduler_cleanup();
 	return state_switch(&scheduler_eng, "scheduler_get_char");
+}
+
+int scheduler_dispose_task(void *arg)
+{
+	(void)arg;
+	char *env_buf = NULL;
+	char *current_cmd;
+	int ret;
+
+	if (should_dispose_exit())
+		return state_switch(&scheduler_eng, "scheduler_get_char");
+	current_cmd = extract_current_cmd();
+	if (!current_cmd)
+		return state_switch(&scheduler_eng, "scheduler_get_char");
+	ret = apply_env_replace(current_cmd, &env_buf, &current_cmd);
+	if (ret < 0)
+		return dispose_fail();
+	if (ret == 1)
+		return CLI_OK;
+	ret = dispatch_cmd(current_cmd);
+	if (handle_dispatch_result(ret, env_buf) < 0)
+		return dispose_fail();
+	return CLI_OK;
 }
 _EXPORT_STATE_SYMBOL(scheduler_dispose, NULL, scheduler_dispose_task, NULL,
 		     ".scheduler");

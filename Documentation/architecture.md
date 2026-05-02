@@ -1,4 +1,4 @@
-# 项目结构与核心机制
+# 🎯 项目结构与核心机制
 ```
 .
 ├── cli/              # CLI 核心：命令行编辑、状态机、命令分发
@@ -18,24 +18,24 @@
 └── Makefile          # 顶层 Makefile
 ```
 
-### 链接脚本段自动注册
+### 💡 链接脚本段自动注册
 
 `cli.ld` 中定义了若干自定义段：
 
-- `.cli_commands`   — 存放所有注册的命令定义
-- `.cli_cmd_line`  — 存放命令行状态机的状态节点
-- `.scheduler`     — 存放调度器任务
-- `.my_init_d`     — 存放初始化函数
-- `.cli_vars`      — 存放通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量描述符
-- `.cli_var_types` — 存放通过 `CLI_VAR_TYPE` 注册的自定义类型操作回调
+- ✅ `.cli_commands`   — 存放所有注册的命令定义
+- 🔹 `.cli_cmd_line`  — 存放命令行状态机的状态节点
+- 📌 `.scheduler`     — 存放调度器任务
+- 🆕 `.my_init_d`     — 存放初始化函数
+- 💎 `.cli_vars`      — 存放通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量描述符
+- ✅ `.cli_var_types` — 存放通过 `CLI_VAR_TYPE` 注册的自定义类型操作回调
 
 每个自定义段内部采用**三段式布局**（`.0.start`、`.1`、`.1.end`）：
-- `.0.start` 与 `.1.end` 是 `init/section_markers.c` 中定义的标记数组，值为 `NULL`，分别位于段的首尾；
-- `.1` 是各 C 文件通过宏注册的实际内容指针数组。
+- 🔹 `.0.start` 与 `.1.end` 是 `init/section_markers.c` 中定义的标记数组，值为 `NULL`，分别位于段的首尾；
+- 📌 `.1` 是各 C 文件通过宏注册的实际内容指针数组。
 
 链接阶段由链接脚本按 `*.0.start` → `*.1` → `*.1.end` 的顺序收集成连续数组。框架运行时使用段起始/结束符号（如 `_cli_commands_start` / `_cli_commands_end`）遍历，遍历时遇到 `NULL` 会自动跳过，**无需手动维护注册表**。
 
-### `CLI_COMMAND` 宏 —— 一行代码注册一个命令
+### ⚙️ `CLI_COMMAND` 宏 —— 一行代码注册一个命令
 
 LinCLI 的核心理念是：**命令注册应当像定义变量一样简单**。你不需要在 `main()` 里写任何初始化代码，也不需要调用注册函数，只要在 C 文件里用 `CLI_COMMAND` 宏写一次，链接器就会自动把它收集到系统的命令表中。
 
@@ -76,7 +76,7 @@ CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
 
 即使是 `CLI_COMMAND_WITH_BUF`（自定义独立缓冲区），也只需把宏名换掉、加上缓冲区参数即可，注册流程完全一致。开发者只需专注于**设计结构体**和**写 handler**，剩下的全部交给编译器与链接脚本。
 
-### 双线程/双角色模型（PC 模拟）
+### 🛡️ 双线程/双角色模型（PC 模拟）
 
 | 角色 | 文件 | 职责 |
 |------|------|------|
@@ -87,4 +87,4 @@ CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
 
 ---
 
-## 开机初始化函数 `_EXPORT_INIT_SYMBOL`
+## 🚀 开机初始化函数 `_EXPORT_INIT_SYMBOL`

@@ -1,7 +1,7 @@
-# 测试用例与终端操作示例
+# 🎯 测试用例与终端操作示例
 
 
-### 1. `tb` — BOOL 类型选项测试
+### 💡 1. `tb` — BOOL 类型选项测试
 
 **命令描述**：测试 BOOL 开关选项。  
 **选项**：`-v, --verbose`（启用详细输出）
@@ -13,7 +13,7 @@ BOOL test executed!
 lin@linCli>
 ```
 
-### 2. `ts` — STRING 类型选项测试
+### ⚙️ 2. `ts` — STRING 类型选项测试
 
 **命令描述**：测试字符串选项。  
 **选项**：`-m, --msg <text>`（消息文本）
@@ -25,7 +25,7 @@ lin@linCli> ts -m hello
 lin@linCli>
 ```
 
-### 3. `ti` — INT 类型选项测试
+### 🛡️ 3. `ti` — INT 类型选项测试
 
 **命令描述**：测试单个整数选项。  
 **选项**：`-n, --num <value>`（整数值）
@@ -37,7 +37,7 @@ INT test executed!
 lin@linCli>
 ```
 
-### 4. `td` — DOUBLE 类型选项测试
+### 🔹 4. `td` — DOUBLE 类型选项测试
 
 **命令描述**：测试浮点数选项。  
 **选项**：`-f, --factor <value>`（浮点值）
@@ -49,12 +49,12 @@ DOUBLE test executed!
 lin@linCli>
 ```
 
-### 5. `ta` — INT_ARRAY 类型选项测试（带依赖）
+### 📌 5. `ta` — INT_ARRAY 类型选项测试（带依赖）
 
 **命令描述**：测试整数数组选项，并演示 `depends` 依赖关系。  
 **选项**：
-- `-v, --verbose`         （BOOL）
-- `-n, --nums <list>`     （INT_ARRAY，最多 8 个，**依赖** `verbose`）
+- ✅ `-v, --verbose`         （BOOL）
+- 🔹 `-n, --nums <list>`     （INT_ARRAY，最多 8 个，**依赖** `verbose`）
 
 ```bash
 lin@linCli> ta -v -n 1 2 3
@@ -74,7 +74,7 @@ usage: ta [-v] [-n <nums...>]
 lin@linCli>
 ```
 
-### 6. `tc` — CALLBACK 类型选项测试
+### 💡 6. `tc` — CALLBACK 类型选项测试
 
 **命令描述**：测试自定义回调选项，框架仅将原始字符串传给 handler。  
 **选项**：`-c, --cfg <raw>`（原始配置字符串）
@@ -86,7 +86,7 @@ CALLBACK test executed!
 lin@linCli>
 ```
 
-### 7. `tr` — REQUIRED 必需选项测试
+### ⚙️ 7. `tr` — REQUIRED 必需选项测试
 
 **命令描述**：测试选项的 `required=true` 校验。  
 **选项**：`-f, --file <path>`（STRING，**必需**）
@@ -110,12 +110,12 @@ usage: tr -f <file>
 lin@linCli>
 ```
 
-### 8. `tcf` — CONFLICTS 互斥选项测试
+### 🛡️ 8. `tcf` — CONFLICTS 互斥选项测试
 
 **命令描述**：测试选项互斥（`conflicts` 字段）。  
 **选项**：
-- `-v, --verbose`         （BOOL）
-- `-n, --nums <list>`     （INT_ARRAY，与 `verbose` **互斥**）
+- 📌 `-v, --verbose`         （BOOL）
+- 🆕 `-n, --nums <list>`     （INT_ARRAY，与 `verbose` **互斥**）
 
 正常单独使用：
 
@@ -136,12 +136,12 @@ usage: tcf [-v] [-n <nums...>]
 lin@linCli>
 ```
 
-### 9. `tw` — CLI_COMMAND_WITH_BUF 独立缓冲区测试
+### 🔹 9. `tw` — CLI_COMMAND_WITH_BUF 独立缓冲区测试
 
 **命令描述**：演示为命令指定独立的静态参数解析缓冲区（而非共享 `g_cli_cmd_buf`）。  
 **选项**：
-- `-v, --verbose`
-- `-n, --nums <list>`（INT_ARRAY，最多 16 个）
+- 💎 `-v, --verbose`
+- ✅ `-n, --nums <list>`（INT_ARRAY，最多 16 个）
 
 ```bash
 lin@linCli> tw -v -n 10 20 30
@@ -151,14 +151,14 @@ WITH_BUF test executed!
 lin@linCli>
 ```
 
-### 10. `var` — 变量系统测试（内建命令）
+### 📌 10. `var` — 变量系统测试（内建命令）
 
 **命令描述**：框架内建的变量读写命令，支持查看和修改所有通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量。测试文件位于 `tests/test_cli_var.c`。
 
 **测试覆盖内容**：
-- 内建类型变量：`INT`、`DOUBLE`、`BOOL`、`STRING`
-- 自定义类型变量：`point`（二维坐标）、`pid`（PID 参数结构体）
-- 只读保护：`CLI_VAR_RO` 和 `CLI_VAR_CUSTOM_RO`
+- 🔹 内建类型变量：`INT`、`DOUBLE`、`BOOL`、`STRING`
+- 📌 自定义类型变量：`point`（二维坐标）、`pid`（PID 参数结构体）
+- 🆕 只读保护：`CLI_VAR_RO` 和 `CLI_VAR_CUSTOM_RO`
 
 **列出所有变量：**
 
@@ -216,8 +216,8 @@ lin@linCli> var -w <Tab>
 g_device_name    g_kp    g_loop_count    g_origin    g_pid    g_verbose
 ```
 
-> `-w` 的补全列表自动排除了 `g_ki` 和 `g_target` 两个只读变量。
+> 📝 `-w` 的补全列表自动排除了 `g_ki` 和 `g_target` 两个只读变量。
 
 ---
 
-## 高级交互功能
+## 🚀 高级交互功能

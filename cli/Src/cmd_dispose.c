@@ -83,8 +83,16 @@ static char *extract_unquoted(char **p_out)
 	char *p = *p_out;
 	char *start = p;
 
-	while (*p && !is_space(*p))
-		p++;
+	while (*p && !is_space(*p)) {
+		if (*p == '\'' || *p == '"') {
+			char quote = *p++;
+			while (*p && *p != quote)
+				p++;
+			if (*p == quote)
+				p++;
+		} else
+			p++;
+	}
 	*p_out = p;
 	return start;
 }
@@ -890,10 +898,8 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 		if (!*p)
 			break;
 		cmds[cnt++] = p;
-
 		char *split_pos = NULL;
 		p = find_chain_split(p, &split_pos);
-
 		if (split_pos) {
 			*split_pos = '\0';
 			trim_tail_spaces(cmds[cnt - 1], split_pos - 1);

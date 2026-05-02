@@ -1,7 +1,7 @@
-# 用户可定制接口
+# 🎯 用户可定制接口
 
 
-### 日志系统 `cli_printk`
+### 💡 日志系统 `cli_printk`
 
 `cli_printk` 的使用方式**一比一复刻 Linux 内核的日志打印函数**。框架推荐直接在**命令响应函数（handler）**中使用它，也推荐在框架内部调试时使用；但需要注意，由于它内部会调用 `cli_out_push` / `cli_out_sync` 进行输出同步，**不能在中断上下文里调用**。如果你的移植代码把串口接收函数放到了中断里，那么该中断函数中也不应调用 `cli_printk`。
 
@@ -65,7 +65,7 @@ const char *pre_INFO_gen(void)
 
 可供覆盖的函数列表：`pre_EMERG_gen`、`pre_ALERT_gen`、`pre_CRIT_gen`、`pre_ERR_gen`、`pre_WARNING_gen`、`pre_NOTICE_gen`、`pre_INFO_gen`、`pre_DEBUG_gen`、`pre_DEFAULT_gen`。
 
-### 命令提示符样式
+### ⚙️ 命令提示符样式
 
 命令提示符（`lin@linCli>`）通过 `cli_prompt_print` 输出，它也是一个弱定义函数（默认定义在 `init/scheduler.c`）。你可以在自己的项目中覆盖它，改成你想要的提示符：
 
@@ -84,4 +84,4 @@ MyDevice>
 
 ---
 
-## 写在最后
+## 🚀 写在最后
