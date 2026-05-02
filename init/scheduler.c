@@ -292,22 +292,6 @@ static char *skip_quoted(char *p)
 	return p;
 }
 
-static char *find_chain_split(char *p, char *start)
-{
-	while (*p) {
-		if (*p == '\'' || *p == '"') {
-			p = skip_quoted(p);
-		} else if (p[0] == '&' && p[1] == '&') {
-			*p = '\0';
-			trim_tail(start, p - 1);
-			return p + 2;
-		} else {
-			p++;
-		}
-	}
-	return NULL;
-}
-
 static char *extract_next_cmd(char **p_out)
 {
 	char *p = *p_out;
@@ -318,12 +302,17 @@ static char *extract_next_cmd(char **p_out)
 		return NULL;
 
 	char *start = p;
-	char *next = find_chain_split(p, start);
-	if (next) {
-		*p_out = next;
-		return start;
+	while (*p) {
+		if (*p == '\'' || *p == '"')
+			p = skip_quoted(p);
+		else if (p[0] == '&' && p[1] == '&') {
+			*p = '\0';
+			trim_tail(start, p - 1);
+			*p_out = p + 2;
+			return start;
+		} else
+			p++;
 	}
-
 	char *end = p + strlen(p) - 1;
 	trim_tail(start, end);
 	*p_out = p;
