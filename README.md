@@ -239,8 +239,8 @@ CLI_ENV(DEVICE_PREFIX, "sensor-A");
 **按名字引用 `$NAME`**：
 
 ```bash
-lin@linCli> echo --msg $PROJECT
-LinCLI-Framework
+lin@linCli> $echo $PROJECT
+[echo] LinCLI-Framework
 ```
 
 **按系统 ID 引用 `$id`**：
@@ -253,8 +253,8 @@ ID   NAME                 VALUE
 1    BUILD_TYPE           debug
 2    DEVICE_PREFIX        sensor-A
 
-lin@linCli> echo --msg $0
-LinCLI-Framework
+lin@linCli> $echo $0
+[echo] LinCLI-Framework
 ```
 
 ### env 命令
@@ -267,8 +267,8 @@ LinCLI-Framework
 lin@linCli> env -s 'BUILD_TYPE=release'
 lin@linCli> env -r BUILD_TYPE
 BUILD_TYPE = release
-lin@linCli> echo --msg $BUILD_TYPE
-release
+lin@linCli> $echo $BUILD_TYPE
+[echo] release
 ```
 
 > **引号保护**：从 v1.4.7 开始，支持用 `'` 或 `"` 包裹整个参数。`env -s 'GREETING=hello world'` 可以正确设置含空格的变量；`env -s 'CMD=ts -m hello && ts -m world'` 设置后执行 `$CMD`，会正确分割命令链并依次执行。

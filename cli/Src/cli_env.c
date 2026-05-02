@@ -30,26 +30,27 @@
 CLI_ENV(VER, CLI_VER_STR(CLI_VERSION_MAJOR, CLI_VERSION_MINOR,
 			   CLI_VERSION_PATCH));
 CLI_ENV(BUILD, __DATE__ " " __TIME__);
+CLI_ENV(echo, "_echo --msg");
 
 /* ============================================================
  *  echo 命令：系统内置打印命令
  * ============================================================ */
 
-struct echo_args {
+struct _echo_args {
 	const char *msg;
 };
 
-static int echo_handler(void *_args)
+static int _echo_handler(void *_args)
 {
-	struct echo_args *args = _args;
+	struct _echo_args *args = _args;
 	cli_printk("[echo] %s\r\n", args->msg ? args->msg : "");
 	return 0;
 }
 
-CLI_COMMAND(echo, "echo", "Print message via cli_printk",
-	    USAGE("echo --msg <message>"), echo_handler,
-	    (struct echo_args *)0,
-	    OPTION(0, "msg", STRING, "Message to print", struct echo_args, msg,
+CLI_COMMAND(_echo, "_echo", "Print message via cli_printk",
+	    USAGE("_echo --msg <message>"), _echo_handler,
+	    (struct _echo_args *)0,
+	    OPTION(0, "msg", STRING, "Message to print", struct _echo_args, msg,
 		   0, NULL, NULL, false),
 	    END_OPTIONS);
 

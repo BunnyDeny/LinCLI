@@ -34,8 +34,8 @@ CLI_ENV(DEVICE_PREFIX, "sensor-A");
 ### `$NAME` — 按名字引用
 
 ```bash
-lin@linCli> echo --msg $PROJECT
-LinCLI-Framework
+lin@linCli> $echo $PROJECT
+[echo] LinCLI-Framework
 ```
 
 ### `$id` — 按系统 ID 引用
@@ -50,8 +50,8 @@ ID   NAME                 VALUE
 1    BUILD_TYPE           debug
 2    DEVICE_PREFIX        sensor-A
 
-lin@linCli> echo --msg $0
-LinCLI-Framework
+lin@linCli> $echo $0
+[echo] LinCLI-Framework
 ```
 
 > **替换规则**：未定义的变量保留原样。例如 `$UNKNOWN` 找不到对应注册时，会原样输出 `$UNKNOWN`。
@@ -89,8 +89,8 @@ lin@linCli> env -s BUILD_TYPE=release
 lin@linCli> env -r BUILD_TYPE
 BUILD_TYPE = release
 
-lin@linCli> echo --msg $BUILD_TYPE
-release
+lin@linCli> $echo $BUILD_TYPE
+[echo] release
 ```
 
 > **仅支持修改已注册变量**：如果变量未通过 `CLI_ENV` 注册，`env -s` 会报错 `"unknown environment variable: xxx"`。
