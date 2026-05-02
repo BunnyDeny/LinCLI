@@ -101,11 +101,6 @@ int cli_env_set(cli_env_t *env, const char *new_value)
 	if (!env || !new_value)
 		return CLI_ERR_NULL;
 
-	if (env->dyn_value) {
-		cli_mpool_free(env->dyn_value);
-		env->dyn_value = NULL;
-	}
-
 	char *buf = cli_mpool_alloc();
 	if (!buf) {
 		pr_err("out of memory\r\n");
@@ -118,6 +113,8 @@ int cli_env_set(cli_env_t *env, const char *new_value)
 	memcpy(buf, new_value, len);
 	buf[len] = '\0';
 
+	if (env->dyn_value)
+		cli_mpool_free(env->dyn_value);
 	env->dyn_value = buf;
 	return 0;
 }

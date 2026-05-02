@@ -421,6 +421,11 @@ int scheduler_dispose_task(void *arg)
 
 	env_ret = cli_env_replace(current_cmd, env_buf, CLI_MPOOL_SIZE);
 	if (env_ret == CLI_OK && env_buf[0] && has_chain_sep(env_buf)) {
+		if (cmd_ctx.sub_chain_buf) {
+			cli_mpool_free(cmd_ctx.sub_chain_buf);
+			cmd_ctx.sub_chain_buf = NULL;
+			cmd_ctx.sub_chain_p = NULL;
+		}
 		cmd_ctx.sub_chain_buf = env_buf;
 		cmd_ctx.sub_chain_p = cmd_ctx.sub_chain_buf;
 		return CLI_OK;
