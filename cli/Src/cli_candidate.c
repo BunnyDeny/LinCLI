@@ -27,7 +27,7 @@ void cli_candidate_init(void *arg)
 {
 	(void)arg;
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd || !cmd->options)
 			continue;

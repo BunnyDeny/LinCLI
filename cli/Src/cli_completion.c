@@ -67,7 +67,7 @@ int str_common_prefix_len(const char *a, const char *b)
 const cli_command_t *find_cmd_by_name(const char *name)
 {
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (cmd->name && strcmp(cmd->name, name) == 0)
 			return cmd;
@@ -81,7 +81,7 @@ int find_cmd_match(const char *prefix, int prefix_len,
 	int match_cnt = 0;
 	const cli_command_t *cmd;
 
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd->name)
 			continue;
@@ -112,7 +112,7 @@ int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
 	memcpy(lcp_buf, first_match->name, lcp_len);
 
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd->name)
 			continue;
@@ -134,7 +134,7 @@ void compute_candidate_layout(const char *prefix, int prefix_len,
 	const cli_command_t *cmd;
 	*max_len = 0;
 	*cnt = 0;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd->name)
 			continue;
@@ -184,7 +184,7 @@ void display_candidates(const char *prefix, int prefix_len,
 				 &cnt);
 
 	int cur_cow = 0, cur_idx = 0;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd->name)
 			continue;
@@ -233,7 +233,7 @@ int cmd_match_total(void)
 {
 	int total = 0;
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd->name)
 			continue;
@@ -250,7 +250,7 @@ const cli_command_t *cmd_find_match_by_index(int idx)
 {
 	int cur = 0;
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd->name)
 			continue;

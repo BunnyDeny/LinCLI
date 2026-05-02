@@ -82,9 +82,9 @@ typedef struct cli_command {
 extern const cli_command_t *const _cli_commands_start[];
 extern const cli_command_t *const _cli_commands_end[];
 
-#define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd)               \
-	for (const cli_command_t *const *_pp = (_start);        \
-	     _pp < (const cli_command_t *const *)(_end); _pp++) \
+#define _FOR_EACH_CLI_COMMAND(_cmd)                               \
+	for (const cli_command_t *const *_pp = _cli_commands_start; \
+	     _pp < (const cli_command_t *const *)_cli_commands_end; _pp++) \
 		if (((_cmd) = *_pp) != NULL)
 
 /* ============================================================

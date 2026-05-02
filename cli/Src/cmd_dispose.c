@@ -39,7 +39,7 @@
 static const cli_command_t *cli_command_find(const char *_name)
 {
 	const cli_command_t *_cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, _cmd)
+	_FOR_EACH_CLI_COMMAND(_cmd)
 	{
 		if (_cmd->name && strcmp(_cmd->name, _name) == 0)
 			return _cmd;
