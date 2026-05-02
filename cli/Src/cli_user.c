@@ -16,7 +16,7 @@
  *  注册测试用户（验证段收集机制）
  * ============================================================ */
 
-CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT);
+CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
 CLI_USER(guest, "guest", "guest", CLI_USER_ROLE_NORMAL,
 	 USER_CMDS("help", "version", "env"));
 CLI_USER(operator, "op", "op_pass", CLI_USER_ROLE_NORMAL,
@@ -48,13 +48,13 @@ void cli_user_init(void *arg)
 	const cli_user_t *user;
 
 	all_printk("\r\n[User Manager] registered users:\r\n");
-	_FOR_EACH_CLI_USER(_cli_users_start, _cli_users_end, user)
+	FOR_EACH_CLI_USER(user)
 	{
 		if (!user)
 			continue;
 		all_printk("  user: %-10s  role: %-5s  cmds: ",
 			   user->username, role_str(user->role));
-		if (user->role == CLI_USER_ROLE_ROOT || user->cmd_count < 0) {
+		if (user->role == CLI_USER_ROLE_ROOT) {
 			all_printk("(all)\r\n");
 		} else if (user->cmd_count == 0 || !user->cmds) {
 			all_printk("(none)\r\n");
