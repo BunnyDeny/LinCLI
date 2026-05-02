@@ -177,6 +177,10 @@ static int su_task(void *_args)
 	}
 	if (!su_target && su_find_target(args->change) < 0)
 		return -1;
+	if (su_target == current_user) {
+		pr_info("already logged in as '%s'\r\n", current_user->username);
+		return 0;
+	}
 	return su_prompt_password();
 }
 
