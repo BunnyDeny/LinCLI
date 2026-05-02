@@ -200,12 +200,52 @@ CLI_COMMAND_ASYNC(su_cmd, "su", "Switch user or list users",
 		  END_OPTIONS);
 
 /* ============================================================
- *  init_d 初始化函数（保留，后续扩展使用）
+ *  init_d 初始化函数：为 su -c 选项附加用户名候选列表
  * ============================================================ */
+
+#define MAX_CLI_USER_CANDS 32
+
+static char *user_names[MAX_CLI_USER_CANDS + 1];
+static int user_name_count;
+
+static void cli_user_collect_candidates(void)
+{
+	const cli_user_t *user;
+	user_name_count = 0;
+	FOR_EACH_CLI_USER(user)
+	{
+		if (!user || !user->username)
+			continue;
+		if (user_name_count < MAX_CLI_USER_CANDS)
+			user_names[user_name_count++] = (char *)user->username;
+	}
+}
+
+static void cli_user_attach_candidates(const cli_command_t *cmd)
+{
+	for (size_t i = 0; i < cmd->option_count; i++) {
+		cli_option_t *opt = &cmd->options[i];
+		if (!opt->long_opt)
+			continue;
+		if (strcmp(opt->long_opt, "change") == 0) {
+			opt->candidate_argc = user_name_count;
+			opt->candidate_argv = user_names;
+		}
+	}
+}
 
 void cli_user_init(void *arg)
 {
 	(void)arg;
+	cli_user_collect_candidates();
+
+	const cli_command_t *cmd;
+	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	{
+		if (!cmd || !cmd->name || strcmp(cmd->name, "su") != 0)
+			continue;
+		cli_user_attach_candidates(cmd);
+	}
 }
 
 _EXPORT_INIT_SYMBOL(cli_user_init, 13, NULL, cli_user_init);
