@@ -218,82 +218,86 @@ lin@linCli>
 
 可以看到，所有选项的描述、是否必需、与谁互斥，都是框架自动生成的。这进一步减少了开发者的重复劳动：你只需要在注册时写一次帮助文本，系统会自动把它呈现给用户。
 
-## alias-命令重命名
+## 环境变量系统
 
-通过 `CMD_ALIAS` 宏来重命名你的命令，这适用于简化已经定义的一些复杂命令。
-需要注意的是，新的名字只能是单个单词的形式，形如`msg log`这样的名字
-是不被允许的。举一个重命名的例子(`tests/test_string.c`)：
+LinCLI 内建一套**字符串环境变量系统**，允许你在代码中预定义一组字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用它们。与编译期固定的宏不同，环境变量的值可以在运行时通过 `env` 命令动态修改，且替换发生在命令解析之前，因此能无缝享受命令链、`--help` 等后续流程。
+
+### 注册环境变量
+
+在任意 `.c` 源文件中：
+
 ```c
-struct string_args {
-	char *msg;
-};
+#include "cli_env.h"
 
-static int string_handler(void *_args)
-{
-	struct string_args *args = _args;
-	if (args->msg)
-		cli_printk(" %s\r\n", args->msg);
-	return 0;
-}
-
-CLI_COMMAND(ts, "ts", "Test STRING option",
-	    USAGE("ts [-m <msg>]"),
-	    string_handler, (struct string_args *)0,
-	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg, 0, NULL, NULL, false),
-	    END_OPTIONS);
-CMD_ALIAS(echo, "ts --msg");
+CLI_ENV(PROJECT, "LinCLI-Framework");
+CLI_ENV(BUILD_TYPE, "debug");
+CLI_ENV(DEVICE_PREFIX, "sensor-A");
 ```
-> **位置无关提示**
+
+### 终端引用方式
+
+**按名字引用 `$NAME`**：
+
+```bash
+lin@linCli> techo --msg $PROJECT
+LinCLI-Framework
+```
+
+**按系统 ID 引用 `$id`**：
+
+```bash
+lin@linCli> env -l
+ID   NAME                 VALUE
+--------------------------------------------
+0    PROJECT              LinCLI-Framework
+1    BUILD_TYPE           debug
+2    DEVICE_PREFIX        sensor-A
+
+lin@linCli> techo --msg $0
+LinCLI-Framework
+```
+
+### env 命令
+
+- `env -l` / `env --list` — 列出所有环境变量
+- `env -r <name>` / `env --read <name>` — 读取指定变量
+- `env -s 'name=value'` / `env --set 'name=value'` — 修改指定变量
+
+```bash
+lin@linCli> env -s 'BUILD_TYPE=release'
+lin@linCli> env -r BUILD_TYPE
+BUILD_TYPE = release
+lin@linCli> techo --msg $BUILD_TYPE
+release
+```
+
+> **引号保护**：从 v1.4.7 开始，支持用 `'` 或 `"` 包裹整个参数。`env -s 'GREETING=hello world'` 可以正确设置含空格的变量；`env -s 'CMD=ts -m hello && ts -m world'` 设置后执行 `$CMD`，会正确分割命令链并依次执行。
 >
-> `CMD_ALIAS` 和 `CLI_COMMAND` 一样，也是通过链接脚本段自动收集的。因此你**不需要**把它和被重命名的命令写在同一个文件里，甚至不需要放在该命令的注册语句后面——它可以定义在项目的任何 `.c` 文件中，链接器会自动汇总。
+> **仅支持修改已注册变量**：如果变量未通过 `CLI_ENV` 注册，`env -s` 会报错 `"unknown environment variable: xxx"`。
 
-首先通过 `CLI_COMMAND` 宏注册了一个 `ts` 命令，这个命令可以通过 `ts --msg hello world` 向终端打印 `hello world` 字符串。可以通过下面的方式将 `ts --msg` 这个较复杂的命令重命名为 `echo` 这样的简短命令：
+### 使用示例：动态切换命令模板
+
+把一条复杂命令的参数模板提取成环境变量，在不同场景下快速切换：
+
 ```c
-CMD_ALIAS(echo, "ts --msg");
-```
-通过`alias`命令可以打印出系统当前通过`CMD_ALIAS`重命名名的所有命令：
-```bash
-lin@linCli> alias 
-
-ALIAS                ORIGINAL COMMAND                        
-------------------------------------------------------------
-echo                 ts --msg                                
-------------------------------------------------------------
-
-lin@linCli> 
-```
-当`CMD_ALIAS`重命名的命令的新名字与`CLI_COMMAND`注册的命令冲突的时候，前者会覆盖后者，这也是linux系统的行为
-
-所以，现在，通过`echo`即可实现`ts --msg`相同的功能：
-```bash
-lin@linCli> echo hello world
- hello world
-
-lin@linCli> 
-```
-另外注意，重命名之后的命令使用`-h`选项，会打印出重命名之前的命令的帮助信息，例如上述`echo`,如果使用`echo -h`则等价于`ts -h`：
-```bash
-lin@linCli> echo -h
- command     : ts
- description : Test STRING option
- usage       : ts [-m <msg>]
- option      :
-  -m, --msg              Message text
-
-lin@linCli> 
+CLI_ENV(TARGET, "sensor-A");
 ```
 
-重命名的新命令可以正常使用下文的命令链（详情看下文命令链章节）：
 ```bash
-lin@linCli> tb --verbose && echo hello && echo nihao shijie
-BOOL test executed!
-  verbose = true
+lin@linCli> log --file /tmp/$TARGET.log
+# 实际执行：log --file /tmp/sensor-A.log
 
- hello
+lin@linCli> env -s TARGET=sensor-B
+lin@linCli> log --file /tmp/$TARGET.log
+# 实际执行：log --file /tmp/sensor-B.log
+```
 
- nihao shijie
+环境变量的值中如果包含 `&&`，展开后会自动触发命令链分割，实现参数级的命令组合：
 
-lin@linCli> 
+```bash
+lin@linCli> env -s 'PIPELINE=flash --erase && flash --write && flash --verify'
+lin@linCli> $PIPELINE
+# 依次执行三条命令，前一条失败则后续自动停止
 ```
 ---
 
@@ -514,7 +518,7 @@ lin@linCli> level
 
 - **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象，支持在线查看和修改 `INT` / `DOUBLE` / `BOOL` / `STRING` 类型的变量，无需重新编译。此外还支持**用户自定义类型**，你可以为任意结构体注册序列化/反序列化规则，让 `var` 命令直接读写结构体成员。非常适合现场 PID 调参、开关调试、状态监控和复杂配置结构体的在线整定。
 
-- **[环境变量系统](Documentation/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用。支持运行时通过 `env -s` 动态修改值，比 `alias` 更灵活。可替换命令行任意位置的 token，并能与 alias、命令链、Tab 补全等功能协同工作。适合动态切换公共前缀、参数模板等场景。
+- **[环境变量系统](Documentation/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用。支持运行时通过 `env -s` 动态修改值，可替换命令行任意位置的 token，并能与命令链、Tab 补全等功能协同工作。适合动态切换公共前缀、参数模板等场景。
 
 - **[Tab 补全候选列表](Documentation/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 

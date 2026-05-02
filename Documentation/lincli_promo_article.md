@@ -267,7 +267,7 @@ CLI_COMMAND_ASYNC(upgrade, "upgrade", "OTA firmware upgrade",
 - **Tab 补全**：命令名前缀补全、选项名补全，歧义前缀自动填充 LCP；
 - **候选列表高亮选择（v1.1.1 新增）**：按 `Tab` 弹出候选列表后，再次按 `Tab` 进入高亮循环模式，通过方向键或 `Tab` 键切换反白候选项，选中后自动替换命令行，无需手敲完整内容；
 - **命令链 `&&`**：`flash erase && write && verify`，前一条失败后续自动停止；
-- **命令别名**：`CMD_ALIAS(echo, "ts --msg")` 把复杂命令简写。
+- **环境变量**：`CLI_ENV(TARGET, "sensor-A")` 配合 `$TARGET` 在命令行任意位置替换，运行时可通过 `env -s` 动态修改；
 
 ### 尾行模式
 

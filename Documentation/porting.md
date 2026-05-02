@@ -194,11 +194,6 @@ example_project/LinCLI_1_0_stm32f103c8t6_keil5_mdk_examply_project/
     KEEP(*(.my_init_d.1))
     KEEP(*(.my_init_d.1.end))
   } >FLASH
-  .alias_cmd : {
-    KEEP(*(.alias_cmd.0.start))
-    KEEP(*(.alias_cmd.1))
-    KEEP(*(.alias_cmd.1.end))
-  } >FLASH
   .cli_vars : {
     KEEP(*(.cli_vars.0.start))
     KEEP(*(.cli_vars.1))
@@ -279,11 +274,6 @@ Keil MDK 使用 `.sct`（分散加载文件）作为链接脚本。核心思路�
     *(.my_init_d.0.start)
     *(.my_init_d.1)
     *(.my_init_d.1.end)
-  }
-  ER_ALIAS_CMD +0 {
-    *(.alias_cmd.0.start)
-    *(.alias_cmd.1)
-    *(.alias_cmd.1.end)
   }
   ER_CLI_VARS +0 {
     *(.cli_vars.0.start)
