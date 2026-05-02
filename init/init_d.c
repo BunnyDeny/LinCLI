@@ -48,7 +48,7 @@ void call_init_d(void)
 	struct init_d *init;
 	struct rb_node *node;
 
-	_FOR_EACH_INIT_D(_init_d_start, _init_d_end, init)
+	_FOR_EACH_INIT_D(init)
 	{
 		if (init) {
 			init_d_insert(init);

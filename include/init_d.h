@@ -41,9 +41,9 @@ struct init_d {
 extern struct init_d *const _init_d_start[];
 extern struct init_d *const _init_d_end[];
 
-#define _FOR_EACH_INIT_D(_start, _end, _init_d)           \
-	for (struct init_d *const *_pp = (_start);        \
-	     _pp < (struct init_d *const *)(_end); _pp++) \
+#define _FOR_EACH_INIT_D(_init_d)                         \
+	for (struct init_d *const *_pp = _init_d_start;   \
+	     _pp < (struct init_d *const *)_init_d_end; _pp++) \
 		if (((_init_d) = *_pp) != NULL)
 
 extern void call_init_d(void);
