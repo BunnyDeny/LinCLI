@@ -383,6 +383,7 @@ int scheduler_dispose_task(void *arg)
 		memcpy(cmd_ctx.chain_buf, origin_cmd.buf, len);
 		cmd_ctx.chain_buf[len] = '\0';
 		cmd_ctx.chain_p = cmd_ctx.chain_buf;
+		cmd_ctx.cmd_ret = 0;
 	}
 
 	if (cmd_ctx.cmd_ret < 0) {
