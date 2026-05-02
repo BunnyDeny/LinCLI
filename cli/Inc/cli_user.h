@@ -12,6 +12,7 @@
 #define _CLI_USER_H_
 
 #include <stddef.h>
+#include "cmd_dispose.h"
 
 /* ============================================================
  *  类型定义
@@ -92,5 +93,11 @@ extern const cli_user_t *const _cli_users_end[];
  * ============================================================ */
 
 extern const cli_user_t *current_user;
+
+/* ============================================================
+ *  权限检查：判断当前用户是否有权访问指定命令
+ * ============================================================ */
+
+int cli_user_cmd_permitted(const cli_command_t *cmd);
 
 #endif /* _CLI_USER_H_ */

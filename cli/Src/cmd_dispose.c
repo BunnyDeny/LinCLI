@@ -18,6 +18,7 @@
 
 #include "cmd_dispose.h"
 #include "cli_errno.h"
+#include "cli_user.h"
 #include "stateM.h"
 #include "cli_io.h"
 #include "cli_cmd_line.h"
@@ -785,6 +786,12 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 	const cli_command_t *cmd_def = lookup_cmd_def(argv[0], cmd_ret);
 	if (!cmd_def)
 		return NULL;
+	if (!cli_user_cmd_permitted(cmd_def)) {
+		pr_err("permission denied: '%s' is not allowed for user '%s'\r\n",
+		       argv[0], current_user->username);
+		*cmd_ret = -1;
+		return NULL;
+	}
 	if (handle_help_request(cmd_def, argc, argv, cmd_ret))
 		return NULL;
 	if (ensure_cmd_buf(&cmd_def) < 0) {

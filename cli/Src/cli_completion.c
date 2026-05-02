@@ -14,6 +14,7 @@
 #include "cli_mpool.h"
 #include "cli_errno.h"
 #include "init_d.h"
+#include "cli_user.h"
 #include <string.h>
 
 /* ============================================================
@@ -84,6 +85,8 @@ int find_cmd_match(const char *prefix, int prefix_len,
 	{
 		if (!cmd->name)
 			continue;
+		if (!cli_user_cmd_permitted(cmd))
+			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
 			match_cnt++;
 			if (match_cnt == 1)
@@ -113,6 +116,8 @@ int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
 	{
 		if (!cmd->name)
 			continue;
+		if (!cli_user_cmd_permitted(cmd))
+			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) != 0)
 			continue;
 		int cpl = str_common_prefix_len(lcp_buf, cmd->name);
@@ -132,6 +137,8 @@ void compute_candidate_layout(const char *prefix, int prefix_len,
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd->name)
+			continue;
+		if (!cli_user_cmd_permitted(cmd))
 			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
 			*max_len = *max_len > strlen(cmd->name) ?
@@ -181,6 +188,8 @@ void display_candidates(const char *prefix, int prefix_len,
 	{
 		if (!cmd->name)
 			continue;
+		if (!cli_user_cmd_permitted(cmd))
+			continue;
 		if (strncmp(cmd->name, prefix, prefix_len) == 0) {
 			display_one_candidate(cmd->name, max_len, highlight_idx,
 					      &cur_cow, &cur_idx);
@@ -228,6 +237,8 @@ int cmd_match_total(void)
 	{
 		if (!cmd->name)
 			continue;
+		if (!cli_user_cmd_permitted(cmd))
+			continue;
 		if (strncmp(cmd->name, candidate_ctx.prefix,
 			    candidate_ctx.prefix_len) == 0)
 			total++;
@@ -242,6 +253,8 @@ const cli_command_t *cmd_find_match_by_index(int idx)
 	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
 	{
 		if (!cmd->name)
+			continue;
+		if (!cli_user_cmd_permitted(cmd))
 			continue;
 		if (strncmp(cmd->name, candidate_ctx.prefix,
 			    candidate_ctx.prefix_len) == 0) {
