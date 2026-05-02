@@ -26,11 +26,13 @@ static void pr_builtin_envs(void)
 {
 	cli_env_t *env;
 	all_printk("Environment:\r\n");
+	all_printk("%-4s %-20s %s\r\n", "ID", "NAME", "VALUE");
+	all_printk("--------------------------------------------\r\n");
 	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
 	{
 		if (!env || !env->name || env->id < 0)
 			continue;
-		all_printk("  $%-12s %s\r\n", env->name,
+		all_printk("%-4d %-20s %s\r\n", env->id, env->name,
 			   cli_env_get_value(env));
 	}
 	all_printk("\r\n");
