@@ -102,7 +102,7 @@ static int tokenize(char *line, char **argv, int max_argv)
 			argv[argc++] = extract_quoted(&p);
 		else
 			argv[argc++] = extract_unquoted(&p);
-		if (*p)
+		if (*p && is_space(*p))
 			*p++ = '\0';
 	}
 	return argc;
