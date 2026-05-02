@@ -239,7 +239,7 @@ CLI_ENV(DEVICE_PREFIX, "sensor-A");
 **按名字引用 `$NAME`**：
 
 ```bash
-lin@linCli> techo --msg $PROJECT
+lin@linCli> echo --msg $PROJECT
 LinCLI-Framework
 ```
 
@@ -253,7 +253,7 @@ ID   NAME                 VALUE
 1    BUILD_TYPE           debug
 2    DEVICE_PREFIX        sensor-A
 
-lin@linCli> techo --msg $0
+lin@linCli> echo --msg $0
 LinCLI-Framework
 ```
 
@@ -267,7 +267,7 @@ LinCLI-Framework
 lin@linCli> env -s 'BUILD_TYPE=release'
 lin@linCli> env -r BUILD_TYPE
 BUILD_TYPE = release
-lin@linCli> techo --msg $BUILD_TYPE
+lin@linCli> echo --msg $BUILD_TYPE
 release
 ```
 

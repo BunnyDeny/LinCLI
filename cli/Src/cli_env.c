@@ -32,6 +32,28 @@ CLI_ENV(VER, CLI_VER_STR(CLI_VERSION_MAJOR, CLI_VERSION_MINOR,
 CLI_ENV(BUILD, __DATE__ " " __TIME__);
 
 /* ============================================================
+ *  echo 命令：系统内置打印命令
+ * ============================================================ */
+
+struct echo_args {
+	const char *msg;
+};
+
+static int echo_handler(void *_args)
+{
+	struct echo_args *args = _args;
+	cli_printk("[echo] %s\r\n", args->msg ? args->msg : "");
+	return 0;
+}
+
+CLI_COMMAND(echo, "echo", "Print message via cli_printk",
+	    USAGE("echo --msg <message>"), echo_handler,
+	    (struct echo_args *)0,
+	    OPTION(0, "msg", STRING, "Message to print", struct echo_args, msg,
+		   0, NULL, NULL, false),
+	    END_OPTIONS);
+
+/* ============================================================
  *  纯整数名字检测与注册过滤
  * ============================================================ */
 
