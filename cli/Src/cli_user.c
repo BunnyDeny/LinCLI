@@ -21,7 +21,7 @@
 
 CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
 CLI_USER(lin, "lin", "lin123", CLI_USER_ROLE_NORMAL,
-	 USER_CMDS("help", "_echo"));
+	 USER_CMDS("_echo"));
 
 /* ============================================================
  *  默认登录用户（弱定义，用户可重定义）

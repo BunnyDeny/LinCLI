@@ -909,10 +909,3 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	return cnt;
 }
 
-static int help_handler(void *_args)
-{
-	all_printk("\r\nLinCLI - type <Tab> to list commands.\r\n");
-	return 0;
-}
-
-CLI_COMMAND_NO_STRUCT(help, "help", "Help", help_handler);
