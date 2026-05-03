@@ -22,7 +22,7 @@ TARGET = stm32g431_gcc_example_project
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Os
+OPT = -Os -flto
 
 
 #######################################
@@ -178,7 +178,7 @@ LDSCRIPT = STM32G431XX_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys -specs=nano.specs 
 LIBDIR = 
-LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) -flto -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
