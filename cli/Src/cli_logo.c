@@ -20,21 +20,6 @@
 #include "init_d.h"
 #include "cmd_dispose.h"
 #include "cli_config.h"
-#include "cli_env.h"
-
-static void pr_builtin_envs(void)
-{
-	cli_env_t *env;
-	all_printk("Env:\r\n");
-	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
-	{
-		if (!env || !env->name || env->id < 0)
-			continue;
-		all_printk("%d %s=%s\r\n", env->id, env->name,
-			   cli_env_get_value(env));
-	}
-	all_printk("\r\n");
-}
 
 void pr_logo(void *arg)
 {
