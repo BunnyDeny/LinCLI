@@ -28,6 +28,9 @@ NO_USER=""
 NO_ENV=""
 NO_VAR=""
 NO_ADV_CMP=""
+NO_HELP=""
+NO_CHAIN=""
+NO_AUTO_RUN=""
 
 # --- parse args ---
 for arg in "$@"; do
@@ -49,6 +52,15 @@ for arg in "$@"; do
 			;;
 		--no-advanced-completion)
 			NO_ADV_CMP=1
+			;;
+		--no-help)
+			NO_HELP=1
+			;;
+		--no-chain)
+			NO_CHAIN=1
+			;;
+		--no-auto-run)
+			NO_AUTO_RUN=1
 			;;
 		-h|--help)
 			cat <<'EOF'
@@ -86,6 +98,19 @@ FEATURE TRIMMING (all default to ENABLED, use --no-* to disable):
                                        Removes: option completion, value completion,
                                        candidate highlight cycling, completer tables
 
+  --no-help                            Disable automatic help generation (--help)
+                                       Effect: removes option description printing
+                                       Removes: build_opt_marks, cli_print_help,
+                                       usage hint on parse error
+
+  --no-chain                           Disable command chain execution (&&)
+                                       Effect: only single command per line
+                                       Removes: chain split, sub-chain dispatch
+
+  --no-auto-run                        Disable CLI_AUTO_CMD auto-run at boot
+                                       Effect: no automatic command execution
+                                       Removes: auto_run states and dispatch logic
+
 COMBINATION EXAMPLES:
   # Minimal build: disable all optional modules
   ./tools/measure_size.sh --no-user --no-env --no-var --no-advanced-completion
@@ -115,7 +140,7 @@ if [ ! -d "$EXAMPLE_DIR" ]; then
 fi
 
 # --- backup & override cli_config.h ---
-if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ] || [ -n "$NO_ADV_CMP" ]; then
+if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ] || [ -n "$NO_ADV_CMP" ] || [ -n "$NO_HELP" ] || [ -n "$NO_CHAIN" ] || [ -n "$NO_AUTO_RUN" ]; then
 	cp "$CONFIG_H" "${CONFIG_H}.orig"
 	if [ -n "$NO_USER" ]; then
 		sed -i -E 's/#define CLI_ENABLE_USER\s+1/#define CLI_ENABLE_USER 0/' "$CONFIG_H"
@@ -128,6 +153,15 @@ if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ] || [ -n "$NO_ADV_CM
 	fi
 	if [ -n "$NO_ADV_CMP" ]; then
 		sed -i -E 's/#define CLI_ENABLE_ADVANCED_COMPLETION\s+1/#define CLI_ENABLE_ADVANCED_COMPLETION 0/' "$CONFIG_H"
+	fi
+	if [ -n "$NO_HELP" ]; then
+		sed -i -E 's/#define CLI_ENABLE_HELP\s+1/#define CLI_ENABLE_HELP 0/' "$CONFIG_H"
+	fi
+	if [ -n "$NO_CHAIN" ]; then
+		sed -i -E 's/#define CLI_ENABLE_CMD_CHAIN\s+1/#define CLI_ENABLE_CMD_CHAIN 0/' "$CONFIG_H"
+	fi
+	if [ -n "$NO_AUTO_RUN" ]; then
+		sed -i -E 's/#define CLI_ENABLE_AUTO_RUN\s+1/#define CLI_ENABLE_AUTO_RUN 0/' "$CONFIG_H"
 	fi
 fi
 

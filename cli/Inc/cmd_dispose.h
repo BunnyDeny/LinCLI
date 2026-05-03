@@ -347,7 +347,9 @@ void cmd_parse_cleanup(const cli_command_t *cmd_def);
 
 
 
+#if CLI_ENABLE_CMD_CHAIN
 /* 命令链拆分工具 */
 int split_cmd_chain(char *buf, char **cmds, int max_cmds);
+#endif
 
 #endif

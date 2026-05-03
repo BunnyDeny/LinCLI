@@ -619,6 +619,7 @@ static int cli_auto_parse(const cli_command_t *cmd, int argc, char **argv)
 /**
  * @brief 打印指定命令的帮助信息。
  */
+#if CLI_ENABLE_HELP
 static void build_opt_marks(cli_option_t *opt, char *req_mark,
 			    char *dep_mark, size_t dep_mark_size)
 {
@@ -712,6 +713,18 @@ static bool has_help_flag(int argc, char **argv)
 	return false;
 }
 
+static bool handle_help_request(const cli_command_t *cmd_def, int argc,
+				char **argv, int *cmd_ret)
+{
+	if (has_help_flag(argc, argv)) {
+		cli_print_help(cmd_def);
+		*cmd_ret = 0;
+		return true;
+	}
+	return false;
+}
+#endif /* CLI_ENABLE_HELP */
+
 /**
  * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
  */
@@ -725,17 +738,6 @@ static const cli_command_t *lookup_cmd_def(char *cmd_name, int *cmd_ret)
 		*cmd_ret = -1;
 	}
 	return cmd_def;
-}
-
-static bool handle_help_request(const cli_command_t *cmd_def, int argc,
-				char **argv, int *cmd_ret)
-{
-	if (has_help_flag(argc, argv)) {
-		cli_print_help(cmd_def);
-		*cmd_ret = 0;
-		return true;
-	}
-	return false;
 }
 
 static int ensure_cmd_buf(const cli_command_t **cmd_def_p)
@@ -781,8 +783,10 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 		*cmd_ret = -1;
 		return NULL;
 	}
+#if CLI_ENABLE_HELP
 	if (handle_help_request(cmd_def, argc, argv, cmd_ret))
 		return NULL;
+#endif
 	if (ensure_cmd_buf(&cmd_def) < 0) {
 		*cmd_ret = -1;
 		return NULL;
@@ -796,6 +800,7 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
  * 新增：命令解析准备与清理（取代 dispose_mec 状态机）
  * ============================================================ */
 
+#if CLI_ENABLE_HELP
 static void cli_print_usage(const cli_command_t *cmd)
 {
 	if (!cmd || !cmd->usage || cmd->usage_count <= 0)
@@ -804,6 +809,7 @@ static void cli_print_usage(const cli_command_t *cmd)
 	for (int i = 1; i < cmd->usage_count; i++)
 		all_printk("  %s\r\n", cmd->usage[i]);
 }
+#endif
 
 static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
 			   int *cmd_ret)
@@ -811,9 +817,10 @@ static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
 	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
 		pr_err("parse err: %s\r\n", argv[0]);
+#if CLI_ENABLE_HELP
 		cli_print_usage(cmd_def);
-		pr_err("use %s -h\r\n",
-		       cmd_def->name);
+		pr_err("use %s -h\r\n", cmd_def->name);
+#endif
 		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
 		return status;
@@ -847,6 +854,7 @@ void cmd_parse_cleanup(const cli_command_t *cmd_def)
 	}
 }
 
+#if CLI_ENABLE_CMD_CHAIN
 #define CMD_CHAIN_MAX 8
 
 static char *trim_tail_spaces(char *start, char *end)
@@ -908,4 +916,4 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 	}
 	return cnt;
 }
-
+#endif /* CLI_ENABLE_CMD_CHAIN */
