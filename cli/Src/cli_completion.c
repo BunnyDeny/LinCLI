@@ -102,6 +102,7 @@ void complete_unique_cmd(const cli_command_t *match)
 {
 	clear_and_up(candidate_ctx.rows, candidate_ctx.rows);
 	replace_cmdline_token(match->name, (int)strlen(match->name), 1);
+	cmd_line_redraw();
 }
 
 int compute_cmd_lcp(char *lcp_buf, int lcp_buf_size,
@@ -347,6 +348,7 @@ void complete_multi_cmd(const cli_command_t *first_match,
 				      prefix, prefix_len);
 	if (lcp_len > prefix_len) {
 		replace_cmdline_token(lcp_buf, lcp_len, 0);
+		cmd_line_redraw();
 	} else {
 		list_cmd_candidates(prefix, prefix_len);
 	}
