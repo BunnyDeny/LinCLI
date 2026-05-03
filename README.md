@@ -75,6 +75,9 @@ LinCLI 采用**模块化条件编译**设计，每个子功能都可以通过 `i
 ./tools/measure_size.sh --no-var --no-env
 ./tools/measure_size.sh --no-help --no-chain --no-auto-run
 
+# 最小化配置（关闭全部可选模块）
+./tools/measure_size.sh --no-user --no-env --no-var --no-advanced-completion --no-help --no-chain --no-auto-run
+
 # 查看帮助
 ./tools/measure_size.sh -h
 ```
