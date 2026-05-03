@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
+#include "cli_config.h"
 #include "cli_env.h"
 #include "cli_errno.h"
 #include "cli_io.h"
 #include "cli_mpool.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
-#include "cli_config.h"
 #include "cli_atoi.h"
 #include <stdlib.h>
 #include <string.h>
