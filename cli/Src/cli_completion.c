@@ -159,10 +159,15 @@ void compute_candidate_layout(const char *prefix, int prefix_len,
 void display_one_candidate(const char *name, int max_len,
 			  int highlight_idx, int *cur_cow, int *cur_idx)
 {
-	(void)highlight_idx;
 	if (*cur_cow == 0)
 		cli_out_push((_u8 *)"\r\n", 2);
-	cli_out_push((_u8 *)name, strlen(name));
+	if (*cur_idx == highlight_idx) {
+		cli_out_push((_u8 *)"\033[7m", 4);
+		cli_out_push((_u8 *)name, strlen(name));
+		cli_out_push((_u8 *)"\033[0m", 4);
+	} else {
+		cli_out_push((_u8 *)name, strlen(name));
+	}
 	int space_count = max_len - strlen(name);
 	while (space_count--)
 		cli_out_push((_u8 *)" ", 1);
