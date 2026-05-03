@@ -118,16 +118,16 @@ fi
 if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ] || [ -n "$NO_ADV_CMP" ]; then
 	cp "$CONFIG_H" "${CONFIG_H}.orig"
 	if [ -n "$NO_USER" ]; then
-		sed -i 's/#define CLI_ENABLE_USER 1/#define CLI_ENABLE_USER 0/' "$CONFIG_H"
+		sed -i -E 's/#define CLI_ENABLE_USER\s+1/#define CLI_ENABLE_USER 0/' "$CONFIG_H"
 	fi
 	if [ -n "$NO_ENV" ]; then
-		sed -i 's/#define CLI_ENABLE_ENV  1/#define CLI_ENABLE_ENV  0/' "$CONFIG_H"
+		sed -i -E 's/#define CLI_ENABLE_ENV\s+1/#define CLI_ENABLE_ENV 0/' "$CONFIG_H"
 	fi
 	if [ -n "$NO_VAR" ]; then
-		sed -i 's/#define CLI_ENABLE_VAR  1/#define CLI_ENABLE_VAR  0/' "$CONFIG_H"
+		sed -i -E 's/#define CLI_ENABLE_VAR\s+1/#define CLI_ENABLE_VAR 0/' "$CONFIG_H"
 	fi
 	if [ -n "$NO_ADV_CMP" ]; then
-		sed -i 's/#define CLI_ENABLE_ADVANCED_COMPLETION 1/#define CLI_ENABLE_ADVANCED_COMPLETION 0/' "$CONFIG_H"
+		sed -i -E 's/#define CLI_ENABLE_ADVANCED_COMPLETION\s+1/#define CLI_ENABLE_ADVANCED_COMPLETION 0/' "$CONFIG_H"
 	fi
 fi
 
