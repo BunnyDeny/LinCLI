@@ -4,14 +4,17 @@
 
 LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。它采用**链接脚本段自动收集**机制，将命令、状态机、初始化函数的注册工作完全交给编译器与链接器，开发者只需用宏定义命令和选项即可。框架具备极低的内存开销、清晰的层次结构，并内建命令历史、Tab 补全、选项依赖/互斥检查、重复选项检测等实用功能。
 
+> 🪶 **轻到离谱**：即使开启**全部功能**（用户管理、环境变量、变量导出、高级 Tab 补全、帮助系统、命令链、自动运行），LinCLI 在 ARM Cortex-M4 上仅占 **~22 KB Flash**（`arm-none-eabi-gcc -Os`，无 LTO）。通过条件编译按需关闭模块，最小可裁剪至 **~11.5 KB**。详见下方 [条件编译与内核裁剪](#条件编译与内核裁剪) 章节。
+
 ---
 
 ## 🚀 目录
 
 1. [快速开始](#快速开始)
-2. [注册自己的第一个命令](#注册自己的第一个命令)
-3. [高级交互功能](#高级交互功能)
-4. [进阶指南](#进阶指南)
+2. [条件编译与内核裁剪](#条件编译与内核裁剪)
+3. [注册自己的第一个命令](#注册自己的第一个命令)
+4. [高级交互功能](#高级交互功能)
+5. [进阶指南](#进阶指南)
 
 ---
 
@@ -30,6 +33,53 @@ LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。�
 ```
 
 将其设为 `1` 后重新编译，即可在终端中使用所有测试命令。设为 `0`（默认值）时，测试文件会被编译成空目标，不占用任何 Flash/RAM。
+
+---
+
+## 🪶 条件编译与内核裁剪 <a id="条件编译与内核裁剪"></a>
+
+LinCLI 采用**模块化条件编译**设计，每个子功能都可以通过 `include/cli_config.h` 中的宏独立开关。关闭不用的模块后，链接器会自动剔除对应代码（`-ffunction-sections -fdata-sections --gc-sections`），不占用任何 Flash/RAM。
+
+### 宏开关一览
+
+| 宏 | 功能 | 默认 | 关闭后节省 |
+|------|------|:----:|:---------:|
+| `CLI_ENABLE_ADVANCED_COMPLETION` | 高级 Tab 补全（选项补全、候选值、高亮循环） | `1` | **~4.7 KB** |
+| `CLI_ENABLE_VAR` | 变量导出系统（`CLI_VAR` / `var` 命令） | `1` | **~2.3 KB** |
+| `CLI_ENABLE_ENV` | 环境变量系统（`CLI_ENV` / `env` 命令） | `1` | **~1.5 KB** |
+| `CLI_ENABLE_USER` | 用户管理系统（`su` / 权限检查） | `1` | **~1.2 KB** |
+| `CLI_ENABLE_HELP` | 帮助系统（`--help` 自动生成、用法提示） | `1` | **~0.5 KB** |
+| `CLI_ENABLE_CMD_CHAIN` | 命令链（`&&` 分隔的多命令执行） | `1` | **~0.3 KB** |
+| `CLI_ENABLE_AUTO_RUN` | 自动运行（`CLI_AUTO_CMD` 开机执行） | `1` | **~0.3 KB** |
+
+### 常用裁剪组合参考
+
+| 配置 | Flash |
+|------|:-----:|
+| **全开（默认）** | **~22.4 KB** |
+| 关高级补全 | ~17.7 KB |
+| 关高级补全 + 环境变量 + 变量导出 | ~13.9 KB |
+| 关上述三项 + 帮助 + 命令链 + 自动运行 | ~12.8 KB |
+| **全部关闭（仅核心骨架）** | **~11.5 KB** |
+
+### 快速测量体积
+
+项目自带 `tools/measure_size.sh`，基于**增量法**（构建两次：含 LinCLI / 不含 LinCLI，取差值）精确测量：
+
+```bash
+# 默认配置（无 LTO）
+./tools/measure_size.sh
+
+# 关闭指定模块
+./tools/measure_size.sh --no-advanced-completion
+./tools/measure_size.sh --no-var --no-env
+./tools/measure_size.sh --no-help --no-chain --no-auto-run
+
+# 查看帮助
+./tools/measure_size.sh -h
+```
+
+> 📝 **为什么用增量法？** 因为 example_project 本身带有一套 STM32 HAL 基线代码。直接读 ELF 体积会包含 HAL 的代码，无法反映 LinCLI 的真实开销。增量法先把 HAL 基线扣除，只算 LinCLI 带来的增量，结果更精确。
 
 ---
 
@@ -199,6 +249,8 @@ lin@linCli>
 
 ## 💡 内置帮助信息
 
+> 📝 **开关**：`#define CLI_ENABLE_HELP 1`（`include/cli_config.h`）。关闭可省 **~0.5 KB** Flash，命令仍能运行但不再响应 `--help` / `-h`。
+
 LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `brief_str`、用法列表以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
 
 以 `led` 命令为例：
@@ -219,6 +271,8 @@ lin@linCli>
 可以看到，所有选项的描述、是否必需、与谁互斥，都是框架自动生成的。这进一步减少了开发者的重复劳动：你只需要在注册时写一次帮助文本，系统会自动把它呈现给用户。
 
 ## ⚙️ 环境变量系统
+
+> 📝 **使用前请确认宏开关**：`#define CLI_ENABLE_ENV 1`（`include/cli_config.h`）。关闭可省 **~1.5 KB** Flash。
 
 LinCLI 内建一套**字符串环境变量系统**，允许你在代码中预定义一组字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用它们。与编译期固定的宏不同，环境变量的值可以在运行时通过 `env` 命令动态修改，且替换发生在命令解析之前，因此能无缝享受命令链、`--help` 等后续流程。
 
@@ -332,6 +386,8 @@ lin@linCli> tb -v
 
 ### 🛡️ Tab 补全
 
+> 📝 **高级补全开关**：`#define CLI_ENABLE_ADVANCED_COMPLETION 1`（`include/cli_config.h`）。关闭后仅保留命令名前缀匹配 + 列表打印，可省 **~4.7 KB** Flash。
+
 按 `Tab` 键可触发两层补全：**命令名补全** 和 **命令选项补全**。框架会自动遍历链接段中的命令/选项定义，全部在 Flash 中完成，**不占用额外 RAM**。
 
 #### 命令名补全
@@ -401,6 +457,8 @@ lin@linCli> tb --verbose
 
 ### 🔹 开机自动执行命令
 
+> 📝 **开关**：`#define CLI_ENABLE_AUTO_RUN 1`（`include/cli_config.h`）。关闭可省 **~0.3 KB** Flash。
+
 LinCLI 支持在调度器初始化完毕、并执行完所有 `init_d` 导出的初始化函数之后，**自动顺序执行一系列预设命令**。这非常适合在设备上电后自动完成一些配置或自检动作。
 
 你只需要在自己的源文件中重新定义弱定义的 `cli_auto_cmds` 数组和 `cli_auto_cmds_count` 变量：
@@ -428,6 +486,8 @@ const int cli_auto_cmds_count = sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0])
 > 💡 项目中 `tests/test_auto_cmd.c` 里的示例默认是被注释掉的，原因正是如此：如果打开它，每次启动都会先打印几条测试命令的输出，影响开机界面的美观；而注释掉之后，由于 `weak` 机制，程序链接、运行都不会报错，直接平滑跳过自动执行阶段。
 
 ### 📌 命令链 `&&`
+
+> 📝 **开关**：`#define CLI_ENABLE_CMD_CHAIN 1`（`include/cli_config.h`）。关闭可省 **~0.3 KB** Flash。
 
 在命令提示符下，你可以用 `&&` 把多个命令串联成一行，实现类似 Shell 的短路与行为：
 
@@ -516,13 +576,13 @@ lin@linCli> level
 
 - ✅ **[用户可定制接口](Documentation/customization.md)** — 介绍如何通过弱定义（`weak`）覆盖框架的默认行为，包括日志系统 `cli_printk`、日志过滤与颜色、命令提示符样式等。
 
-- 🔹 **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象，支持在线查看和修改 `INT` / `DOUBLE` / `BOOL` / `STRING` 类型的变量，无需重新编译。此外还支持**用户自定义类型**，你可以为任意结构体注册序列化/反序列化规则，让 `var` 命令直接读写结构体成员。非常适合现场 PID 调参、开关调试、状态监控和复杂配置结构体的在线整定。
+- 🔹 **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象。需开启 `#define CLI_ENABLE_VAR 1`。
 
-- 📌 **[环境变量系统](Documentation/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用。支持运行时通过 `env -s` 动态修改值，可替换命令行任意位置的 token，并能与命令链、Tab 补全等功能协同工作。适合动态切换公共前缀、参数模板等场景。
+- 📌 **[环境变量系统](Documentation/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对。需开启 `#define CLI_ENABLE_ENV 1`。
 
 - 🆕 **[Tab 补全候选列表](Documentation/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 
-- 🛡️ **[用户管理系统](Documentation/cli_user.md)** — 通过 `CLI_USER` 宏注册用户并分配命令级权限，支持 `su` 切换用户、密码验证、命令执行拦截和 Tab 补全过滤。产品化阶段对不同角色（开发者、运维、产线测试）呈现不同的 CLI 视图，实现最小权限原则。
+- 🛡️ **[用户管理系统](Documentation/cli_user.md)** — 通过 `CLI_USER` 宏注册用户并分配命令级权限。需开启 `#define CLI_ENABLE_USER 1`。
 
 - 💎 **[尾行模式打印支持](Documentation/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
 
