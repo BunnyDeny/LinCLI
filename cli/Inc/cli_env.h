@@ -11,6 +11,7 @@
 #ifndef _CLI_ENV_H_
 #define _CLI_ENV_H_
 
+#include "cli_config.h"
 #include <stddef.h>
 
 /* ============================================================
