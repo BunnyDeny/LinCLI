@@ -7,6 +7,9 @@
 #   ./tools/measure_size.sh              # use example_project default flags
 #   ./tools/measure_size.sh -O0          # override optimization
 #   ./tools/measure_size.sh --no-lto     # disable LTO
+#   ./tools/measure_size.sh --no-user    # disable user system
+#   ./tools/measure_size.sh --no-env     # disable env system
+#   ./tools/measure_size.sh --no-var     # disable var system
 #
 
 set -e
@@ -15,10 +18,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EXAMPLE_DIR="${PROJECT_ROOT}/example_project/stm32g431_gcc_example_project"
 BUILD_DIR="${EXAMPLE_DIR}/build"
+CONFIG_H="${PROJECT_ROOT}/include/cli_config.h"
 
-# --- defaults (read from Makefile) ---
+# --- defaults ---
 OPT=""
 LTO=""
+NO_USER=""
+NO_ENV=""
+NO_VAR=""
 
 # --- parse args ---
 for arg in "$@"; do
@@ -29,8 +36,17 @@ for arg in "$@"; do
 		--no-lto)
 			LTO="--no-lto"
 			;;
+		--no-user)
+			NO_USER=1
+			;;
+		--no-env)
+			NO_ENV=1
+			;;
+		--no-var)
+			NO_VAR=1
+			;;
 		-h|--help)
-			echo "Usage: $0 [-O0|-Os|-O1|-O2|-O3] [--no-lto]"
+			echo "Usage: $0 [-O0|-Os|-O1|-O2|-O3] [--no-lto] [--no-user] [--no-env] [--no-var]"
 			exit 0
 			;;
 	esac
@@ -47,6 +63,20 @@ fi
 if [ ! -d "$EXAMPLE_DIR" ]; then
 	echo "ERROR: Example project not found: $EXAMPLE_DIR"
 	exit 1
+fi
+
+# --- backup & override cli_config.h ---
+if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ]; then
+	cp "$CONFIG_H" "${CONFIG_H}.orig"
+	if [ -n "$NO_USER" ]; then
+		sed -i 's/#define CLI_ENABLE_USER 1/#define CLI_ENABLE_USER 0/' "$CONFIG_H"
+	fi
+	if [ -n "$NO_ENV" ]; then
+		sed -i 's/#define CLI_ENABLE_ENV  1/#define CLI_ENABLE_ENV  0/' "$CONFIG_H"
+	fi
+	if [ -n "$NO_VAR" ]; then
+		sed -i 's/#define CLI_ENABLE_VAR  1/#define CLI_ENABLE_VAR  0/' "$CONFIG_H"
+	fi
 fi
 
 cd "$EXAMPLE_DIR"
@@ -157,6 +187,11 @@ rm -f Makefile.baseline
 # Restore original Makefile if it was modified
 if [ -f Makefile.orig ]; then
 	mv Makefile.orig Makefile
+fi
+
+# Restore original cli_config.h if it was modified
+if [ -f "${CONFIG_H}.orig" ]; then
+	mv "${CONFIG_H}.orig" "$CONFIG_H"
 fi
 
 echo "Done."

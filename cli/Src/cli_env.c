@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if CLI_ENABLE_ENV
+
 /* ============================================================
  *  系统内置环境变量（不依赖 CLI_ENABLE_TESTS）
  * ============================================================ */
@@ -424,3 +426,23 @@ static void cli_env_candidate_init(void *arg)
 }
 _EXPORT_INIT_SYMBOL(cli_env_candidate_init, 25, NULL,
 		    cli_env_candidate_init);
+
+#else /* !CLI_ENABLE_ENV */
+
+/* ============================================================
+ *  存根：环境变量替换直通（不做任何替换）
+ * ============================================================ */
+
+int cli_env_replace(const char *input, char *out, size_t out_size)
+{
+	if (!input || !out || out_size == 0)
+		return CLI_ERR_NULL;
+	size_t n = strlen(input);
+	if (n >= out_size)
+		n = out_size - 1;
+	memcpy(out, input, n);
+	out[n] = '\0';
+	return CLI_OK;
+}
+
+#endif /* CLI_ENABLE_ENV */

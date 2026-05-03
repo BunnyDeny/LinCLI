@@ -89,6 +89,7 @@ extern const cli_var_type_t *const _cli_var_types_end[];
  * 对于 char *p，sizeof(p) = 指针大小（通常为 8），需避免。
  */
 
+#if CLI_ENABLE_VAR
 #define _CLI_VAR_REGISTER(_symbol, _name, _type_name, _doc, _ro) \
 	static const cli_var_t _cli_var_def_##_symbol = {          \
 		.name = _name,                                       \
@@ -126,5 +127,13 @@ extern const cli_var_type_t *const _cli_var_types_end[];
 	static const cli_var_type_t *const _cli_vartype_ptr_##_name     \
 		__attribute__((used, section(".cli_var_types.1"))) =        \
 			&_cli_vartype_def_##_name
+#else
+#define _CLI_VAR_REGISTER(_symbol, _name, _type_name, _doc, _ro) /* disabled */
+#define CLI_VAR(_symbol, _name, _type, _doc) /* disabled */
+#define CLI_VAR_RO(_symbol, _name, _type, _doc) /* disabled */
+#define CLI_VAR_CUSTOM(_symbol, _name, _type_name, _doc) /* disabled */
+#define CLI_VAR_CUSTOM_RO(_symbol, _name, _type_name, _doc) /* disabled */
+#define CLI_VAR_TYPE(_name, _from_str, _to_str) /* disabled */
+#endif
 
 #endif

@@ -18,6 +18,8 @@
 #include <errno.h>
 #include <limits.h>
 
+#if CLI_ENABLE_VAR
+
 /* ============================================================
  * 查找变量
  * ============================================================ */
@@ -402,3 +404,5 @@ CLI_VAR_TYPE(INT, builtin_int_from_str, builtin_int_to_str);
 CLI_VAR_TYPE(FLOAT, builtin_float_from_str, builtin_float_to_str);
 CLI_VAR_TYPE(BOOL, builtin_bool_from_str, builtin_bool_to_str);
 CLI_VAR_TYPE(STRING, builtin_string_from_str, builtin_string_to_str);
+
+#endif /* CLI_ENABLE_VAR */

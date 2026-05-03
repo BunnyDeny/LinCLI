@@ -549,4 +549,6 @@ int scheduler_task(void)
  *  Default system-info variables
  * ============================================================ */
 
+#if CLI_ENABLE_VAR
 CLI_VAR_RO(scheduler_ticks, "scheduler_ticks", INT, "tick");
+#endif

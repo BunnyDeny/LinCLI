@@ -15,6 +15,8 @@
 #include "init_d.h"
 #include "cmd_dispose.h"
 
+#if CLI_ENABLE_USER
+
 /* ============================================================
  *  注册测试用户（验证段收集机制）
  * ============================================================ */
@@ -71,7 +73,7 @@ static void su_print_users(void)
 			for (int i = 0; i < user->cmd_count; i++) {
 				all_printk("%s%s", user->cmds[i],
 					   (i < user->cmd_count - 1) ? ", " :
-								       "");
+							       "");
 			}
 			all_printk("\r\n");
 		}
@@ -275,3 +277,32 @@ void cli_user_init(void *arg)
 }
 
 _EXPORT_INIT_SYMBOL(cli_user_init, 13, NULL, cli_user_init);
+
+#else /* !CLI_ENABLE_USER */
+
+/* ============================================================
+ *  存根：默认 admin 用户，所有命令允许
+ * ============================================================ */
+
+static const cli_user_t _cli_user_def_admin = {
+	.username = "admin",
+	.role = CLI_USER_ROLE_ROOT,
+	.cmd_count = 0,
+	.cmds = NULL,
+};
+
+const cli_user_t *current_user = &_cli_user_def_admin;
+
+int cli_user_cmd_permitted(const cli_command_t *cmd)
+{
+	(void)cmd;
+	return 1;
+}
+
+void cli_user_init(void *arg)
+{
+	(void)arg;
+	current_user = &_cli_user_def_admin;
+}
+
+#endif /* CLI_ENABLE_USER */

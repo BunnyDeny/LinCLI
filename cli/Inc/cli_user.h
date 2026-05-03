@@ -76,6 +76,7 @@ extern const cli_user_t *const _cli_users_end[];
  *            USER_CMDS("help", "version"));
  */
 
+#if CLI_ENABLE_USER
 #define CLI_USER(name, _username, _password, _role, _cmds)             \
 	const cli_user_t _cli_user_def_##name = {                          \
 		.username = _username,                                         \
@@ -87,6 +88,9 @@ extern const cli_user_t *const _cli_users_end[];
 	static const cli_user_t *const _cli_user_ptr_##name                \
 		__attribute__((used, section(".cli_users.1"))) =             \
 			&_cli_user_def_##name
+#else
+#define CLI_USER(name, _username, _password, _role, _cmds) /* disabled */
+#endif
 
 /* ============================================================
  *  默认登录用户（弱定义，用户可重定义以指定默认用户）
