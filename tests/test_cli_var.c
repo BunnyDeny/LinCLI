@@ -5,7 +5,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS && CLI_ENABLE_VAR
 #include "cli_var.h"
 #include "cli_io.h"
 
@@ -109,4 +109,4 @@ CLI_VAR_TYPE(pid, pid_from_str, pid_to_str);
 static pid_params_t g_pid = { 2000, 100, 50 };
 CLI_VAR_CUSTOM(g_pid, "g_pid", "pid", "Motor PID parameters");
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_TESTS && CLI_ENABLE_VAR */
