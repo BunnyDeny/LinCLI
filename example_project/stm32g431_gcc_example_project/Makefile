@@ -60,6 +60,9 @@ Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c \
 Core/Src/system_stm32g4xx.c \
 Core/Src/sysmem.c \
 Core/Src/syscalls.c \
+../../lib/cli_float.c \
+../../lib/cli_vsnprintf.c \
+../../lib/cli_atoi.c \
 ../../cli/Src/cli_candidate.c \
 ../../cli/Src/cli_cmd_line.c \
 ../../cli/Src/cli_completion.c \
@@ -191,7 +194,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32G431XX_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys 
+LIBS = -lc -lm -lnosys -specs=nano.specs 
 LIBDIR = 
 LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 

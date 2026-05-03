@@ -22,6 +22,7 @@
 #include "cli_cmd_line.h"
 #include "cli_completion.h"
 #include "cli_mpool.h"
+#include "cli_vsnprintf.h"
 #include <stdarg.h>
 #include <string.h>
 //#include <unistd.h>
@@ -197,7 +198,7 @@ int all_printk(const char *fmt, ...)
 	char buf[CLI_PRINTK_BUF_SIZE];
 	va_list args;
 	va_start(args, fmt);
-	int len = vsnprintf(buf, sizeof(buf), fmt, args);
+	int len = cli_vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 	status = cli_out_push((_u8 *)buf, len);
 	if (status < 0)
@@ -381,7 +382,7 @@ int cli_printk(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	int len = cli_vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
 	if (printk_should_drop(pre))
