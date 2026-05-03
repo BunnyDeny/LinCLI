@@ -9,7 +9,7 @@ _EXPORT_INIT_SYMBOL(obj, priority, private, init_entry)
 
 | 参数 | 含义 |
 |------|------|
-| `obj` | **C 标识符名**。宏会用它生成内部静态符号（如 `init_d_pr_license`）。 |
+| `obj` | **C 标识符名**。宏会用它生成内部静态符号（如 `init_d_pr_logo`）。 |
 | `priority` | **优先级整数**。数值越小优先级越高，越早执行（如 `-100` 先于 `0`，`0` 先于 `10`）。 |
 | `private` | **私有数据指针**。在调用 `init_entry` 时会作为参数传入；如果不需要，可以填 `NULL`。 |
 | `init_entry` | **初始化函数指针**。签名必须是 `void (*)(void *)`。 |
