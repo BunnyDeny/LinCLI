@@ -644,6 +644,7 @@ void do_complete_long_option(const cli_command_t *cmd,
 	if (match_cnt == 1) {
 		replace_long_option_only(match->long_opt,
 					 (int)strlen(match->long_opt));
+		cmd_line_redraw();
 	} else if (match_cnt > 1) {
 		int lcp_len = long_opt_compute_lcp(cmd, name_prefix,
 						   name_prefix_len, match);
@@ -651,6 +652,7 @@ void do_complete_long_option(const cli_command_t *cmd,
 			return;
 		if (lcp_len > name_prefix_len) {
 			replace_long_option(match->long_opt, lcp_len);
+			cmd_line_redraw();
 		} else {
 			list_long_option_candidates(cmd, name_prefix,
 						    name_prefix_len, -1);
@@ -691,8 +693,10 @@ void complete_option_empty_prefix(const cli_command_t *cmd)
 		} else if (opt->long_opt) {
 			replace_long_option_only(opt->long_opt,
 						 (int)strlen(opt->long_opt));
+			cmd_line_redraw();
 		} else if (opt->short_opt) {
 			replace_short_option(opt->short_opt);
+			cmd_line_redraw();
 		} else {
 			cli_out_push((_u8 *)"\a", 1);
 			cli_out_sync();
@@ -715,8 +719,10 @@ void complete_option_dash_prefix(const cli_command_t *cmd,
 		if (opt->long_opt) {
 			replace_long_option(opt->long_opt,
 					    (int)strlen(opt->long_opt));
+			cmd_line_redraw();
 		} else if (opt->short_opt) {
 			replace_short_option(opt->short_opt);
+			cmd_line_redraw();
 		} else {
 			cli_out_push((_u8 *)"\a", 1);
 			cli_out_sync();
@@ -1099,13 +1105,15 @@ void do_complete_string_value(cli_option_t *opt,
 				   prefix, prefix_len, &first);
 	if (cnt == 1) {
 		replace_cmdline_token(first, (int)strlen(first), 1);
+		cmd_line_redraw();
 	} else if (cnt > 1) {
 		int lcp_len = compute_value_lcp(opt->candidate_argv,
 						opt->candidate_argc,
 						prefix, prefix_len, first);
-		if (lcp_len > prefix_len)
+		if (lcp_len > prefix_len) {
 			replace_cmdline_token(first, lcp_len, 0);
-		else
+			cmd_line_redraw();
+		} else
 			list_value_candidates(opt->candidate_argv,
 					      opt->candidate_argc,
 					      prefix, prefix_len);
