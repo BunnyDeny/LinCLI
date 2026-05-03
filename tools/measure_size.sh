@@ -1,26 +1,24 @@
 #!/bin/bash
 #
-# LinCLI Flash/RAM size measurement script
-# Measures LinCLI core footprint WITHOUT HAL, tests, or example code.
+# LinCLI Flash/RAM size measurement — delta method
+# Compares "with LinCLI" vs "without LinCLI" in the same STM32 HAL project.
 #
 # Usage:
-#   ./tools/measure_size.sh              # default: -Os -flto
-#   ./tools/measure_size.sh -O0          # no optimization
-#   ./tools/measure_size.sh -O2 --no-lto # O2 without LTO
-#   ./tools/measure_size.sh -d           # detailed per-module breakdown
+#   ./tools/measure_size.sh              # use example_project default flags
+#   ./tools/measure_size.sh -O0          # override optimization
+#   ./tools/measure_size.sh --no-lto     # disable LTO
 #
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/build_size_measure"
+EXAMPLE_DIR="${PROJECT_ROOT}/example_project/stm32g431_gcc_example_project"
+BUILD_DIR="${EXAMPLE_DIR}/build"
 
-# --- defaults ---
-OPT="-Os"
-LTO="-flto"
-MCU="-mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard"
-DETAIL=false
+# --- defaults (read from Makefile) ---
+OPT=""
+LTO=""
 
 # --- parse args ---
 for arg in "$@"; do
@@ -29,159 +27,131 @@ for arg in "$@"; do
 			OPT="$arg"
 			;;
 		--no-lto)
-			LTO=""
-			;;
-		-d|--detail)
-			DETAIL=true
+			LTO="--no-lto"
 			;;
 		-h|--help)
-			echo "Usage: $0 [-O0|-Os|-O1|-O2|-O3] [--no-lto] [-d|--detail]"
+			echo "Usage: $0 [-O0|-Os|-O1|-O2|-O3] [--no-lto]"
 			exit 0
 			;;
 	esac
 done
 
-# --- source files (LinCLI core only) ---
-CORE_SRCS=(
-	"${PROJECT_ROOT}/cli/Src/cli_candidate.c"
-	"${PROJECT_ROOT}/cli/Src/cli_cmd_line.c"
-	"${PROJECT_ROOT}/cli/Src/cli_completion.c"
-	"${PROJECT_ROOT}/cli/Src/cli_edit.c"
-	"${PROJECT_ROOT}/cli/Src/cli_env.c"
-	"${PROJECT_ROOT}/cli/Src/cli_history.c"
-	"${PROJECT_ROOT}/cli/Src/cli_io.c"
-	"${PROJECT_ROOT}/cli/Src/cli_logo.c"
-	"${PROJECT_ROOT}/cli/Src/cli_parse.c"
-	"${PROJECT_ROOT}/cli/Src/cli_user.c"
-	"${PROJECT_ROOT}/cli/Src/cli_var.c"
-	"${PROJECT_ROOT}/cli/Src/cmd_dispose.c"
-	"${PROJECT_ROOT}/init/critical_default.c"
-	"${PROJECT_ROOT}/init/init_d.c"
-	"${PROJECT_ROOT}/init/scheduler.c"
-	"${PROJECT_ROOT}/init/section_markers.c"
-	"${PROJECT_ROOT}/lib/cli_atoi.c"
-	"${PROJECT_ROOT}/lib/cli_errno.c"
-	"${PROJECT_ROOT}/lib/cli_float.c"
-	"${PROJECT_ROOT}/lib/cli_mpool.c"
-	"${PROJECT_ROOT}/lib/cli_vsnprintf.c"
-	"${PROJECT_ROOT}/lib/rbtree.c"
-	"${PROJECT_ROOT}/lib/stateM.c"
-	"${PROJECT_ROOT}/lib/tVector.c"
-	"${PROJECT_ROOT}/tools/stub_main.c"
-)
-
-INCLUDES=(
-	"-I${PROJECT_ROOT}/cli/Inc"
-	"-I${PROJECT_ROOT}/include"
-)
-
-# Force test switches off regardless of cli_config.h state
-OVERRIDE="-include ${PROJECT_ROOT}/tools/cli_config_override.h"
-
-CFLAGS="${MCU} ${INCLUDES[@]} ${OPT} -Wall -fdata-sections -ffunction-sections ${OVERRIDE}"
-[ -n "$LTO" ] && CFLAGS="${CFLAGS} ${LTO}"
-
-LDFLAGS="${MCU} -Wl,--gc-sections -specs=nano.specs"
-[ -n "$LTO" ] && LDFLAGS="${LDFLAGS} ${LTO}"
-
 CC="arm-none-eabi-gcc"
-SIZE="arm-none-eabi-size"
-NM="arm-none-eabi-nm"
+SZ="arm-none-eabi-size"
 
-# --- check toolchain ---
 if ! command -v "$CC" &>/dev/null; then
 	echo "ERROR: ${CC} not found in PATH"
 	exit 1
 fi
 
-# --- prepare build dir ---
-rm -rf "${BUILD_DIR}"
-mkdir -p "${BUILD_DIR}"
-
-# --- compile (single-step for correct LTO on bare-metal ARM) ---
-echo "========================================"
-echo "  LinCLI Size Measurement"
-echo "========================================"
-echo "  Compiler: $(${CC} --version | head -1)"
-echo "  CFLAGS:   ${CFLAGS}"
-echo "  LDFLAGS:  ${LDFLAGS}"
-echo ""
-
-ELF="${BUILD_DIR}/lincli_size.elf"
-"${CC}" "${CORE_SRCS[@]}" ${CFLAGS} ${LDFLAGS} -o "${ELF}"
-
-# --- size summary ---
-echo "----------------------------------------"
-echo "  arm-none-eabi-size (Flash = text+data)"
-echo "----------------------------------------"
-${SIZE} "${ELF}"
-echo ""
-
-# --- precise section breakdown ---
-echo "----------------------------------------"
-echo "  Section Breakdown (size -A)"
-echo "----------------------------------------"
-${SIZE} -A "${ELF}" | awk '
-/section/ {next}
-/\.text/   {t=$2}
-/\.rodata/ {r=$2}
-/\.data/   {d=$2}
-/\.bss/    {b=$2}
-END {
-    flash = t + r + d
-    ram   = d + b
-    printf "  .text    %6d B\n", t
-    printf "  .rodata  %6d B\n", r
-    printf "  .data    %6d B\n", d
-    printf "  .bss     %6d B\n", b
-    printf "  -------------------------\n"
-    printf "  Flash    %6d B  (%d.%02d KB)\n", flash, flash/1024, (flash%1024)*100/1024
-    printf "  RAM      %6d B  (%d.%02d KB)\n", ram,   ram/1024,   (ram%1024)*100/1024
-}'
-echo ""
-
-# --- per-module breakdown (compile each file individually, no LTO) ---
-if [ "$DETAIL" = true ]; then
-	echo "----------------------------------------"
-	echo "  Per-Module Breakdown (obj size, no LTO)"
-	echo "----------------------------------------"
-	
-	TMP_DIR="${BUILD_DIR}/detail"
-	mkdir -p "$TMP_DIR"
-	
-	# Compile without LTO for per-file accuracy
-	CFLAGS_NO_LTO="${MCU} ${INCLUDES[@]} ${OPT} -Wall -fdata-sections -ffunction-sections ${OVERRIDE}"
-	
-	TOTAL_OBJ=0
-	for src in "${CORE_SRCS[@]}"; do
-		base=$(basename "$src" .c)
-		obj="${TMP_DIR}/${base}.o"
-		"${CC}" -c ${CFLAGS_NO_LTO} "$src" -o "$obj" 2>/dev/null || true
-		
-		# size -A gives section sizes per object
-		sz=$(${SIZE} -A "$obj" 2>/dev/null | awk '
-			/\.text|\.rodata|\.data|\.bss/ {sum+=$2}
-			END {print sum+0}
-		')
-		TOTAL_OBJ=$((TOTAL_OBJ + sz))
-		printf "  %-28s %6d B\n" "${base}.c" "$sz"
-	done
-	echo "  ---------------------------  -------"
-	printf "  %-28s %6d B\n" "Total (no LTO)" "$TOTAL_OBJ"
-	echo ""
-	
-	# --- top symbols with LTO ---
-	echo "----------------------------------------"
-	echo "  Top 20 Symbols (LTO linked ELF)"
-	echo "----------------------------------------"
-	${NM} --print-size --size-sort --radix=d "${ELF}" 2>/dev/null | \
-		grep -v ' [U] ' | tail -20 | \
-		awk '{size=$2; name=$4; printf "  %8d B  %s\n", size, name}' || \
-		echo "  (nm output unavailable)"
-	echo ""
+if [ ! -d "$EXAMPLE_DIR" ]; then
+	echo "ERROR: Example project not found: $EXAMPLE_DIR"
+	exit 1
 fi
 
-# --- cleanup ---
-rm -rf "${BUILD_DIR}"
+cd "$EXAMPLE_DIR"
+
+# ============================================
+# 1. Build WITH LinCLI (full)
+# ============================================
+echo "========================================"
+echo "  Building WITH LinCLI..."
+echo "========================================"
+
+make clean >/dev/null 2>&1 || true
+
+# Override OPT / LTO if requested
+if [ -n "$OPT" ] || [ -n "$LTO" ]; then
+	# Save original Makefile
+	cp Makefile Makefile.orig
+	if [ -n "$OPT" ]; then
+		sed -i "s/^OPT = .*/OPT = ${OPT}/" Makefile
+	fi
+	if [ -n "$LTO" ]; then
+		sed -i 's/ -flto//g' Makefile
+	fi
+fi
+
+make -j$(nproc) >/dev/null 2>&1 || make
+
+FULL_ELF="${BUILD_DIR}/stm32g431_gcc_example_project.elf"
+if [ ! -f "$FULL_ELF" ]; then
+	echo "ERROR: Full build failed"
+	exit 1
+fi
+
+FULL_TEXT=$($SZ "$FULL_ELF" | tail -1 | awk '{print $1}')
+FULL_DATA=$($SZ "$FULL_ELF" | tail -1 | awk '{print $2}')
+FULL_BSS=$($SZ "$FULL_ELF" | tail -1 | awk '{print $3}')
+
+# ============================================
+# 2. Build WITHOUT LinCLI (baseline)
+# ============================================
+echo ""
+echo "========================================"
+echo "  Building WITHOUT LinCLI (baseline)..."
+echo "========================================"
+
+# Create baseline Makefile: strip all LinCLI sources & includes
+cp Makefile Makefile.baseline
+
+# Remove LinCLI / init / lib / tests sources
+sed -i '/\.\.\/\.\.\/lib\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/cli\/Src\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/init\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/tests\//d' Makefile.baseline
+
+# Remove LinCLI include paths
+sed -i '/-I\.\.\/\.\.\/cli\/Inc/d' Makefile.baseline
+sed -i '/-I\.\.\/\.\.\/include/d' Makefile.baseline
+
+# Use baseline main.c (no LinCLI)
+cp "${PROJECT_ROOT}/tools/main_baseline.c" Core/Src/main_baseline.c
+sed -i 's|Core/Src/main.c|Core/Src/main_baseline.c|' Makefile.baseline
+sed -i 's|Core/Src/main.c|Core/Src/main_baseline.c|' Makefile.baseline
+
+make -f Makefile.baseline clean >/dev/null 2>&1 || true
+make -f Makefile.baseline -j$(nproc) >/dev/null 2>&1 || make -f Makefile.baseline
+
+BASE_ELF="${BUILD_DIR}/stm32g431_gcc_example_project.elf"
+if [ ! -f "$BASE_ELF" ]; then
+	echo "ERROR: Baseline build failed"
+	exit 1
+fi
+
+BASE_TEXT=$($SZ "$BASE_ELF" | tail -1 | awk '{print $1}')
+BASE_DATA=$($SZ "$BASE_ELF" | tail -1 | awk '{print $2}')
+BASE_BSS=$($SZ "$BASE_ELF" | tail -1 | awk '{print $3}')
+
+# ============================================
+# 3. Report delta
+# ============================================
+echo ""
+echo "========================================"
+echo "  LinCLI Size Report (delta method)"
+echo "========================================"
+echo ""
+printf "  %-26s %10s %10s %10s\n" "" "text" "data" "bss"
+printf "  %-26s %10s %10s %10s\n" "-------------------------" "----------" "----------" "----------"
+printf "  %-26s %10d %10d %10d\n" "WITH LinCLI (full)" "$FULL_TEXT" "$FULL_DATA" "$FULL_BSS"
+printf "  %-26s %10d %10d %10d\n" "WITHOUT LinCLI (baseline)" "$BASE_TEXT" "$BASE_DATA" "$BASE_BSS"
+printf "  %-26s %10s %10s %10s\n" "-------------------------" "----------" "----------" "----------"
+printf "  %-26s %10d %10d %10d\n" "DELTA (LinCLI only)" "$((FULL_TEXT - BASE_TEXT))" "$((FULL_DATA - BASE_DATA))" "$((FULL_BSS - BASE_BSS))"
+echo ""
+
+FLASH_DELTA=$((FULL_TEXT + FULL_DATA - BASE_TEXT - BASE_DATA))
+RAM_DELTA=$((FULL_DATA + FULL_BSS - BASE_DATA - BASE_BSS))
+
+echo "  Flash delta (text+data) : ${FLASH_DELTA} B  ($((FLASH_DELTA/1024)).$(((FLASH_DELTA%1024)*100/1024)) KB)"
+echo "  RAM   delta (data+bss)  : ${RAM_DELTA} B  ($((RAM_DELTA/1024)).$(((RAM_DELTA%1024)*100/1024)) KB)"
+echo ""
+
+# ============================================
+# 4. Cleanup
+# ============================================
+rm -f Makefile.baseline Makefile.orig Core/Src/main_baseline.c
+make clean >/dev/null 2>&1 || true
+make -f Makefile.baseline clean >/dev/null 2>&1 || true
+rm -f Makefile.baseline
 
 echo "Done."
