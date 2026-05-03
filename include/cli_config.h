@@ -17,19 +17,6 @@
 /*启用尾行模式测试*/
 #define INLINE_TEST_EN 0
 
-/* ============================================================
- *  功能裁剪配置（最小模式开关）
- * ============================================================ */
-#define CLI_ENABLE_COMPLETION   0   /* Tab 补全 (~6KB) */
-#define CLI_ENABLE_ENV          0   /* 环境变量 (~2.5KB) */
-#define CLI_ENABLE_VAR          0   /* 变量系统 (~2.7KB) */
-#define CLI_ENABLE_USER         0   /* 用户权限 (~1.7KB) */
-#define CLI_ENABLE_HISTORY      0   /* 命令历史 (~0.1KB text + 0.5KB bss) */
-#define CLI_ENABLE_LOGO         0   /* 启动 Logo (~0.8KB) */
-#define CLI_ENABLE_LICENSE      0   /* license/show 命令 (~1.3KB) */
-#define CLI_ENABLE_CANDIDATE    0   /* 候选命令 (~0.3KB) */
-#define CLI_ENABLE_FLOAT        0   /* FLOAT 类型支持 (~0.5KB) */
-
 /*命令历史记录条目数量（嵌入式环境不建议太大）*/
 #define HISTORY_MAX 4
 
