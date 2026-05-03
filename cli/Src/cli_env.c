@@ -15,6 +15,7 @@
 #include "cmd_dispose.h"
 #include "init_d.h"
 #include "cli_config.h"
+#include "cli_atoi.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -215,7 +216,8 @@ static int append_value(char *dst, size_t dst_size, int dst_pos,
 static const char *lookup_env_value(const char *name_buf)
 {
 	if (is_pure_integer_name(name_buf)) {
-		int id = atoi(name_buf);
+		int id;
+		cli_atoi(name_buf, &id, NULL);
 		cli_env_t *env = cli_env_find_by_id(id);
 		if (env)
 			return cli_env_get_value(env);
