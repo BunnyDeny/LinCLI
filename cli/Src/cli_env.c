@@ -300,7 +300,7 @@ static bool cli_env_parse_set_str(const char *set_str, char *name_buf,
 {
 	const char *eq = strchr(set_str, '=');
 	if (!eq) {
-		pr_err("format: name=value\r\n");
+		pr_err("fmt: name=value\r\n");
 		return false;
 	}
 
@@ -332,7 +332,7 @@ static int cli_env_handle_set(const char *set_str)
 
 	cli_env_t *env = cli_env_find(name_buf);
 	if (!env) {
-		pr_err("unknown environment variable: %s\r\n", name_buf);
+		pr_err("unknown env: %s\r\n", name_buf);
 		return -1;
 	}
 

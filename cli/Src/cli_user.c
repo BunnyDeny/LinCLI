@@ -110,7 +110,7 @@ static int su_verify_pwd(void)
 	if (strcmp(su_pwd, su_target->password) == 0) {
 		current_user = su_target;
 		all_printk("\r\n");
-		pr_info("switched to '%s'\r\n", current_user->username);
+		pr_info("switched to %s\r\n", current_user->username);
 		return 0;
 	}
 	su_attempts++;
@@ -119,7 +119,7 @@ static int su_verify_pwd(void)
 		pr_err("auth failed\r\n");
 		return -1;
 	}
-	all_printk("\r\nwrong (%d/3): ", su_attempts);
+	all_printk("\r\nbad (%d/3): ", su_attempts);
 	su_pwd_len = 0;
 	return CLI_CONTINUE;
 }
@@ -183,7 +183,7 @@ static int su_task(void *_args)
 	if (!su_target && su_find_target(args->change) < 0)
 		return -1;
 	if (su_target == current_user) {
-		pr_info("already logged in as '%s'\r\n", current_user->username);
+		pr_info("already %s\r\n", current_user->username);
 		return 0;
 	}
 	return su_prompt_password();
@@ -194,7 +194,7 @@ static void su_exit(void *_args)
 	(void)_args;
 }
 
-CLI_COMMAND_ASYNC(su_cmd, "su", "Switch user",
+CLI_COMMAND_ASYNC(su_cmd, "su", "Switch usr",
 		  USAGE("su -l", "su -c <user>"),
 		  su_entry, su_task, su_exit,
 		  (struct su_args *)0,

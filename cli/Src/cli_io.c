@@ -147,50 +147,17 @@ int cli_out_sync(void)
 	return 0;
 }
 
-__attribute__((weak)) const char *pre_EMERG_gen(void)
-{
-	return COLOR_BOLD COLOR_RED "[EMERG] ";
-}
-
-__attribute__((weak)) const char *pre_ALERT_gen(void)
-{
-	return COLOR_MAGENTA "[ALERT] ";
-}
-
-__attribute__((weak)) const char *pre_CRIT_gen(void)
-{
-	return COLOR_RAINBOW_2 "[CRIT] ";
-}
-
-__attribute__((weak)) const char *pre_ERR_gen(void)
-{
-	return COLOR_RED "[ERR] ";
-}
-
-__attribute__((weak)) const char *pre_WARNING_gen(void)
-{
-	return COLOR_YELLOW "[WARNING] ";
-}
-
-__attribute__((weak)) const char *pre_NOTICE_gen(void)
-{
-	return COLOR_BOLD COLOR_GREEN " ";
-}
-
-__attribute__((weak)) const char *pre_INFO_gen(void)
-{
-	return COLOR_BLUE "[INFO] " COLOR_NONE;
-}
-
-__attribute__((weak)) const char *pre_DEBUG_gen(void)
-{
-	return COLOR_RAINBOW_4 "[DEBUG] ";
-}
-
-__attribute__((weak)) const char *pre_DEFAULT_gen(void)
-{
-	return "";
-}
+static const char *prefix_table[] = {
+	COLOR_BOLD COLOR_RED "[E] ",
+	COLOR_MAGENTA "[A] ",
+	COLOR_RAINBOW_2 "[C] ",
+	COLOR_RED "[E] ",
+	COLOR_YELLOW "[W] ",
+	COLOR_BOLD COLOR_GREEN " ",
+	COLOR_BLUE "[I] " COLOR_NONE,
+	COLOR_RAINBOW_4 "[D] ",
+	"",
+};
 
 int all_printk(const char *fmt, ...)
 {
@@ -302,37 +269,9 @@ static char buffer[CLI_PRINTK_BUF_SIZE];
 static const char *prefix_gen(const char *level)
 {
 	char lv = level[0];
-	const char *prefix;
-	switch (lv) {
-	case '0':
-		prefix = pre_EMERG_gen();
-		break;
-	case '1':
-		prefix = pre_ALERT_gen();
-		break;
-	case '2':
-		prefix = pre_CRIT_gen();
-		break;
-	case '3':
-		prefix = pre_ERR_gen();
-		break;
-	case '4':
-		prefix = pre_WARNING_gen();
-		break;
-	case '5':
-		prefix = pre_NOTICE_gen();
-		break;
-	case '6':
-		prefix = pre_INFO_gen();
-		break;
-	case '7':
-		prefix = pre_DEBUG_gen();
-		break;
-	default:
-		prefix = pre_DEFAULT_gen();
-		break;
-	}
-	return prefix;
+	if (lv >= '0' && lv <= '7')
+		return prefix_table[lv - '0'];
+	return prefix_table[8];
 }
 
 static inline int is_kern_level(char c)

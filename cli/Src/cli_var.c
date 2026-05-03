@@ -82,12 +82,12 @@ static const cli_var_type_t *cli_var_set_lookup_type(const cli_var_t *var)
 {
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (!type) {
-		pr_err("unknown type '%s' for '%s'\r\n",
+		pr_err("unk type %s:%s\r\n",
 			var->type_name, var->name);
 		return NULL;
 	}
 	if (!type->ops.from_string) {
-		pr_err("type '%s' read-only\r\n",
+		pr_err("type %s RO\r\n",
 			var->type_name);
 		return NULL;
 	}
@@ -361,7 +361,7 @@ static int builtin_bool_from_str(void *addr, size_t size, const char *str)
 	else if (strcmp(str, "false") == 0 || strcmp(str, "0") == 0)
 		*(bool *)addr = false;
 	else {
-		pr_err("bool value must be true/false or 1/0\r\n");
+		pr_err("bool: true/false/1/0\r\n");
 		return -1;
 	}
 	return 0;
@@ -381,7 +381,7 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 		return -1;
 	size_t len = strlen(str);
 	if (len >= size) {
-		pr_warn("string truncated: %u -> %u chars\r\n", (unsigned int)len,
+		pr_warn("str trunc %u>%u\r\n", (unsigned int)len,
 			size - 1);
 		len = size - 1;
 	}

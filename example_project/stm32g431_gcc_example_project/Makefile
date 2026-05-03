@@ -22,7 +22,7 @@ TARGET = stm32g431_gcc_example_project
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Os -flto
+OPT = -Os
 
 
 #######################################
@@ -62,6 +62,7 @@ Core/Src/sysmem.c \
 Core/Src/syscalls.c \
 ../../lib/cli_float.c \
 ../../lib/cli_vsnprintf.c \
+../../lib/cli_string.c \
 ../../lib/cli_atoi.c \
 ../../cli/Src/cli_candidate.c \
 ../../cli/Src/cli_cmd_line.c \
@@ -84,24 +85,6 @@ Core/Src/syscalls.c \
 ../../lib/rbtree.c \
 ../../lib/stateM.c \
 ../../lib/tVector.c \
-../../tests/test_auto_cmd.c \
-../../tests/test_bool.c \
-../../tests/test_buf_insufficient.c \
-../../tests/test_callback.c \
-../../tests/test_cli_var.c \
-../../tests/test_conflicts.c \
-../../tests/test_double.c \
-../../tests/test_env.c \
-../../tests/test_init_d.c \
-../../tests/test_int_array.c \
-../../tests/test_int.c \
-../../tests/test_key_interaction.c \
-../../tests/test_led.c \
-../../tests/test_log.c \
-../../tests/test_motor.c \
-../../tests/test_required.c \
-../../tests/test_string.c \
-../../tests/test_with_buf.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -195,7 +178,7 @@ LDSCRIPT = STM32G431XX_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys -specs=nano.specs 
 LIBDIR = 
-LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -flto
+LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
