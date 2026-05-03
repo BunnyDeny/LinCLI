@@ -47,28 +47,29 @@
 #define _STATE_M_
 
 #include "rbtree.h"
+#include "cli_state_ids.h"
 
 #define STATEM_FORMAT_LOG(fmt, ...)
 
 #define STATEM_SWITCH(from, to)                                        \
 	{                                                              \
 		if (from && to)                                        \
-			STATEM_FORMAT_LOG("switch frome %s to %s\r\n", \
-					  (from)->name, (to)->name);   \
+			STATEM_FORMAT_LOG("switch %d to %d\r\n",      \
+					  (from)->state_id, (to)->state_id);   \
 	}
 #define STATEM_EXIT(state)                                               \
 	{                                                                \
 		if (state)                                               \
-			STATEM_FORMAT_LOG("exit %s\r\n", (state)->name); \
+			STATEM_FORMAT_LOG("exit %d\r\n", (state)->state_id); \
 	}
 #define STATEM_ENTRY(state)                                               \
 	{                                                                 \
 		if (state)                                                \
-			STATEM_FORMAT_LOG("entry %s\r\n", (state)->name); \
+			STATEM_FORMAT_LOG("entry %d\r\n", (state)->state_id); \
 	}
 
 struct tState {
-	char name[32];
+	int state_id;
 	struct rb_node node; /*user no need to care*/
 	void (*state_entry)(void *);
 	int (*state_task)(void *);
@@ -107,9 +108,9 @@ struct tState {
  *
  * @note For detailed usage, refer to init/scheduler.c and cli_project.ld in this project
  */
-#define _EXPORT_STATE_SYMBOL(obj, entry, task, exit, _section) \
+#define _EXPORT_STATE_SYMBOL(obj, _state_id, entry, task, exit, _section) \
 	static struct tState state_##obj = {                   \
-		.name = #obj,                                  \
+		.state_id = _state_id,                         \
 		.node = { 0 },                                 \
 		.state_entry = entry,                          \
 		.state_task = task,                            \
@@ -128,9 +129,9 @@ struct tStateEngine {
 	struct rb_root state_tree_root;
 };
 
-int engine_init(struct tStateEngine *engine, char *startup_state,
+int engine_init(struct tStateEngine *engine, int startup_state_id,
 		struct tState *const *sec_start, struct tState *const *sec_end);
-int state_switch(struct tStateEngine *engine, char *name);
+int state_switch(struct tStateEngine *engine, int state_id);
 int stateEngineRun(struct tStateEngine *engine, void *private);
 
 #endif

@@ -149,9 +149,14 @@ echo ""
 # ============================================
 # 4. Cleanup
 # ============================================
-rm -f Makefile.baseline Makefile.orig Core/Src/main_baseline.c
+rm -f Makefile.baseline Core/Src/main_baseline.c
 make clean >/dev/null 2>&1 || true
 make -f Makefile.baseline clean >/dev/null 2>&1 || true
 rm -f Makefile.baseline
+
+# Restore original Makefile if it was modified
+if [ -f Makefile.orig ]; then
+	mv Makefile.orig Makefile
+fi
 
 echo "Done."

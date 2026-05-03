@@ -22,16 +22,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct tState *state_search(struct rb_root *root, char *name)
+static struct tState *state_search(struct rb_root *root, int state_id)
 {
 	struct rb_node *node = root->rb_node;
 	while (node) {
 		struct tState *data = container_of(node, struct tState, node);
-		int result;
-		result = strcmp(name, data->name);
-		if (result < 0)
+		if (state_id < data->state_id)
 			node = node->rb_left;
-		else if (result > 0)
+		else if (state_id > data->state_id)
 			node = node->rb_right;
 		else
 			return data;
@@ -45,7 +43,7 @@ static int state_insert(struct rb_root *root, struct tState *state_to_insert)
 	/* Figure out where to put new node */
 	while (*new) {
 		struct tState *this = container_of(*new, struct tState, node);
-		int result = strcmp(state_to_insert->name, this->name);
+		int result = state_to_insert->state_id - this->state_id;
 		parent = *new;
 		if (result < 0)
 			new = &((*new)->rb_left);
@@ -74,11 +72,10 @@ static int state_insert(struct rb_root *root, struct tState *state_to_insert)
  *         CLI_ERR_STATEM_EMPTY if the state pool is empty,
  *         CLI_ERR_NOTFOUND if the startup state is not found in the pool.
  */
-int engine_init(struct tStateEngine *engine, char *startup_state,
+int engine_init(struct tStateEngine *engine, int startup_state_id,
 		struct tState *const *sec_start, struct tState *const *sec_end)
 {
-	if (engine == NULL || startup_state == NULL || sec_start == NULL ||
-	    sec_end == NULL)
+	if (engine == NULL || sec_start == NULL || sec_end == NULL)
 		return CLI_ERR_NULL;
 	if (sec_start >= sec_end)
 		return CLI_ERR_STATEM_EMPTY;
@@ -91,7 +88,7 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
 		state_insert(rbtree_root, state);
 	}
 
-	struct tState *_to = state_search(rbtree_root, startup_state);
+	struct tState *_to = state_search(rbtree_root, startup_state_id);
 	if (_to == NULL) {
 		return CLI_ERR_NOTFOUND;
 	}
@@ -168,11 +165,11 @@ int stateEngineRun(struct tStateEngine *engine, void *private)
  *     return CLI_OK;
  * }
  */
-int state_switch(struct tStateEngine *engine, char *name)
+int state_switch(struct tStateEngine *engine, int state_id)
 {
 	if (engine == NULL)
 		return CLI_ERR_NULL;
-	struct tState *_to = state_search(&engine->state_tree_root, name);
+	struct tState *_to = state_search(&engine->state_tree_root, state_id);
 	if (_to == NULL)
 		return CLI_ERR_NOTFOUND;
 	if (_to == engine->from)
