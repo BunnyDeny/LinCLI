@@ -82,7 +82,6 @@ Core/Src/syscalls.c \
 ../../init/section_markers.c \
 ../../lib/cli_errno.c \
 ../../lib/cli_mpool.c \
-../../lib/rbtree.c \
 ../../lib/stateM.c \
 ../../lib/tVector.c \
 

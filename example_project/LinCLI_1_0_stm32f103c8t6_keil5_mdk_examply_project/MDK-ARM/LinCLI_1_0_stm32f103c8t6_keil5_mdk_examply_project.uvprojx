@@ -554,10 +554,6 @@
               <FilePath>..\..\..\lib\cli_mpool.c</FilePath>
             </File>
             <File>
-              <FileName>rbtree.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\lib\rbtree.c</FilePath>
-            </File>
             <File>
               <FileName>stateM.c</FileName>
               <FileType>1</FileType>

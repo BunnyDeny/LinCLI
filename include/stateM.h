@@ -46,7 +46,6 @@
 #ifndef _STATE_M_
 #define _STATE_M_
 
-#include "rbtree.h"
 #include "cli_state_ids.h"
 
 #define STATEM_FORMAT_LOG(fmt, ...)
@@ -70,7 +69,6 @@
 
 struct tState {
 	int state_id;
-	struct rb_node node; /*user no need to care*/
 	void (*state_entry)(void *);
 	int (*state_task)(void *);
 	void (*state_exit)(void *);
@@ -111,7 +109,6 @@ struct tState {
 #define _EXPORT_STATE_SYMBOL(obj, _state_id, entry, task, exit, _section) \
 	static struct tState state_##obj = {                   \
 		.state_id = _state_id,                         \
-		.node = { 0 },                                 \
 		.state_entry = entry,                          \
 		.state_task = task,                            \
 		.state_exit = exit,                            \
@@ -126,7 +123,6 @@ struct tState {
 struct tStateEngine {
 	struct tState *from;
 	struct tState *to;
-	struct rb_root state_tree_root;
 };
 
 int engine_init(struct tStateEngine *engine, int startup_state_id,
