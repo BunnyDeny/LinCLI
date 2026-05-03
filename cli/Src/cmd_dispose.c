@@ -163,7 +163,7 @@ static int check_prev_opt_missing_arg(struct parse_state *state)
 {
 	if (state->cur_opt && state->cur_opt->type != CLI_TYPE_BOOL &&
 	    state->cur_opt_argc == 0) {
-		pr_err("option -%c/--%s missing argument\r\n",
+		pr_err("opt -%c/--%s missing arg\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
@@ -178,7 +178,7 @@ static int resolve_option(const cli_command_t *cmd, const char *arg,
 {
 	state->cur_opt = find_option(cmd, arg);
 	if (!state->cur_opt) {
-		pr_err("unknow option: %s\r\n", arg);
+		pr_err("unknown opt: %s\r\n", arg);
 		return CLI_ERR_UNKNOWN_OPT;
 	}
 	return 0;
@@ -189,7 +189,7 @@ static int mark_option_seen(cli_option_t *opt, bool *opt_seen,
 {
 	size_t idx = (size_t)(opt - state->cmd->options);
 	if (opt_seen[idx]) {
-		pr_err("repeated option: -%c/--%s\r\n",
+		pr_err("dup opt: -%c/--%s\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "");
 		return CLI_ERR_DUP_OPT;
@@ -238,8 +238,7 @@ static int *ensure_int_array(cli_option_t *opt, void *arg_struct,
 	size_t need = opt->max_args * sizeof(int);
 	if (need > state->scratch_remain) {
 		int shortfall = (int)need - (int)state->scratch_remain;
-		pr_err("option -%c/--%s insufficient buffer, missing "
-		       "%d bytes (requires %u b contiguous space)\r\n",
+		pr_err("opt -%c/--%s buf short %d/%u\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "", shortfall,
 		       (unsigned int)need);
@@ -266,7 +265,7 @@ static int parse_int_array(cli_option_t *opt, const char *arg,
 			   void *arg_struct, struct parse_state *state)
 {
 	if (state->cur_opt_idx >= (int)opt->max_args) {
-		pr_err("option -%c/--%s too many arguments\r\n",
+		pr_err("opt -%c/--%s too many args\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "");
 		return CLI_ERR_ARRAY_MAX;
@@ -300,7 +299,7 @@ static int parse_value_by_type(const char *arg, void *arg_struct,
 	case CLI_TYPE_INT_ARRAY:
 		return parse_int_array(state->cur_opt, arg, arg_struct, state);
 	default:
-		pr_err("option -%c/--%s type not implemented\r\n",
+		pr_err("opt -%c/--%s type N/A\r\n",
 		       state->cur_opt->short_opt ? state->cur_opt->short_opt :
 						   ' ',
 		       state->cur_opt->long_opt ? state->cur_opt->long_opt :
@@ -313,7 +312,7 @@ static int parse_option_value(const char *arg, void *arg_struct,
 			      struct parse_state *state)
 {
 	if (!state->cur_opt) {
-		pr_err("orphaned argument: %s\r\n", arg);
+		pr_err("orphan: %s\r\n", arg);
 		return CLI_ERR_ORPHAN_ARG;
 	}
 	int ret = parse_value_by_type(arg, arg_struct, state);
@@ -328,7 +327,7 @@ static int validate_required(const cli_command_t *cmd, const bool *opt_seen)
 {
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		if (cmd->options[i].required && !opt_seen[i]) {
-			pr_err("missing required option: -%c/--%s\r\n",
+			pr_err("missing required: -%c/--%s\r\n",
 			       cmd->options[i].short_opt ?
 				       cmd->options[i].short_opt :
 				       ' ',
@@ -377,11 +376,11 @@ static int report_name_check_error(cli_option_t *opt,
 				   int err_code)
 {
 	if (expect_present) {
-		pr_err("option -%c/--%s depends on %s but not provided\r\n",
+		pr_err("opt -%c/--%s needs %s\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "", name_buf);
 	} else {
-		pr_err("option -%c/--%s conflicts with %s, cannot be used together\r\n",
+		pr_err("opt -%c/--%s conflicts %s\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
 		       opt->long_opt ? opt->long_opt : "", name_buf);
 	}
@@ -404,30 +403,25 @@ static int check_name_list(const cli_command_t *cmd, const bool *opt_seen,
 	return 0;
 }
 
-static int validate_depends(const cli_command_t *cmd, const bool *opt_seen)
+static int validate_constraints(const cli_command_t *cmd, const bool *opt_seen)
 {
 	for (size_t i = 0; i < cmd->option_count; i++) {
-		if (!opt_seen[i] || !cmd->options[i].depends)
+		if (!opt_seen[i])
 			continue;
-		int ret = check_name_list(cmd, opt_seen, i,
-					  cmd->options[i].depends, true,
-					  CLI_ERR_DEP_MISSING);
-		if (ret < 0)
-			return ret;
-	}
-	return 0;
-}
-
-static int validate_conflicts(const cli_command_t *cmd, const bool *opt_seen)
-{
-	for (size_t i = 0; i < cmd->option_count; i++) {
-		if (!opt_seen[i] || !cmd->options[i].conflicts)
-			continue;
-		int ret = check_name_list(cmd, opt_seen, i,
-					  cmd->options[i].conflicts, false,
-					  CLI_ERR_CONFLICT);
-		if (ret < 0)
-			return ret;
+		if (cmd->options[i].depends) {
+			int ret = check_name_list(cmd, opt_seen, i,
+						  cmd->options[i].depends, true,
+						  CLI_ERR_DEP_MISSING);
+			if (ret < 0)
+				return ret;
+		}
+		if (cmd->options[i].conflicts) {
+			int ret = check_name_list(cmd, opt_seen, i,
+						  cmd->options[i].conflicts, false,
+						  CLI_ERR_CONFLICT);
+			if (ret < 0)
+				return ret;
+		}
 	}
 	return 0;
 }
@@ -450,8 +444,7 @@ static int alloc_scratch_string(size_t need, struct parse_state *state,
 {
 	if (need > state->scratch_remain) {
 		int shortfall = (int)need - (int)state->scratch_remain;
-		pr_err("string argument too long, missing "
-		       "%d bytes (%u b required)\r\n",
+		pr_err("str too long, need %d/%u\r\n",
 		       shortfall, (unsigned int)need);
 		return CLI_ERR_BUF_INSUFF;
 	}
@@ -507,10 +500,7 @@ static int validate_parsed_result(const cli_command_t *cmd,
 	ret = validate_required(cmd, opt_seen);
 	if (ret < 0)
 		return ret;
-	ret = validate_depends(cmd, opt_seen);
-	if (ret < 0)
-		return ret;
-	ret = validate_conflicts(cmd, opt_seen);
+	ret = validate_constraints(cmd, opt_seen);
 	if (ret < 0)
 		return ret;
 	return CLI_OK;
@@ -536,7 +526,7 @@ static int alloc_opt_seen(const cli_command_t *cmd, char **scratch,
 	size_t need = cmd->option_count * sizeof(bool);
 	long avail = (long)*scratch_size;
 	if (avail < (long)need) {
-		pr_err("command %s insufficient buffer, missing %d bytes\r\n",
+		pr_err("cmd %s buf short %d\r\n",
 		       cmd->name, (int)need - (int)avail);
 		return CLI_ERR_BUF_INSUFF;
 	}
@@ -635,16 +625,16 @@ static void build_opt_marks(cli_option_t *opt, char *req_mark,
 	req_mark[0] = '\0';
 	dep_mark[0] = '\0';
 	if (opt->required)
-		cli_snprintf(req_mark, CLI_HELP_REQ_MARK_SIZE, " [required]");
+		cli_snprintf(req_mark, CLI_HELP_REQ_MARK_SIZE, " [req]");
 	if (opt->depends && opt->depends[0]) {
-		cli_snprintf(dep_mark, dep_mark_size, " [depends:%s]",
+		cli_snprintf(dep_mark, dep_mark_size, " [dep:%s]",
 			 opt->depends);
 	}
 	if (opt->conflicts && opt->conflicts[0]) {
 		size_t len = strlen(dep_mark);
 		if (len < dep_mark_size - 1) {
 			cli_snprintf(dep_mark + len, dep_mark_size - len,
-				 " [conflicts:%s]", opt->conflicts);
+				 " [conf:%s]", opt->conflicts);
 		}
 	}
 }
@@ -673,20 +663,18 @@ static void free_help_marks(char *req_mark, char *dep_mark)
 
 static void print_cmd_brief(const cli_command_t *cmd)
 {
-	all_printk(" command     : %s\r\n", cmd->name);
-	all_printk(" description : %s\r\n", cmd->brief);
+	all_printk("%s\r\n", cmd->name);
 	if (cmd->usage && cmd->usage_count > 0) {
-		all_printk(" usage       : %s\r\n", cmd->usage[0]);
+		all_printk("usage: %s\r\n", cmd->usage[0]);
 		for (int i = 1; i < cmd->usage_count; i++)
-			all_printk("               %s\r\n", cmd->usage[i]);
+			all_printk(" %s\r\n", cmd->usage[i]);
 	}
-	all_printk(" option      :\r\n");
 }
 
 static void print_opt_line(cli_option_t *opt, const char *req_mark,
 			   const char *dep_mark)
 {
-	all_printk("      -%c, --%-16s %s%s%s\r\n",
+	all_printk("  -%c, --%-12s %s%s%s\r\n",
 		   opt->short_opt ? opt->short_opt : ' ',
 		   opt->long_opt ? opt->long_opt : "",
 		   opt->help ? opt->help : "", req_mark, dep_mark);
@@ -733,7 +721,7 @@ static const cli_command_t *lookup_cmd_def(char *cmd_name, int *cmd_ret)
 {
 	const cli_command_t *cmd_def = cli_command_find(cmd_name);
 	if (!cmd_def) {
-		pr_err("unknown command: %s\r\n", cmd_name);
+		pr_err("unknown cmd: %s\r\n", cmd_name);
 		*cmd_ret = -1;
 	}
 	return cmd_def;
@@ -758,7 +746,7 @@ static int ensure_cmd_buf(const cli_command_t **cmd_def_p)
 	memcpy(&cmd_runtime, cmd_def, sizeof(cli_command_t));
 	cmd_runtime.arg_buf = cli_mpool_alloc();
 	if (!cmd_runtime.arg_buf) {
-		pr_err("command %s out of memory\r\n", cmd_def->name);
+		pr_err("cmd %s OOM\r\n", cmd_def->name);
 		return -1;
 	}
 	*cmd_def_p = &cmd_runtime;
@@ -768,8 +756,7 @@ static int ensure_cmd_buf(const cli_command_t **cmd_def_p)
 static bool validate_cmd_buf_size(const cli_command_t *cmd_def, int *cmd_ret)
 {
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
-		pr_err("command %s struct size %u bytes, "
-		       "exceeds buffer by %u bytes\r\n",
+		pr_err("cmd %s size %u > buf %u\r\n",
 		       cmd_def->name, (unsigned int)cmd_def->arg_struct_size,
 		       (unsigned int)cmd_def->arg_buf_size);
 		cmd_parse_cleanup(cmd_def);
@@ -789,7 +776,7 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 	if (!cmd_def)
 		return NULL;
 	if (!cli_user_cmd_permitted(cmd_def)) {
-		pr_err("permission denied: '%s' is not allowed for user '%s'\r\n",
+		pr_err("denied: %s not allowed for %s\r\n",
 		       argv[0], current_user->username);
 		*cmd_ret = -1;
 		return NULL;
@@ -815,7 +802,7 @@ static void cli_print_usage(const cli_command_t *cmd)
 		return;
 	all_printk("usage: %s\r\n", cmd->usage[0]);
 	for (int i = 1; i < cmd->usage_count; i++)
-		all_printk("       %s\r\n", cmd->usage[i]);
+		all_printk("  %s\r\n", cmd->usage[i]);
 }
 
 static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
@@ -823,9 +810,9 @@ static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
 {
 	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
-		pr_err("command parsing failed: %s\r\n", argv[0]);
+		pr_err("parse failed: %s\r\n", argv[0]);
 		cli_print_usage(cmd_def);
-		pr_err("try '%s -h' or '%s --help' for more information.\r\n",
+		pr_err("try %s -h or %s --help\r\n",
 		       cmd_def->name, cmd_def->name);
 		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
@@ -924,13 +911,8 @@ int split_cmd_chain(char *buf, char **cmds, int max_cmds)
 
 static int help_handler(void *_args)
 {
-	all_printk("\r\n");
-	all_printk("For more information, please visit:\r\n");
-	all_printk("  https://github.com/BunnyDeny/LinCLI.git\r\n");
-	all_printk("\r\n");
-	all_printk(
-		"Tip: Press <Tab> on an empty prompt to list all commands.\r\n");
+	all_printk("\r\nLinCLI - type <Tab> to list commands.\r\n");
 	return 0;
 }
 
-CLI_COMMAND_NO_STRUCT(help, "help", "show help information", help_handler);
+CLI_COMMAND_NO_STRUCT(help, "help", "Help", help_handler);

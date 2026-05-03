@@ -56,17 +56,17 @@ static void su_print_users(void)
 {
 	const cli_user_t *user;
 
-	all_printk("\r\n[User Manager] registered users:\r\n");
+	all_printk("\r\nU:\r\n");
 	FOR_EACH_CLI_USER(user)
 	{
 		if (!user)
 			continue;
-		all_printk("  user: %-10s  role: %-5s  cmds: ",
+		all_printk("%-10s %-5s ",
 			   user->username, role_str(user->role));
 		if (user->role == CLI_USER_ROLE_ROOT) {
-			all_printk("(all)\r\n");
+			all_printk("*\r\n");
 		} else if (user->cmd_count == 0 || !user->cmds) {
-			all_printk("(none)\r\n");
+			all_printk("-\r\n");
 		} else {
 			for (int i = 0; i < user->cmd_count; i++) {
 				all_printk("%s%s", user->cmds[i],
@@ -116,10 +116,10 @@ static int su_verify_pwd(void)
 	su_attempts++;
 	if (su_attempts >= 3) {
 		all_printk("\r\n");
-		pr_err("authentication failed (3 attempts)\r\n");
+		pr_err("auth failed\r\n");
 		return -1;
 	}
-	all_printk("\r\nincorrect (%d/3), try again: ", su_attempts);
+	all_printk("\r\nwrong (%d/3): ", su_attempts);
 	su_pwd_len = 0;
 	return CLI_CONTINUE;
 }
@@ -155,14 +155,14 @@ static int su_find_target(const char *username)
 			return 0;
 		}
 	}
-	pr_err("user '%s' not found\r\n", username);
+	pr_err("no user: %s\r\n", username);
 	return -1;
 }
 
 static int su_prompt_password(void)
 {
 	if (!su_prompted) {
-		all_printk("Password: ");
+		all_printk("PW: ");
 		su_prompted = true;
 	}
 	return su_read_input();
@@ -177,7 +177,7 @@ static int su_task(void *_args)
 		return 0;
 	}
 	if (!args->change) {
-		pr_err("usage: su -l | su -c <username>\r\n");
+		pr_err("su -l | su -c <user>\r\n");
 		return -1;
 	}
 	if (!su_target && su_find_target(args->change) < 0)
@@ -194,13 +194,13 @@ static void su_exit(void *_args)
 	(void)_args;
 }
 
-CLI_COMMAND_ASYNC(su_cmd, "su", "Switch user or list users",
-		  USAGE("su -l", "su -c <username>"),
+CLI_COMMAND_ASYNC(su_cmd, "su", "Switch user",
+		  USAGE("su -l", "su -c <user>"),
 		  su_entry, su_task, su_exit,
 		  (struct su_args *)0,
-		  OPTION('l', "list", BOOL, "List all registered users",
+		  OPTION('l', "list", BOOL, "",
 			 struct su_args, list, 0, NULL, "change", false),
-		  OPTION('c', "change", STRING, "Switch to specified user",
+		  OPTION('c', "change", STRING, "",
 			 struct su_args, change, 0, NULL, "list", false),
 		  END_OPTIONS);
 

@@ -1,15 +1,15 @@
 /*
- * LinCLI - Lightweight vsnprintf for embedded targets (32/64-bit compatible).
- * Supports: %% %d %i %u %x %X %s %c %p %ld %lu %lx %zu %zx
+ * LinCLI - Minimal vsnprintf for embedded targets.
+ * Supports: %% %d %u %s %c (with width/left-align)
  */
 
 #include "cli_vsnprintf.h"
 #include <stdint.h>
 #include <stddef.h>
 
-static int _utoa64(uint64_t val, char *buf, int base, int upper)
+static int _utoa(unsigned int val, char *buf)
 {
-	char tmp[24];
+	char tmp[12];
 	int i = 0, j;
 	if (val == 0) {
 		buf[0] = '0';
@@ -17,10 +17,8 @@ static int _utoa64(uint64_t val, char *buf, int base, int upper)
 		return 1;
 	}
 	while (val) {
-		int digit = val % base;
-		tmp[i++] = (digit < 10) ? ('0' + digit)
-					: (upper ? 'A' : 'a') + digit - 10;
-		val /= base;
+		tmp[i++] = '0' + (val % 10);
+		val /= 10;
 	}
 	for (j = 0; j < i; j++)
 		buf[j] = tmp[i - 1 - j];
@@ -28,21 +26,19 @@ static int _utoa64(uint64_t val, char *buf, int base, int upper)
 	return i;
 }
 
-static int _itoa64(int64_t val, char *buf, int base, int upper)
+static int _itoa(int val, char *buf)
 {
 	if (val < 0) {
 		buf[0] = '-';
-		return 1 + _utoa64((uint64_t)(-val), buf + 1, base, upper);
+		return 1 + _utoa((unsigned int)(-val), buf + 1);
 	}
-	return _utoa64((uint64_t)val, buf, base, upper);
+	return _utoa((unsigned int)val, buf);
 }
 
-static int _out_str(char *buf, int buf_size, int *len, const char *s,
-		    int width, int left)
+static void _out_str(char *buf, int buf_size, int *len, const char *s, int width, int left)
 {
 	int sl = 0;
-	while (s[sl])
-		sl++;
+	while (s[sl]) sl++;
 	int pad = width - sl;
 	if (!left) {
 		while (pad-- > 0 && *len < buf_size - 1)
@@ -54,24 +50,21 @@ static int _out_str(char *buf, int buf_size, int *len, const char *s,
 		while (pad-- > 0 && *len < buf_size - 1)
 			buf[(*len)++] = ' ';
 	}
-	return sl;
 }
 
-static void _out_num(char *buf, int buf_size, int *len, const char *num,
-		     int width, int left, char pad)
+static void _out_num(char *buf, int buf_size, int *len, const char *num, int width, int left)
 {
 	int nl = 0;
-	while (num[nl])
-		nl++;
-	int pad_count = width - nl;
-	if (!left && pad_count > 0) {
-		while (pad_count-- > 0 && *len < buf_size - 1)
-			buf[(*len)++] = pad;
+	while (num[nl]) nl++;
+	int pad = width - nl;
+	if (!left) {
+		while (pad-- > 0 && *len < buf_size - 1)
+			buf[(*len)++] = ' ';
 	}
 	while (*num && *len < buf_size - 1)
 		buf[(*len)++] = *num++;
-	if (left && pad_count > 0) {
-		while (pad_count-- > 0 && *len < buf_size - 1)
+	if (left) {
+		while (pad-- > 0 && *len < buf_size - 1)
 			buf[(*len)++] = ' ';
 	}
 }
@@ -79,7 +72,7 @@ static void _out_num(char *buf, int buf_size, int *len, const char *num,
 int cli_vsnprintf(char *buf, int buf_size, const char *fmt, va_list args)
 {
 	int len = 0;
-	char num_buf[32];
+	char num_buf[12];
 
 	if (buf_size <= 0)
 		return 0;
@@ -92,26 +85,14 @@ int cli_vsnprintf(char *buf, int buf_size, const char *fmt, va_list args)
 		fmt++;
 		int left = 0;
 		int width = 0;
-		char pad = ' ';
-		char len_mod = 0;
 
-		while (*fmt == '-' || *fmt == '0') {
-			if (*fmt == '-')
-				left = 1;
-			if (*fmt == '0')
-				pad = '0';
+		if (*fmt == '-') {
+			left = 1;
 			fmt++;
 		}
 		while (*fmt >= '0' && *fmt <= '9') {
 			width = width * 10 + (*fmt - '0');
 			fmt++;
-		}
-		if (*fmt == 'l' || *fmt == 'z') {
-			len_mod = *fmt++;
-			if (len_mod == 'l' && *fmt == 'l') {
-				len_mod = 'L';
-				fmt++;
-			}
 		}
 
 		char type = *fmt++;
@@ -132,49 +113,15 @@ int cli_vsnprintf(char *buf, int buf_size, const char *fmt, va_list args)
 			}
 		} else if (type == 's') {
 			const char *s = va_arg(args, const char *);
-			_out_str(buf, buf_size, &len, s ? s : "(null)", width,
-				 left);
+			_out_str(buf, buf_size, &len, s ? s : "(null)", width, left);
 		} else if (type == 'd' || type == 'i') {
-			int64_t val;
-			if (len_mod == 'l')
-				val = va_arg(args, long);
-			else if (len_mod == 'L')
-				val = va_arg(args, long long);
-			else
-				val = va_arg(args, int);
-			_itoa64(val, num_buf, 10, 0);
-			_out_num(buf, buf_size, &len, num_buf, width, left, pad);
+			int val = va_arg(args, int);
+			_itoa(val, num_buf);
+			_out_num(buf, buf_size, &len, num_buf, width, left);
 		} else if (type == 'u') {
-			uint64_t val;
-			if (len_mod == 'l')
-				val = va_arg(args, unsigned long);
-			else if (len_mod == 'L')
-				val = va_arg(args, unsigned long long);
-			else
-				val = va_arg(args, unsigned int);
-			_utoa64(val, num_buf, 10, 0);
-			_out_num(buf, buf_size, &len, num_buf, width, left, pad);
-		} else if (type == 'x' || type == 'X') {
-			uint64_t val;
-			if (len_mod == 'l')
-				val = va_arg(args, unsigned long);
-			else if (len_mod == 'L')
-				val = va_arg(args, unsigned long long);
-			else if (len_mod == 'z')
-				val = va_arg(args, size_t);
-			else
-				val = va_arg(args, unsigned int);
-			_utoa64(val, num_buf, 16, type == 'X');
-			_out_num(buf, buf_size, &len, num_buf, width, left, pad);
-		} else if (type == 'p') {
-			uintptr_t val = (uintptr_t)va_arg(args, void *);
-			_utoa64((uint64_t)val, num_buf, 16, 0);
-			if (len < buf_size - 1)
-				buf[len++] = '0';
-			if (len < buf_size - 1)
-				buf[len++] = 'x';
-			for (int i = 0; num_buf[i] && len < buf_size - 1; i++)
-				buf[len++] = num_buf[i];
+			unsigned int val = va_arg(args, unsigned int);
+			_utoa(val, num_buf);
+			_out_num(buf, buf_size, &len, num_buf, width, left);
 		} else {
 			buf[len++] = '%';
 			if (len < buf_size - 1)

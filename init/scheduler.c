@@ -46,8 +46,7 @@ __attribute__((weak)) void cli_prompt_print(void)
 
 void start_entry(void *private)
 {
-	pr_info("execute initialization routines"
-		" exported by _EXPORT_INIT_SYMBOL\r\n");
+	pr_info("init routines\r\n");
 	CALL_INIT_D;
 }
 int start_task(void *private)
@@ -72,7 +71,7 @@ void scheduler_get_char_entry(void *private)
 	}
 	status = cli_in_clear();
 	if (status < 0) {
-		pr_err("failed to clear input buffer\r\n");
+		pr_err("clear input err\r\n");
 	}
 	all_printk("\r\n");
 	cli_prompt_print();
@@ -179,7 +178,7 @@ void scheduler_cmd_run_exit(void *private)
 	}
 
 	if (cmd_ctx.cmd_ret < 0 && cmd_ctx.cmd_def) {
-		pr_err("command '%s' execution failed, return value: %d\r\n",
+		pr_err("cmd '%s' failed: %d\r\n",
 		       cmd_ctx.cmd_def->name, cmd_ctx.cmd_ret);
 	}
 
@@ -381,7 +380,7 @@ static bool should_dispose_exit(void)
 			return true;
 		cmd_ctx.chain_buf = cli_mpool_alloc();
 		if (!cmd_ctx.chain_buf) {
-			pr_err("out of memory\r\n");
+			pr_err("OOM\r\n");
 			return true;
 		}
 		int len = origin_cmd.size;
@@ -437,7 +436,7 @@ static int apply_env_replace(char *current_cmd, char **env_buf_out,
 {
 	char *env_buf = cli_mpool_alloc();
 	if (!env_buf) {
-		pr_err("out of memory\r\n");
+		pr_err("OOM\r\n");
 		return -1;
 	}
 	int env_ret = cli_env_replace(current_cmd, env_buf, CLI_MPOOL_SIZE);
@@ -552,5 +551,4 @@ int scheduler_task(void)
  *  Default system-info variables
  * ============================================================ */
 
-CLI_VAR_RO(scheduler_ticks, "scheduler_ticks", INT,
-	   "Scheduler main-loop tick counter");
+CLI_VAR_RO(scheduler_ticks, "scheduler_ticks", INT, "tick");

@@ -269,83 +269,51 @@ _EXPORT_STATE_SYMBOL(cursor_right, NULL, cursor_right_task, NULL,
 		     ".cli_cmd_line");
 
 /* ------------------------------------------------------------
- * 命令候选列表导航状态
+ * 候选列表导航状态（命令/选项/值共用）
  * ------------------------------------------------------------ */
 
-static int cmd_cycle_left_task(void *pch)
+static int cycle_left_task(void *pch)
 {
 	candidate_ctx.highlight_index--;
 	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_left, NULL, cmd_cycle_left_task, NULL,
+_EXPORT_STATE_SYMBOL(cmd_cycle_left, NULL, cycle_left_task, NULL,
+		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_left, NULL, cycle_left_task, NULL,
 		     ".cli_cmd_line");
 
-static int cmd_cycle_right_task(void *pch)
+static int cycle_right_task(void *pch)
 {
 	candidate_ctx.highlight_index++;
 	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_right, NULL, cmd_cycle_right_task, NULL,
+_EXPORT_STATE_SYMBOL(cmd_cycle_right, NULL, cycle_right_task, NULL,
+		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_right, NULL, cycle_right_task, NULL,
 		     ".cli_cmd_line");
 
-static int cmd_cycle_up_task(void *pch)
+static int cycle_up_task(void *pch)
 {
 	candidate_ctx.highlight_index -= candidate_ctx.cols;
 	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_up, NULL, cmd_cycle_up_task, NULL,
+_EXPORT_STATE_SYMBOL(cmd_cycle_up, NULL, cycle_up_task, NULL,
+		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_up, NULL, cycle_up_task, NULL,
 		     ".cli_cmd_line");
 
-static int cmd_cycle_down_task(void *pch)
+static int cycle_down_task(void *pch)
 {
 	candidate_ctx.highlight_index += candidate_ctx.cols;
 	completer_cycle();
 	return state_switch(&cmd_line_mec, "exit_handler");
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_down, NULL, cmd_cycle_down_task, NULL,
+_EXPORT_STATE_SYMBOL(cmd_cycle_down, NULL, cycle_down_task, NULL,
 		     ".cli_cmd_line");
-
-/* ------------------------------------------------------------
- * 选项候选列表导航状态（统一处理 all_opts 和 long_opts）
- * ------------------------------------------------------------ */
-
-static int opt_cycle_left_task(void *pch)
-{
-	candidate_ctx.highlight_index--;
-	completer_cycle();
-	return state_switch(&cmd_line_mec, "exit_handler");
-}
-_EXPORT_STATE_SYMBOL(opt_cycle_left, NULL, opt_cycle_left_task, NULL,
-		     ".cli_cmd_line");
-
-static int opt_cycle_right_task(void *pch)
-{
-	candidate_ctx.highlight_index++;
-	completer_cycle();
-	return state_switch(&cmd_line_mec, "exit_handler");
-}
-_EXPORT_STATE_SYMBOL(opt_cycle_right, NULL, opt_cycle_right_task, NULL,
-		     ".cli_cmd_line");
-
-static int opt_cycle_up_task(void *pch)
-{
-	candidate_ctx.highlight_index -= candidate_ctx.cols;
-	completer_cycle();
-	return state_switch(&cmd_line_mec, "exit_handler");
-}
-_EXPORT_STATE_SYMBOL(opt_cycle_up, NULL, opt_cycle_up_task, NULL,
-		     ".cli_cmd_line");
-
-static int opt_cycle_down_task(void *pch)
-{
-	candidate_ctx.highlight_index += candidate_ctx.cols;
-	completer_cycle();
-	return state_switch(&cmd_line_mec, "exit_handler");
-}
-_EXPORT_STATE_SYMBOL(opt_cycle_down, NULL, opt_cycle_down_task, NULL,
+_EXPORT_STATE_SYMBOL(opt_cycle_down, NULL, cycle_down_task, NULL,
 		     ".cli_cmd_line");
 
 /* ------------------------------------------------------------
@@ -584,28 +552,18 @@ _EXPORT_STATE_SYMBOL(exit_handler, NULL, cmd_line_exit_handler, NULL,
 
 __attribute__((used)) static bool is_valid_char(char c)
 {
-	static const bool char_table[256] = {
-		['a'] = 1, ['b'] = 1,  ['c'] = 1, ['d'] = 1,  ['e'] = 1,
-		['f'] = 1, ['g'] = 1,  ['h'] = 1, ['i'] = 1,  ['j'] = 1,
-		['k'] = 1, ['l'] = 1,  ['m'] = 1, ['n'] = 1,  ['o'] = 1,
-		['p'] = 1, ['q'] = 1,  ['r'] = 1, ['s'] = 1,  ['t'] = 1,
-		['u'] = 1, ['v'] = 1,  ['w'] = 1, ['x'] = 1,  ['y'] = 1,
-		['z'] = 1, ['A'] = 1,  ['B'] = 1, ['C'] = 1,  ['D'] = 1,
-		['E'] = 1, ['F'] = 1,  ['G'] = 1, ['H'] = 1,  ['I'] = 1,
-		['J'] = 1, ['K'] = 1,  ['L'] = 1, ['M'] = 1,  ['N'] = 1,
-		['O'] = 1, ['P'] = 1,  ['Q'] = 1, ['R'] = 1,  ['S'] = 1,
-		['T'] = 1, ['U'] = 1,  ['V'] = 1, ['W'] = 1,  ['X'] = 1,
-		['Y'] = 1, ['Z'] = 1,  ['0'] = 1, ['1'] = 1,  ['2'] = 1,
-		['3'] = 1, ['4'] = 1,  ['5'] = 1, ['6'] = 1,  ['7'] = 1,
-		['8'] = 1, ['9'] = 1,  [' '] = 1, ['~'] = 1,  ['!'] = 1,
-		['@'] = 1, ['#'] = 1,  ['$'] = 1, ['%'] = 1,  ['^'] = 1,
-		['&'] = 1, ['*'] = 1,  ['('] = 1, [')'] = 1,  ['-'] = 1,
-		['_'] = 1, ['='] = 1,  ['+'] = 1, ['['] = 1,  [']'] = 1,
-		['{'] = 1, ['}'] = 1,  ['|'] = 1, ['\\'] = 1, [';'] = 1,
-		[':'] = 1, ['\''] = 1, ['"'] = 1, [','] = 1,  ['.'] = 1,
-		['<'] = 1, ['>'] = 1,  ['/'] = 1, ['?'] = 1,
-	};
-	return char_table[(unsigned char)c];
+	if (c >= 'a' && c <= 'z') return true;
+	if (c >= 'A' && c <= 'Z') return true;
+	if (c >= '0' && c <= '9') return true;
+	switch (c) {
+	case ' ': case '~': case '!': case '@': case '#': case '$': case '%':
+	case '^': case '&': case '*': case '(': case ')': case '-': case '_':
+	case '=': case '+': case '[': case ']': case '{': case '}': case '|':
+	case '\\': case ';': case ':': case '\'': case '"': case ',': case '.':
+	case '<': case '>': case '/': case '?':
+		return true;
+	}
+	return false;
 }
 
 int cli_cmd_line_init(void)

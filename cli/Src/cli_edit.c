@@ -99,24 +99,7 @@ void replace_cmdline_token(const char *replacement, int repl_len,
 				  int append_space)
 {
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	int new_size = tok_start + repl_len;
-
-	if (append_space && new_size < CMD_LINE_BUF_SIZE - 1)
-		new_size++;
-	if (new_size > CMD_LINE_BUF_SIZE)
-		new_size = CMD_LINE_BUF_SIZE;
-
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	memcpy(new_buf + tok_start, replacement, repl_len);
-	if (append_space && tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
-		new_buf[tok_start + repl_len] = ' ';
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	replace_token_at(tok_start, replacement, repl_len, append_space);
 }
 
 void replace_token_at(int seg_start, const char *token, int tok_len,
@@ -148,82 +131,38 @@ void replace_token_at(int seg_start, const char *token, int tok_len,
 void replace_long_opt_at(int tok_start, const char *long_opt,
 				int long_len)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = '-';
-	memcpy(new_buf + tok_start + 2, long_opt, long_len);
-	int new_size = tok_start + 2 + long_len;
-	if (new_size < CMD_LINE_BUF_SIZE - 1)
-		new_buf[new_size++] = ' ';
-
-	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
-	memcpy(cmd_line.buf, new_buf, new_size);
-	cmd_line.size = new_size;
-	cmd_line.pos = new_size;
-	cli_mpool_free(new_buf);
+	char tmp[CMD_LINE_BUF_SIZE];
+	tmp[0] = '-';
+	tmp[1] = '-';
+	memcpy(tmp + 2, long_opt, long_len);
+	replace_token_at(tok_start, tmp, 2 + long_len, 1);
 }
 
 void replace_long_option_only(const char *long_opt, int long_len)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = '-';
-	memcpy(new_buf + tok_start + 2, long_opt, long_len);
-	int new_size = tok_start + 2 + long_len;
-	if (new_size < CMD_LINE_BUF_SIZE - 1) {
-		new_buf[new_size] = ' ';
-		new_size++;
-	}
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	char tmp[CMD_LINE_BUF_SIZE];
+	tmp[0] = '-';
+	tmp[1] = '-';
+	memcpy(tmp + 2, long_opt, long_len);
+	replace_token_at(get_last_token_start(cmd_line.buf, cmd_line.size),
+			 tmp, 2 + long_len, 1);
 }
 
 void replace_long_option(const char *long_opt, int long_len)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = '-';
-	memcpy(new_buf + tok_start + 2, long_opt, long_len);
-	int new_size = tok_start + 2 + long_len;
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	char tmp[CMD_LINE_BUF_SIZE];
+	tmp[0] = '-';
+	tmp[1] = '-';
+	memcpy(tmp + 2, long_opt, long_len);
+	replace_token_at(get_last_token_start(cmd_line.buf, cmd_line.size),
+			 tmp, 2 + long_len, 0);
 }
 
 void replace_short_option(char c)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = c;
-	int new_size = tok_start + 2;
-	if (new_size < CMD_LINE_BUF_SIZE - 1) {
-		new_buf[new_size] = ' ';
-		new_size++;
-	}
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	char tmp[2] = { '-', c };
+	replace_token_at(get_last_token_start(cmd_line.buf, cmd_line.size),
+			 tmp, 2, 1);
 }
 
 int valid_char_append(char ch)

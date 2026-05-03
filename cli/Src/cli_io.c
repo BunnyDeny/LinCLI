@@ -272,24 +272,24 @@ static int level_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(level, "level", "Set log level filter",
-	    USAGE("level [--emerg|--alert|--crit|--err|--warning|--notice|--info|--debug]"),
+CLI_COMMAND(level, "level", "Log level",
+	    USAGE("level [options]"),
 	    level_handler, (struct level_args *)0,
-	    OPTION(0, "emerg", BOOL, "Set log level to EMERG (0)",
+	    OPTION(0, "emerg", BOOL, "",
 		   struct level_args, emerg, 0, NULL, NULL, false),
-	    OPTION(0, "alert", BOOL, "Set log level to ALERT (1)",
+	    OPTION(0, "alert", BOOL, "",
 		   struct level_args, alert, 0, NULL, NULL, false),
-	    OPTION(0, "crit", BOOL, "Set log level to CRIT (2)",
+	    OPTION(0, "crit", BOOL, "",
 		   struct level_args, crit, 0, NULL, NULL, false),
-	    OPTION(0, "err", BOOL, "Set log level to ERR (3)",
+	    OPTION(0, "err", BOOL, "",
 		   struct level_args, err, 0, NULL, NULL, false),
-	    OPTION(0, "warning", BOOL, "Set log level to WARNING (4)",
+	    OPTION(0, "warning", BOOL, "",
 		   struct level_args, warning, 0, NULL, NULL, false),
-	    OPTION(0, "notice", BOOL, "Set log level to NOTICE (5)",
+	    OPTION(0, "notice", BOOL, "",
 		   struct level_args, notice, 0, NULL, NULL, false),
-	    OPTION(0, "info", BOOL, "Set log level to INFO (6)",
+	    OPTION(0, "info", BOOL, "",
 		   struct level_args, info, 0, NULL, NULL, false),
-	    OPTION(0, "debug", BOOL, "Set log level to DEBUG (7)",
+	    OPTION(0, "debug", BOOL, "",
 		   struct level_args, debug, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
@@ -417,10 +417,10 @@ void cli_mpool_dump_usage(void)
 
 	cli_mpool_get_usage(owners, &used_count);
 
-	pr_crit("[mpool] exhausted! %d/%d blocks used\r\n", used_count,
+	pr_crit("mpool OOM %d/%d\r\n", used_count,
 		CLI_MPOOL_COUNT);
 	for (int i = 0; i < used_count; i++) {
-		pr_crit("[mpool]   [%d] %s\r\n", i,
-			owners[i] ? owners[i] : "unknown");
+		pr_crit("[%d] %s\r\n", i,
+			owners[i] ? owners[i] : "?");
 	}
 }

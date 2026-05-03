@@ -4,13 +4,13 @@
 #include "cmd_dispose.h"
 
 /* ============================================================
- * 注册几个字符串类型命令选项候选（用于 Tab 补全）
+ * 注册字符串类型命令选项候选（用于 Tab 补全）
  * ============================================================ */
 
-CLI_CANDIDATE(log_file, "log", "file",
-	      CANDIDATES("app.log", "app.cfg", "app.txt", "debug.log",
-			 "system.log"));
-CLI_CANDIDATE(ts_msg, "ts", "msg", CANDIDATES("hello", "world"));
+/* 在此处添加候选值定义，例如：
+ * CLI_CANDIDATE(log_file, "log", "file",
+ * 	      CANDIDATES("app.log", "app.cfg", "app.txt"));
+ */
 
 /* ============================================================
  * 将 CLI_CANDIDATE 注册的候选数据填充到对应命令选项中

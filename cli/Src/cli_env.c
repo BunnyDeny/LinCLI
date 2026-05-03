@@ -37,24 +37,6 @@ CLI_ENV(echo, "_echo --msg");
  *  echo 命令：系统内置打印命令
  * ============================================================ */
 
-struct _echo_args {
-	const char *msg;
-};
-
-static int _echo_handler(void *_args)
-{
-	struct _echo_args *args = _args;
-	cli_printk("[echo] %s\r\n", args->msg ? args->msg : "");
-	return 0;
-}
-
-CLI_COMMAND(_echo, "_echo", "Print message via cli_printk",
-	    USAGE("_echo --msg <message>"), _echo_handler,
-	    (struct _echo_args *)0,
-	    OPTION(0, "msg", STRING, "Message to print", struct _echo_args, msg,
-		   0, NULL, NULL, false),
-	    END_OPTIONS);
-
 /* ============================================================
  *  纯整数名字检测与注册过滤
  * ============================================================ */
@@ -152,7 +134,7 @@ int cli_env_set(cli_env_t *env, const char *new_value)
 
 	char *buf = cli_mpool_alloc();
 	if (!buf) {
-		pr_err("out of memory\r\n");
+		pr_err("OOM\r\n");
 		return -1;
 	}
 
@@ -292,13 +274,12 @@ int cli_env_replace(const char *input, char *out, size_t out_size)
 static void cli_env_list_all(void)
 {
 	cli_env_t *env;
-	all_printk("\r\n%-4s %-20s %s\r\n", "ID", "NAME", "VALUE");
-	all_printk("--------------------------------------------\r\n");
+
 	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
 	{
 		if (!env || !env->name || env->id < 0)
 			continue;
-		all_printk("%-4d %-20s %s\r\n", env->id, env->name,
+		all_printk("%d %s=%s\r\n", env->id, env->name,
 			   cli_env_get_value(env));
 	}
 }
@@ -307,7 +288,7 @@ static int cli_env_handle_read(const char *name)
 {
 	cli_env_t *env = cli_env_find(name);
 	if (!env) {
-		pr_err("unknown environment variable: %s\r\n", name);
+		pr_err("unknown: %s\r\n", name);
 		return -1;
 	}
 	all_printk("%s = %s\r\n", env->name, cli_env_get_value(env));
@@ -319,7 +300,7 @@ static bool cli_env_parse_set_str(const char *set_str, char *name_buf,
 {
 	const char *eq = strchr(set_str, '=');
 	if (!eq) {
-		pr_err("format must be name=value\r\n");
+		pr_err("format: name=value\r\n");
 		return false;
 	}
 
@@ -345,7 +326,7 @@ static int cli_env_handle_set(const char *set_str)
 		return -1;
 
 	if (is_pure_integer_name(name_buf)) {
-		pr_err("name cannot be a pure integer\r\n");
+		pr_err("name not number\r\n");
 		return -1;
 	}
 
@@ -375,20 +356,20 @@ static int env_handler(void *_args)
 	if (args->read)
 		return cli_env_handle_read(args->read);
 
-	pr_err("usage: env -l | env -s <name=value> | env -r <name>\r\n");
+	pr_err("env -l | env -s <n=v> | env -r <n>\r\n");
 	return -1;
 }
 
-CLI_COMMAND(env, "env", "Manage environment variables",
-	    USAGE("env -l", "env -s <name=value>",
-		  "env -r <name>"),
+CLI_COMMAND(env, "env", "Environment",
+	    USAGE("env -l", "env -s <n=v>",
+		  "env -r <n>"),
 	    env_handler, (struct env_args *)0,
-	    OPTION('l', "list", BOOL, "List all environment variables",
+	    OPTION('l', "list", BOOL, "",
 		   struct env_args, list, 0, NULL, "set read", false),
 	    OPTION('s', "set", STRING,
-		   "Set environment variable (name=value)", struct env_args,
+		   "", struct env_args,
 		   set, 0, NULL, "list read", false),
-	    OPTION('r', "read", STRING, "Read environment variable",
+	    OPTION('r', "read", STRING, "",
 		   struct env_args, read, 0, NULL, "list set", false),
 	    END_OPTIONS);
 

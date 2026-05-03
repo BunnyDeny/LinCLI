@@ -17,6 +17,8 @@
 #include "cli_user.h"
 #include <string.h>
 
+void candidate_list_redraw(int rows);
+
 /* ============================================================
  *  候选列表状态管理（供 cli_printk 重绘使用）
  * ============================================================ */
@@ -203,11 +205,7 @@ void list_cmd_candidates(const char *prefix, int prefix_len)
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_CMD, prefix, prefix_len, NULL);
 	display_candidates(prefix, prefix_len, DISPLAY_MAX_COWS, -1);
-	for (int i = 0; i < candidate_ctx.rows; i++) {
-		cli_out_push((_u8 *)"\033[1A", 4); //返回到上一行
-		cli_out_sync();
-	}
-	cmd_line_redraw();
+	candidate_list_redraw(candidate_ctx.rows);
 }
 
 void normalize_highlight_index(int total)
@@ -414,11 +412,7 @@ void list_all_options(const cli_command_t *cmd, const char *prefix,
 	}
 	candidate_ctx.rows = cows;
 	candidate_ctx.cols = 1;
-	for (int i = 0; i < candidate_ctx.rows; i++) {
-		cli_out_push((_u8 *)"\033[1A", 4);
-		cli_out_sync();
-	}
-	cmd_line_redraw();
+	candidate_list_redraw(candidate_ctx.rows);
 }
 
 void do_complete_short_option(char c, const cli_command_t *cmd)
@@ -473,11 +467,7 @@ void list_long_option_candidates(const cli_command_t *cmd,
 	}
 	candidate_ctx.rows = cows;
 	candidate_ctx.cols = 1;
-	for (int i = 0; i < candidate_ctx.rows; i++) {
-		cli_out_push((_u8 *)"\033[1A", 4);
-		cli_out_sync();
-	}
-	cmd_line_redraw();
+	candidate_list_redraw(candidate_ctx.rows);
 }
 
 int get_option_repl_start(void)
@@ -989,11 +979,7 @@ void list_value_candidates(char **argv, int argc,
 		cli_out_sync();
 	}
 	candidate_ctx.rows = cows;
-	for (int i = 0; i < cows; i++) {
-		cli_out_push((_u8 *)"\033[1A", 4);
-		cli_out_sync();
-	}
-	cmd_line_redraw();
+	candidate_list_redraw(cows);
 }
 
 int value_match_total(cli_option_t *opt)
@@ -1048,11 +1034,7 @@ void list_value_candidates_with_highlight(char **argv, int argc,
 		cows++;
 	}
 	candidate_ctx.rows = cows;
-	for (int i = 0; i < cows; i++) {
-		cli_out_push((_u8 *)"\033[1A", 4);
-		cli_out_sync();
-	}
-	cmd_line_redraw();
+	candidate_list_redraw(cows);
 }
 
 void refresh_value_highlight(char *match)
