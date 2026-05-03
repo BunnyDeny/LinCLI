@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "icon": {
+                "id": "tools",
+                "tooltip": "构建项目"
+            },
+            "command": "make",
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "icon": {
+                "id": "flame",
+                "tooltip": "清理项目"
+            },
+            "command": "make clean",
+        },
+        {
+            "label": "rebuild",
+            "type": "shell",
+            "icon": {
+                "id": "rocket",
+                "tooltip": "重新编译项目"
+            },
+            "command": "make clean && make",
+        },
+        {
+            "label": "load",
+            "type": "shell",
+            "icon": {
+                "id": "gear",
+                "tooltip": "加载elf文件"
+            },
+            "command": "make && openocd -f interface/cmsis-dap.cfg -f target/stm32g4x.cfg -c \"program ${workspaceFolder}/build/stm32g431_gcc_example_project.elf verify reset exit\"",
+        },
+    ]
+}
