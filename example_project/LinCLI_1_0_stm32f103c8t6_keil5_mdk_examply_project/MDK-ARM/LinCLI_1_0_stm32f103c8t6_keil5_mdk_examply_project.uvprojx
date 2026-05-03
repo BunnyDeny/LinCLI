@@ -534,11 +534,6 @@
               <FilePath>..\..\..\init\init_d.c</FilePath>
             </File>
             <File>
-              <FileName>pr_license.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\init\pr_license.c</FilePath>
-            </File>
-            <File>
               <FileName>scheduler.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\init\scheduler.c</FilePath>
@@ -559,10 +554,6 @@
               <FilePath>..\..\..\lib\cli_mpool.c</FilePath>
             </File>
             <File>
-              <FileName>rbtree.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\lib\rbtree.c</FilePath>
-            </File>
             <File>
               <FileName>stateM.c</FileName>
               <FileType>1</FileType>

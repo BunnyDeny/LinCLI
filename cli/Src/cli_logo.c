@@ -20,41 +20,11 @@
 #include "init_d.h"
 #include "cmd_dispose.h"
 #include "cli_config.h"
-#include "cli_env.h"
-
-static void pr_builtin_envs(void)
-{
-	cli_env_t *env;
-	all_printk("Environment:\r\n");
-	all_printk("%-4s %-20s %s\r\n", "ID", "NAME", "VALUE");
-	all_printk("--------------------------------------------\r\n");
-	_FOR_EACH_CLI_ENV(_cli_envs_start, _cli_envs_end, env)
-	{
-		if (!env || !env->name || env->id < 0)
-			continue;
-		all_printk("%-4d %-20s %s\r\n", env->id, env->name,
-			   cli_env_get_value(env));
-	}
-	all_printk("\r\n");
-}
 
 void pr_logo(void *arg)
 {
-	all_printk(" _     _        ____ _     ___ \r\n");
-	all_printk("| |   (_)_ __  / ___| |   |_ _|\r\n");
-	all_printk("| |   | | '_ \\| |   | |    | | \r\n");
-	all_printk("| |___| | | | | |___| |___ | | \r\n");
-	all_printk("|_____|_|_| |_|\\____|_____|___|\r\n");
-	all_printk("\r\n");
-	all_printk("Build:       " __DATE__ " " __TIME__ "\r\n");
-	all_printk("Version:     %d.%d.%d\r\n", CLI_VERSION_MAJOR,
-		CLI_VERSION_MINOR, CLI_VERSION_PATCH);
-	all_printk("Copyright:   (C) 2026 bunnydeny <guoy55448@gmail.com>\r\n");
-	all_printk("License:     GNU GPL v3+ (type `show -c' for details)\r\n");
-	all_printk("Warranty:    NONE (type `show -w' for disclaimer)\r\n");
-	all_printk("\r\n");
-	pr_builtin_envs();
-	all_printk("Welcome to LinCLI! Type 'help' to get started.\r\n");
+	all_printk("LinCLI v%d.%d.%d\r\n",
+		CLI_VERSION_MAJOR, CLI_VERSION_MINOR, CLI_VERSION_PATCH);
 }
 
 _EXPORT_INIT_SYMBOL(logo, 21, NULL, pr_logo);

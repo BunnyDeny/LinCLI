@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/stm32g431_gcc_example_project.elf", // 要调试的程序
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            // 使用J-link GDB Server时必须；其他GBD Server时可选（有可能
+            // 帮助自动选择 SVD文件）。支持的设备见 https://www.segger.com/downloads/supported-devices.php
+            //"device": "STM32L151CB", 
+            // svd文件，有这个文件才能查看寄存器的值，每个单片机都不同。可以在以下地址找到 https://github.com/posborne/cmsis-svd下载
+            //"svdFile": "./STM32L15xC.svd",  
+            "interface": "swd",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "target/stm32g4x.cfg"
+            ],
+            "runToEntryPoint": "main",
+            "preLaunchTask": "build", // 在调试前预先执行的任务，此处是tasks.json中的
+            "gdbPath": "gdb-multiarch",
+        }
+    ]
+}

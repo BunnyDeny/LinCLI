@@ -43,23 +43,26 @@
 #if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
+#include "cli_float.h"
 
-struct double_args {
-	double factor;
+struct float_args {
+	float factor;
 };
 
-static int double_handler(void *_args)
+static int float_handler(void *_args)
 {
-	struct double_args *args = _args;
-	cli_printk("DOUBLE test executed!\r\n");
-	cli_printk("  factor = %f\r\n", args->factor);
+	struct float_args *args = _args;
+	char buf[32];
+	cli_ftoa(args->factor, buf, sizeof(buf), 6);
+	cli_printk("FLOAT test executed!\r\n");
+	cli_printk("  factor = %s\r\n", buf);
 	return 0;
 }
 
-CLI_COMMAND(td, "td", "Test DOUBLE option",
+CLI_COMMAND(td, "td", "Test FLOAT option",
 	    USAGE("td [-f <factor>]"),
-	    double_handler, (struct double_args *)0,
-	    OPTION('f', "factor", DOUBLE, "Float value", struct double_args,
+	    float_handler, (struct float_args *)0,
+	    OPTION('f', "factor", FLOAT, "Float value", struct float_args,
 		   factor, 0, NULL, NULL, false),
 	    END_OPTIONS);
 

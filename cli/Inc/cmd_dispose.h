@@ -38,7 +38,7 @@ typedef enum {
 	CLI_TYPE_STRING, // 字符串类型
 	CLI_TYPE_INT, // 单个整数
 	CLI_TYPE_INT_ARRAY, // 整数数组
-	CLI_TYPE_DOUBLE, // 浮点数
+	CLI_TYPE_FLOAT, // 浮点数
 	CLI_TYPE_CALLBACK, // 自定义回调处理
 	CLI_TYPE_CUSTOM, // 自定义变量类型（cli_var 专用）
 } cli_type_t;
@@ -82,9 +82,9 @@ typedef struct cli_command {
 extern const cli_command_t *const _cli_commands_start[];
 extern const cli_command_t *const _cli_commands_end[];
 
-#define _FOR_EACH_CLI_COMMAND(_start, _end, _cmd)               \
-	for (const cli_command_t *const *_pp = (_start);        \
-	     _pp < (const cli_command_t *const *)(_end); _pp++) \
+#define _FOR_EACH_CLI_COMMAND(_cmd)                               \
+	for (const cli_command_t *const *_pp = _cli_commands_start; \
+	     _pp < (const cli_command_t *const *)_cli_commands_end; _pp++) \
 		if (((_cmd) = *_pp) != NULL)
 
 /* ============================================================
@@ -200,6 +200,7 @@ extern const cli_command_t *const _cli_commands_end[];
 #define _OPTION_COUNT_STRING(_stype, _field) 0
 #define _OPTION_COUNT_INT(_stype, _field) 0
 #define _OPTION_COUNT_DOUBLE(_stype, _field) 0
+#define _OPTION_COUNT_FLOAT(_stype, _field) 0
 #define _OPTION_COUNT_CALLBACK(_stype, _field) 0
 #define _OPTION_COUNT_INT_ARRAY(_stype, _field) \
 	CLI_OFFSETOF(_stype, _field##_count)
@@ -346,7 +347,9 @@ void cmd_parse_cleanup(const cli_command_t *cmd_def);
 
 
 
+#if CLI_ENABLE_CMD_CHAIN
 /* 命令链拆分工具 */
 int split_cmd_chain(char *buf, char **cmds, int max_cmds);
+#endif
 
 #endif

@@ -52,6 +52,7 @@ extern cli_env_t *const _cli_envs_end[];
  * 注意：名字为纯整数的注册会被运行时忽略。
  */
 
+#if CLI_ENABLE_ENV
 #define CLI_ENV(_name, _value)                                        \
 	static cli_env_t _cli_env_def_##_name = {                         \
 		.id = -1,                                                     \
@@ -62,6 +63,9 @@ extern cli_env_t *const _cli_envs_end[];
 	static cli_env_t *const _cli_env_ptr_##_name                      \
 		__attribute__((used, section(".cli_envs.1"))) =               \
 			&_cli_env_def_##_name
+#else
+#define CLI_ENV(_name, _value) /* disabled */
+#endif
 
 /* ============================================================
  *  公共接口

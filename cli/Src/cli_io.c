@@ -22,6 +22,7 @@
 #include "cli_cmd_line.h"
 #include "cli_completion.h"
 #include "cli_mpool.h"
+#include "cli_vsnprintf.h"
 #include <stdarg.h>
 #include <string.h>
 //#include <unistd.h>
@@ -146,50 +147,17 @@ int cli_out_sync(void)
 	return 0;
 }
 
-__attribute__((weak)) const char *pre_EMERG_gen(void)
-{
-	return COLOR_BOLD COLOR_RED "[EMERG] ";
-}
-
-__attribute__((weak)) const char *pre_ALERT_gen(void)
-{
-	return COLOR_MAGENTA "[ALERT] ";
-}
-
-__attribute__((weak)) const char *pre_CRIT_gen(void)
-{
-	return COLOR_RAINBOW_2 "[CRIT] ";
-}
-
-__attribute__((weak)) const char *pre_ERR_gen(void)
-{
-	return COLOR_RED "[ERR] ";
-}
-
-__attribute__((weak)) const char *pre_WARNING_gen(void)
-{
-	return COLOR_YELLOW "[WARNING] ";
-}
-
-__attribute__((weak)) const char *pre_NOTICE_gen(void)
-{
-	return COLOR_BOLD COLOR_GREEN " ";
-}
-
-__attribute__((weak)) const char *pre_INFO_gen(void)
-{
-	return COLOR_BLUE "[INFO] " COLOR_NONE;
-}
-
-__attribute__((weak)) const char *pre_DEBUG_gen(void)
-{
-	return COLOR_RAINBOW_4 "[DEBUG] ";
-}
-
-__attribute__((weak)) const char *pre_DEFAULT_gen(void)
-{
-	return "";
-}
+static const char *prefix_table[] = {
+	COLOR_BOLD COLOR_RED "[E] ",
+	COLOR_MAGENTA "[A] ",
+	COLOR_RAINBOW_2 "[C] ",
+	COLOR_RED "[E] ",
+	COLOR_YELLOW "[W] ",
+	COLOR_BOLD COLOR_GREEN " ",
+	COLOR_BLUE "[I] " COLOR_NONE,
+	COLOR_RAINBOW_4 "[D] ",
+	"",
+};
 
 int all_printk(const char *fmt, ...)
 {
@@ -197,7 +165,7 @@ int all_printk(const char *fmt, ...)
 	char buf[CLI_PRINTK_BUF_SIZE];
 	va_list args;
 	va_start(args, fmt);
-	int len = vsnprintf(buf, sizeof(buf), fmt, args);
+	int len = cli_vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 	status = cli_out_push((_u8 *)buf, len);
 	if (status < 0)
@@ -271,24 +239,24 @@ static int level_handler(void *_args)
 	return 0;
 }
 
-CLI_COMMAND(level, "level", "Set log level filter",
-	    USAGE("level [--emerg|--alert|--crit|--err|--warning|--notice|--info|--debug]"),
+CLI_COMMAND(level, "level", "Log level",
+	    USAGE("level [options]"),
 	    level_handler, (struct level_args *)0,
-	    OPTION(0, "emerg", BOOL, "Set log level to EMERG (0)",
+	    OPTION(0, "emerg", BOOL, "",
 		   struct level_args, emerg, 0, NULL, NULL, false),
-	    OPTION(0, "alert", BOOL, "Set log level to ALERT (1)",
+	    OPTION(0, "alert", BOOL, "",
 		   struct level_args, alert, 0, NULL, NULL, false),
-	    OPTION(0, "crit", BOOL, "Set log level to CRIT (2)",
+	    OPTION(0, "crit", BOOL, "",
 		   struct level_args, crit, 0, NULL, NULL, false),
-	    OPTION(0, "err", BOOL, "Set log level to ERR (3)",
+	    OPTION(0, "err", BOOL, "",
 		   struct level_args, err, 0, NULL, NULL, false),
-	    OPTION(0, "warning", BOOL, "Set log level to WARNING (4)",
+	    OPTION(0, "warning", BOOL, "",
 		   struct level_args, warning, 0, NULL, NULL, false),
-	    OPTION(0, "notice", BOOL, "Set log level to NOTICE (5)",
+	    OPTION(0, "notice", BOOL, "",
 		   struct level_args, notice, 0, NULL, NULL, false),
-	    OPTION(0, "info", BOOL, "Set log level to INFO (6)",
+	    OPTION(0, "info", BOOL, "",
 		   struct level_args, info, 0, NULL, NULL, false),
-	    OPTION(0, "debug", BOOL, "Set log level to DEBUG (7)",
+	    OPTION(0, "debug", BOOL, "",
 		   struct level_args, debug, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
@@ -301,37 +269,9 @@ static char buffer[CLI_PRINTK_BUF_SIZE];
 static const char *prefix_gen(const char *level)
 {
 	char lv = level[0];
-	const char *prefix;
-	switch (lv) {
-	case '0':
-		prefix = pre_EMERG_gen();
-		break;
-	case '1':
-		prefix = pre_ALERT_gen();
-		break;
-	case '2':
-		prefix = pre_CRIT_gen();
-		break;
-	case '3':
-		prefix = pre_ERR_gen();
-		break;
-	case '4':
-		prefix = pre_WARNING_gen();
-		break;
-	case '5':
-		prefix = pre_NOTICE_gen();
-		break;
-	case '6':
-		prefix = pre_INFO_gen();
-		break;
-	case '7':
-		prefix = pre_DEBUG_gen();
-		break;
-	default:
-		prefix = pre_DEFAULT_gen();
-		break;
-	}
-	return prefix;
+	if (lv >= '0' && lv <= '7')
+		return prefix_table[lv - '0'];
+	return prefix_table[8];
 }
 
 static inline int is_kern_level(char c)
@@ -381,7 +321,7 @@ int cli_printk(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	int len = cli_vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
 	if (printk_should_drop(pre))
@@ -416,10 +356,10 @@ void cli_mpool_dump_usage(void)
 
 	cli_mpool_get_usage(owners, &used_count);
 
-	pr_crit("[mpool] exhausted! %d/%d blocks used\r\n", used_count,
+	pr_crit("mpool OOM %d/%d\r\n", used_count,
 		CLI_MPOOL_COUNT);
 	for (int i = 0; i < used_count; i++) {
-		pr_crit("[mpool]   [%d] %s\r\n", i,
-			owners[i] ? owners[i] : "unknown");
+		pr_crit("[%d] %s\r\n", i,
+			owners[i] ? owners[i] : "?");
 	}
 }

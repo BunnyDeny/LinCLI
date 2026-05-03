@@ -38,6 +38,7 @@ void candidate_ctx_save(cand_active_t active, const char *prefix, int prefix_len
 void candidate_ctx_clear(void);
 
 void complete_command_name(const char *prefix, int prefix_len);
+#if CLI_ENABLE_ADVANCED_COMPLETION
 void complete_option(const cli_command_t *cmd, const char *prefix,
 		     int prefix_len);
 void complete_string_value(const cli_command_t *cmd, const char *prefix,
@@ -49,6 +50,17 @@ void cycle_cmd_candidate_highlight(void);
 void cycle_all_option_highlight(void);
 void cycle_long_option_highlight(void);
 void cycle_value_highlight(void);
+#else
+static inline int try_complete_option(const char *prefix, int prefix_len,
+				      int cmd_start, int first_word_end)
+{
+	(void)prefix;
+	(void)prefix_len;
+	(void)cmd_start;
+	(void)first_word_end;
+	return 0;
+}
+#endif
 
 struct cli_completer {
 	cand_active_t active;
@@ -70,5 +82,6 @@ void extract_current_cmd_name(char *cmd_name, int buf_size, int cmd_start,
 			      int first_word_end);
 void get_token_prefix(int *tok_start, int *prefix_len, const char **prefix);
 void get_first_word_bounds(int *cmd_start, int *first_word_end);
+void get_prev_token_bounds(int tok_start, int *prev_start, int *prev_len);
 
 #endif

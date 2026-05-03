@@ -15,13 +15,15 @@
 #include "init_d.h"
 #include "cmd_dispose.h"
 
+#if CLI_ENABLE_USER
+
 /* ============================================================
  *  注册测试用户（验证段收集机制）
  * ============================================================ */
 
 CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
 CLI_USER(lin, "lin", "lin123", CLI_USER_ROLE_NORMAL,
-	 USER_CMDS("help", "_echo"));
+	 USER_CMDS("_echo"));
 
 /* ============================================================
  *  默认登录用户（弱定义，用户可重定义）
@@ -31,10 +33,10 @@ const cli_user_t *const _cli_user_default __attribute__((weak)) =
 	&_cli_user_def_admin;
 
 /* ============================================================
- *  当前登录用户全局指针
+ *  当前登录用户全局指针（运行时由 cli_user_init 初始化）
  * ============================================================ */
 
-const cli_user_t *current_user = _cli_user_default;
+const cli_user_t *current_user;
 
 /* ============================================================
  *  辅助函数
@@ -56,22 +58,22 @@ static void su_print_users(void)
 {
 	const cli_user_t *user;
 
-	all_printk("\r\n[User Manager] registered users:\r\n");
+	all_printk("\r\nU:\r\n");
 	FOR_EACH_CLI_USER(user)
 	{
 		if (!user)
 			continue;
-		all_printk("  user: %-10s  role: %-5s  cmds: ",
+		all_printk("%-10s %-5s ",
 			   user->username, role_str(user->role));
 		if (user->role == CLI_USER_ROLE_ROOT) {
-			all_printk("(all)\r\n");
+			all_printk("*\r\n");
 		} else if (user->cmd_count == 0 || !user->cmds) {
-			all_printk("(none)\r\n");
+			all_printk("-\r\n");
 		} else {
 			for (int i = 0; i < user->cmd_count; i++) {
 				all_printk("%s%s", user->cmds[i],
 					   (i < user->cmd_count - 1) ? ", " :
-								       "");
+							       "");
 			}
 			all_printk("\r\n");
 		}
@@ -110,16 +112,16 @@ static int su_verify_pwd(void)
 	if (strcmp(su_pwd, su_target->password) == 0) {
 		current_user = su_target;
 		all_printk("\r\n");
-		pr_info("switched to '%s'\r\n", current_user->username);
+		pr_info("switched to %s\r\n", current_user->username);
 		return 0;
 	}
 	su_attempts++;
 	if (su_attempts >= 3) {
 		all_printk("\r\n");
-		pr_err("authentication failed (3 attempts)\r\n");
+		pr_err("auth failed\r\n");
 		return -1;
 	}
-	all_printk("\r\nincorrect (%d/3), try again: ", su_attempts);
+	all_printk("\r\nbad (%d/3): ", su_attempts);
 	su_pwd_len = 0;
 	return CLI_CONTINUE;
 }
@@ -155,14 +157,14 @@ static int su_find_target(const char *username)
 			return 0;
 		}
 	}
-	pr_err("user '%s' not found\r\n", username);
+	pr_err("no user: %s\r\n", username);
 	return -1;
 }
 
 static int su_prompt_password(void)
 {
 	if (!su_prompted) {
-		all_printk("Password: ");
+		all_printk("PW: ");
 		su_prompted = true;
 	}
 	return su_read_input();
@@ -177,13 +179,13 @@ static int su_task(void *_args)
 		return 0;
 	}
 	if (!args->change) {
-		pr_err("usage: su -l | su -c <username>\r\n");
+		pr_err("su -l | su -c <user>\r\n");
 		return -1;
 	}
 	if (!su_target && su_find_target(args->change) < 0)
 		return -1;
 	if (su_target == current_user) {
-		pr_info("already logged in as '%s'\r\n", current_user->username);
+		pr_info("already %s\r\n", current_user->username);
 		return 0;
 	}
 	return su_prompt_password();
@@ -194,13 +196,13 @@ static void su_exit(void *_args)
 	(void)_args;
 }
 
-CLI_COMMAND_ASYNC(su_cmd, "su", "Switch user or list users",
-		  USAGE("su -l", "su -c <username>"),
+CLI_COMMAND_ASYNC(su_cmd, "su", "Switch usr",
+		  USAGE("su -l", "su -c <user>"),
 		  su_entry, su_task, su_exit,
 		  (struct su_args *)0,
-		  OPTION('l', "list", BOOL, "List all registered users",
+		  OPTION('l', "list", BOOL, "",
 			 struct su_args, list, 0, NULL, "change", false),
-		  OPTION('c', "change", STRING, "Switch to specified user",
+		  OPTION('c', "change", STRING, "",
 			 struct su_args, change, 0, NULL, "list", false),
 		  END_OPTIONS);
 
@@ -266,7 +268,7 @@ void cli_user_init(void *arg)
 	cli_user_collect_candidates();
 
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd || !cmd->name || strcmp(cmd->name, "su") != 0)
 			continue;
@@ -275,3 +277,32 @@ void cli_user_init(void *arg)
 }
 
 _EXPORT_INIT_SYMBOL(cli_user_init, 13, NULL, cli_user_init);
+
+#else /* !CLI_ENABLE_USER */
+
+/* ============================================================
+ *  存根：默认 admin 用户，所有命令允许
+ * ============================================================ */
+
+static const cli_user_t _cli_user_def_admin = {
+	.username = "admin",
+	.role = CLI_USER_ROLE_ROOT,
+	.cmd_count = 0,
+	.cmds = NULL,
+};
+
+const cli_user_t *current_user = &_cli_user_def_admin;
+
+int cli_user_cmd_permitted(const cli_command_t *cmd)
+{
+	(void)cmd;
+	return 1;
+}
+
+void cli_user_init(void *arg)
+{
+	(void)arg;
+	current_user = &_cli_user_def_admin;
+}
+
+#endif /* CLI_ENABLE_USER */

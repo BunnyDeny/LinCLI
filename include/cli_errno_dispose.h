@@ -23,8 +23,8 @@
 #define CLI_ERR_ORPHAN_ARG    -26   /* 孤立参数（非选项字符串） */
 #define CLI_ERR_INT_RANGE     -27   /* 整数超出范围 */
 #define CLI_ERR_INT_FMT       -28   /* 整数格式错误 */
-#define CLI_ERR_DOUBLE_RANGE  -29   /* 浮点数超出范围 */
-#define CLI_ERR_DOUBLE_FMT    -30   /* 浮点数格式错误 */
+#define CLI_ERR_FLOAT_RANGE   -29   /* 浮点数超出范围 */
+#define CLI_ERR_FLOAT_FMT     -30   /* 浮点数格式错误 */
 #define CLI_ERR_ARRAY_MAX     -31   /* 数组元素超过上限 */
 #define CLI_ERR_BUF_INSUFF    -32   /* 缓冲区不足 */
 

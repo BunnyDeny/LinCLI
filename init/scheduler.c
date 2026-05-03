@@ -46,13 +46,16 @@ __attribute__((weak)) void cli_prompt_print(void)
 
 void start_entry(void *private)
 {
-	pr_info("execute initialization routines"
-		" exported by _EXPORT_INIT_SYMBOL\r\n");
+	pr_info("init routines\r\n");
 	CALL_INIT_D;
 }
 int start_task(void *private)
 {
-	int status = state_switch(&scheduler_eng, "scheduler_auto_run");
+#if CLI_ENABLE_AUTO_RUN
+	int status = state_switch(&scheduler_eng, STATE_ID_scheduler_auto_run);
+#else
+	int status = state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
+#endif
 	if (status < 0) {
 		pr_crit("[scheduler] failed to switch \
 			auto-run task, error code: %d\r\n",
@@ -61,7 +64,7 @@ int start_task(void *private)
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(scheduler_start, start_entry, start_task, NULL,
+_EXPORT_STATE_SYMBOL(scheduler_start, STATE_ID_scheduler_start, start_entry, start_task, NULL,
 		     ".scheduler");
 
 void scheduler_get_char_entry(void *private)
@@ -72,7 +75,7 @@ void scheduler_get_char_entry(void *private)
 	}
 	status = cli_in_clear();
 	if (status < 0) {
-		pr_err("failed to clear input buffer\r\n");
+		pr_err("clear input err\r\n");
 	}
 	all_printk("\r\n");
 	cli_prompt_print();
@@ -93,7 +96,7 @@ int scheduler_get_char_task(void *private)
 			return status;
 		} else if (status == cmd_line_enter_press) {
 			status = state_switch(&scheduler_eng,
-					      "scheduler_dispose");
+					      STATE_ID_scheduler_dispose);
 			if (status < 0) {
 				return status;
 			}
@@ -106,7 +109,7 @@ void scheduler_get_char_exit(void *arg)
 {
 	set_cli_in_push_lock();
 }
-_EXPORT_STATE_SYMBOL(scheduler_get_char, scheduler_get_char_entry,
+_EXPORT_STATE_SYMBOL(scheduler_get_char, STATE_ID_scheduler_get_char, scheduler_get_char_entry,
 		     scheduler_get_char_task, scheduler_get_char_exit,
 		     ".scheduler");
 
@@ -118,6 +121,7 @@ struct scheduler_cmd_ctx {
 	const cli_command_t *cmd_def;
 	int cmd_ret;
 
+#if CLI_ENABLE_CMD_CHAIN
 	/* 主命令链 */
 	char *chain_buf;
 	char *chain_p;
@@ -125,12 +129,15 @@ struct scheduler_cmd_ctx {
 	/* 子命令链（环境变量替换产生） */
 	char *sub_chain_buf;
 	char *sub_chain_p;
+#endif
 
+#if CLI_ENABLE_AUTO_RUN
 	/* 自启动索引 */
 	int auto_run_idx;
+#endif
 
-	/* 命令执行完后切换到的目标状态名 */
-	char next_state[32];
+	/* 命令执行完后切换到的目标状态 */
+	int next_state_id;
 
 	/* 环境变量替换缓冲区，在 cmd_run_exit 中释放 */
 	char *env_buf;
@@ -151,7 +158,7 @@ int scheduler_cmd_run_task(void *private)
 	(void)private;
 
 	if (!cmd_ctx.cmd_def || !cmd_ctx.cmd_def->cmd_task) {
-		return state_switch(&scheduler_eng, cmd_ctx.next_state);
+		return state_switch(&scheduler_eng, cmd_ctx.next_state_id);
 	}
 
 	int ret = cmd_ctx.cmd_def->cmd_task(cmd_ctx.cmd_def->arg_buf);
@@ -161,14 +168,14 @@ int scheduler_cmd_run_task(void *private)
 			  cmd_ctx.cmd_def->cmd_exit == NULL);
 
 	if (is_legacy) {
-		return state_switch(&scheduler_eng, cmd_ctx.next_state);
+		return state_switch(&scheduler_eng, cmd_ctx.next_state_id);
 	}
 
 	if (ret == CLI_CONTINUE) {
 		return CLI_OK;
 	}
 
-	return state_switch(&scheduler_eng, cmd_ctx.next_state);
+	return state_switch(&scheduler_eng, cmd_ctx.next_state_id);
 }
 
 void scheduler_cmd_run_exit(void *private)
@@ -179,7 +186,7 @@ void scheduler_cmd_run_exit(void *private)
 	}
 
 	if (cmd_ctx.cmd_ret < 0 && cmd_ctx.cmd_def) {
-		pr_err("command '%s' execution failed, return value: %d\r\n",
+		pr_err("cmd '%s' failed: %d\r\n",
 		       cmd_ctx.cmd_def->name, cmd_ctx.cmd_ret);
 	}
 
@@ -192,7 +199,7 @@ void scheduler_cmd_run_exit(void *private)
 	}
 }
 
-_EXPORT_STATE_SYMBOL(scheduler_cmd_run, scheduler_cmd_run_entry,
+_EXPORT_STATE_SYMBOL(scheduler_cmd_run, STATE_ID_scheduler_cmd_run, scheduler_cmd_run_entry,
 		     scheduler_cmd_run_task, scheduler_cmd_run_exit,
 		     ".scheduler");
 
@@ -200,6 +207,7 @@ _EXPORT_STATE_SYMBOL(scheduler_cmd_run, scheduler_cmd_run_entry,
  * 自启动命令状态（改造为异步状态驱动）
  * ============================================================ */
 
+#if CLI_ENABLE_AUTO_RUN
 static bool auto_run_should_exit(void)
 {
 	if (cmd_ctx.auto_run_idx > 0 && cmd_ctx.cmd_ret < 0) {
@@ -250,16 +258,15 @@ static int auto_run_try_dispatch(void)
 		return CLI_OK;
 	}
 	cmd_ctx.auto_run_idx++;
-	strncpy(cmd_ctx.next_state, "scheduler_auto_run",
-		sizeof(cmd_ctx.next_state));
-	return state_switch(&scheduler_eng, "scheduler_cmd_run");
+	cmd_ctx.next_state_id = STATE_ID_scheduler_auto_run;
+	return state_switch(&scheduler_eng, STATE_ID_scheduler_cmd_run);
 }
 
 int scheduler_auto_run_task(void *private)
 {
 	(void)private;
 	if (auto_run_should_exit())
-		return state_switch(&scheduler_eng, "scheduler_get_char");
+		return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
 	const char *cmd = cli_auto_cmds[cmd_ctx.auto_run_idx];
 	if (!cmd) {
 		cmd_ctx.auto_run_idx++;
@@ -269,8 +276,9 @@ int scheduler_auto_run_task(void *private)
 	auto_run_env_replace();
 	return auto_run_try_dispatch();
 }
-_EXPORT_STATE_SYMBOL(scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
+_EXPORT_STATE_SYMBOL(scheduler_auto_run, STATE_ID_scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
 		     ".scheduler");
+#endif /* CLI_ENABLE_AUTO_RUN */
 
 /* ============================================================
  * 命令分派状态（支持环境变量展开后的命令链）
@@ -278,6 +286,7 @@ _EXPORT_STATE_SYMBOL(scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
 
 extern int split_cmd_chain(char *buf, char **cmds, int max_cmds);
 
+#if CLI_ENABLE_CMD_CHAIN
 static char *trim_tail(char *start, char *end)
 {
 	while (end > start && *end == ' ')
@@ -342,9 +351,11 @@ static bool has_chain_sep(const char *str)
 	}
 	return false;
 }
+#endif /* CLI_ENABLE_CMD_CHAIN */
 
 static void scheduler_cleanup(void)
 {
+#if CLI_ENABLE_CMD_CHAIN
 	if (cmd_ctx.chain_buf) {
 		cli_mpool_free(cmd_ctx.chain_buf);
 		cmd_ctx.chain_buf = NULL;
@@ -355,6 +366,7 @@ static void scheduler_cleanup(void)
 		cmd_ctx.sub_chain_buf = NULL;
 		cmd_ctx.sub_chain_p = NULL;
 	}
+#endif
 	if (cmd_ctx.env_buf) {
 		cli_mpool_free(cmd_ctx.env_buf);
 		cmd_ctx.env_buf = NULL;
@@ -369,19 +381,19 @@ static int dispatch_cmd(char *cmd)
 	if (status == dispose_exit)
 		return 0;
 
-	strncpy(cmd_ctx.next_state, "scheduler_dispose",
-		sizeof(cmd_ctx.next_state));
-	return state_switch(&scheduler_eng, "scheduler_cmd_run");
+	cmd_ctx.next_state_id = STATE_ID_scheduler_dispose;
+	return state_switch(&scheduler_eng, STATE_ID_scheduler_cmd_run);
 }
 
 static bool should_dispose_exit(void)
 {
+#if CLI_ENABLE_CMD_CHAIN
 	if (!cmd_ctx.chain_buf) {
 		if (!origin_cmd.buf[0])
 			return true;
 		cmd_ctx.chain_buf = cli_mpool_alloc();
 		if (!cmd_ctx.chain_buf) {
-			pr_err("out of memory\r\n");
+			pr_err("OOM\r\n");
 			return true;
 		}
 		int len = origin_cmd.size;
@@ -390,6 +402,10 @@ static bool should_dispose_exit(void)
 		cmd_ctx.chain_p = cmd_ctx.chain_buf;
 		cmd_ctx.cmd_ret = 0;
 	}
+#else
+	if (!origin_cmd.buf[0])
+		return true;
+#endif
 	if (cmd_ctx.cmd_ret < 0) {
 		scheduler_cleanup();
 		return true;
@@ -399,6 +415,7 @@ static bool should_dispose_exit(void)
 
 static char *extract_current_cmd(void)
 {
+#if CLI_ENABLE_CMD_CHAIN
 	char *cmd = NULL;
 	if (cmd_ctx.sub_chain_p) {
 		cmd = extract_next_cmd(&cmd_ctx.sub_chain_p);
@@ -416,8 +433,12 @@ static char *extract_current_cmd(void)
 		}
 	}
 	return cmd;
+#else
+	return origin_cmd.buf;
+#endif
 }
 
+#if CLI_ENABLE_CMD_CHAIN
 static bool try_sub_chain(char *env_buf)
 {
 	if (!has_chain_sep(env_buf))
@@ -431,18 +452,21 @@ static bool try_sub_chain(char *env_buf)
 	cmd_ctx.sub_chain_p = cmd_ctx.sub_chain_buf;
 	return true;
 }
+#endif /* CLI_ENABLE_CMD_CHAIN */
 
 static int apply_env_replace(char *current_cmd, char **env_buf_out,
 			      char **cmd_out)
 {
 	char *env_buf = cli_mpool_alloc();
 	if (!env_buf) {
-		pr_err("out of memory\r\n");
+		pr_err("OOM\r\n");
 		return -1;
 	}
 	int env_ret = cli_env_replace(current_cmd, env_buf, CLI_MPOOL_SIZE);
+#if CLI_ENABLE_CMD_CHAIN
 	if (env_ret == CLI_OK && env_buf[0] && try_sub_chain(env_buf))
 		return 1;
+#endif
 	if (env_ret == CLI_OK && env_buf[0]) {
 		*env_buf_out = env_buf;
 		*cmd_out = env_buf;
@@ -475,7 +499,7 @@ static int dispose_fail(void)
 		cmd_ctx.cmd_def = NULL;
 	}
 	scheduler_cleanup();
-	return state_switch(&scheduler_eng, "scheduler_get_char");
+	return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
 }
 
 int scheduler_dispose_task(void *arg)
@@ -486,10 +510,10 @@ int scheduler_dispose_task(void *arg)
 	int ret;
 
 	if (should_dispose_exit())
-		return state_switch(&scheduler_eng, "scheduler_get_char");
+		return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
 	current_cmd = extract_current_cmd();
 	if (!current_cmd)
-		return state_switch(&scheduler_eng, "scheduler_get_char");
+		return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
 	ret = apply_env_replace(current_cmd, &env_buf, &current_cmd);
 	if (ret < 0)
 		return dispose_fail();
@@ -500,14 +524,14 @@ int scheduler_dispose_task(void *arg)
 		return dispose_fail();
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(scheduler_dispose, NULL, scheduler_dispose_task, NULL,
+_EXPORT_STATE_SYMBOL(scheduler_dispose, STATE_ID_scheduler_dispose, NULL, scheduler_dispose_task, NULL,
 		     ".scheduler");
 
 int scheduler_init(void)
 {
 	int status;
 	cli_io_init();
-	status = engine_init(&scheduler_eng, "scheduler_start",
+	status = engine_init(&scheduler_eng, STATE_ID_scheduler_start,
 			     _scheduler_start, _scheduler_end);
 	if (status < 0) {
 		pr_emerg("[scheduler] init failed: %s (%d), \
@@ -522,7 +546,7 @@ int scheduler_init(void)
 int scheduler_is_in_get_char(void)
 {
 	return (scheduler_eng.from &&
-		strcmp(scheduler_eng.from->name, "scheduler_get_char") == 0);
+		scheduler_eng.from->state_id == STATE_ID_scheduler_get_char);
 }
 
 #if INLINE_TEST_EN
@@ -552,5 +576,6 @@ int scheduler_task(void)
  *  Default system-info variables
  * ============================================================ */
 
-CLI_VAR_RO(scheduler_ticks, "scheduler_ticks", INT,
-	   "Scheduler main-loop tick counter");
+#if CLI_ENABLE_VAR
+CLI_VAR_RO(scheduler_ticks, "scheduler_ticks", INT, "tick");
+#endif

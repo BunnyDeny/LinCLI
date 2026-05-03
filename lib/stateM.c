@@ -6,92 +6,41 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "stateM.h"
 #include "cli_errno.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-static struct tState *state_search(struct rb_root *root, char *name)
+static struct tState *state_pool_search(struct tStateEngine *engine, int state_id)
 {
-	struct rb_node *node = root->rb_node;
-	while (node) {
-		struct tState *data = container_of(node, struct tState, node);
-		int result;
-		result = strcmp(name, data->name);
-		if (result < 0)
-			node = node->rb_left;
-		else if (result > 0)
-			node = node->rb_right;
-		else
-			return data;
-	}
+	if (state_id >= 0 && state_id < STATE_POOL_SIZE)
+		return engine->state_pool[state_id];
 	return NULL;
 }
 
-static int state_insert(struct rb_root *root, struct tState *state_to_insert)
+static void state_pool_insert(struct tStateEngine *engine, struct tState *state)
 {
-	struct rb_node **new = &(root->rb_node), *parent = NULL;
-	/* Figure out where to put new node */
-	while (*new) {
-		struct tState *this = container_of(*new, struct tState, node);
-		int result = strcmp(state_to_insert->name, this->name);
-		parent = *new;
-		if (result < 0)
-			new = &((*new)->rb_left);
-		else if (result > 0)
-			new = &((*new)->rb_right);
-		else
-			return -1;
-	}
-	/* Add new node and rebalance tree. */
-	rb_link_node(&state_to_insert->node, parent, new);
-	rb_insert_color(&state_to_insert->node, root);
-	return 0;
+	if (state->state_id >= 0 && state->state_id < STATE_POOL_SIZE)
+		engine->state_pool[state->state_id] = state;
 }
 
-/**
- * @brief Initializes the state engine with a startup state and state pool.
- *
- * @note This function ensures 'engine->to' is initialized with a non-null
- * 'startup_state', establishing the safety guarantee for the first run.
- *
- * @param engine        Pointer to the state engine.
- * @param startup_state The initial state to enter. Must not be NULL.
- * @param pool          Array of available states.
- * @param pool_size     Number of states in the pool.
- * @return CLI_OK on success, CLI_ERR_NULL if engine or startup_state is NULL,
- *         CLI_ERR_STATEM_EMPTY if the state pool is empty,
- *         CLI_ERR_NOTFOUND if the startup state is not found in the pool.
- */
-int engine_init(struct tStateEngine *engine, char *startup_state,
+int engine_init(struct tStateEngine *engine, int startup_state_id,
 		struct tState *const *sec_start, struct tState *const *sec_end)
 {
-	if (engine == NULL || startup_state == NULL || sec_start == NULL ||
-	    sec_end == NULL)
+	if (engine == NULL || sec_start == NULL || sec_end == NULL)
 		return CLI_ERR_NULL;
 	if (sec_start >= sec_end)
 		return CLI_ERR_STATEM_EMPTY;
 	engine->from = NULL;
-	struct rb_root *rbtree_root = &engine->state_tree_root;
-	*rbtree_root = RB_ROOT;
+	memset(engine->state_pool, 0, sizeof(engine->state_pool));
 	struct tState *state;
 	_FOR_EACH_STATE(sec_start, sec_end, state)
 	{
-		state_insert(rbtree_root, state);
+		state_pool_insert(engine, state);
 	}
 
-	struct tState *_to = state_search(rbtree_root, startup_state);
+	struct tState *_to = state_pool_search(engine, startup_state_id);
 	if (_to == NULL) {
 		return CLI_ERR_NOTFOUND;
 	}
@@ -99,23 +48,6 @@ int engine_init(struct tStateEngine *engine, char *startup_state,
 	return CLI_OK;
 }
 
-/**
- * @brief Executes the state machine's main loop and state transitions.
- *
- * @details
- * 1. Handles state transitions: If 'from' != 'to', it triggers the exit
- *    logic of the old state and entry logic of the new state.
- * 2. **Pointer Safety:** Both 'engine_init' and 'state_switch' guarantee that
- *    'engine->to' is never NULL. Thus, after assignment, 'engine->from' is
- *    guaranteed to be valid for task execution.
- * 3. **Error Propagation:** The return value is directly passed from the
- *    active state's task function. A negative return value triggers an
- *    engine-level exception in the main loop.
- *
- * @param engine  Pointer to the state engine.
- * @param private Context-specific data passed to state functions.
- * @return The status code from the state task.
- */
 int stateEngineRun(struct tStateEngine *engine, void *private)
 {
 	if (engine == NULL)
@@ -126,9 +58,6 @@ int stateEngineRun(struct tStateEngine *engine, void *private)
 			engine->from->state_exit(private);
 		}
 
-		/*Both engine_init and state_switch guarantee that the to pointer is never
-     * null. Therefore, the subsequent if check on from (after assignment) is
-     * redundant.*/
 		STATEM_SWITCH(engine->from, engine->to);
 
 		engine->from = engine->to;
@@ -144,35 +73,11 @@ int stateEngineRun(struct tStateEngine *engine, void *private)
 	}
 }
 
-/**
- * @brief Switches the target state of the state engine.
- *
- * @note **IMPORTANT:** This function MUST only be called within a state task.
- *
- * @warning The caller must propagate negative return values back to the engine.
- * Any negative value returned by a state task will cause the stateEngineRun()
- * to return that same negative value, triggering an engine exception.
- *
- * @return CLI_OK              Success.
- * @return CLI_ERR_NULL        Invalid engine pointer.
- * @return CLI_ERR_NOTFOUND    No matching state name found in the pool.
- * @return CLI_ERR_STATEM_SAME Target state is already the current state.
- *
- * @example
- * // 1. Inside a state task:
- * int my_state_task(struct tStateEngine *engine, void *ctx) {
- *     if (state_switch(engine, "state2")) {
- *         printf("switch error!\n");
- *         return CLI_ERR_NOTFOUND; // Propagate error to the engine
- *     }
- *     return CLI_OK;
- * }
- */
-int state_switch(struct tStateEngine *engine, char *name)
+int state_switch(struct tStateEngine *engine, int state_id)
 {
 	if (engine == NULL)
 		return CLI_ERR_NULL;
-	struct tState *_to = state_search(&engine->state_tree_root, name);
+	struct tState *_to = state_pool_search(engine, state_id);
 	if (_to == NULL)
 		return CLI_ERR_NOTFOUND;
 	if (_to == engine->from)

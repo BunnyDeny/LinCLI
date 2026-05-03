@@ -17,6 +17,24 @@
 /*启用尾行模式测试*/
 #define INLINE_TEST_EN 0
 
+/* 条件编译：用户/环境变量/变量导出系统 */
+#define CLI_ENABLE_USER 1
+#define CLI_ENABLE_ENV 1
+#define CLI_ENABLE_VAR 1
+
+/* 条件编译：高级 Tab 补全（选项补全/候选值/高亮循环）
+ * 关闭后仅保留命令名前缀匹配 + 列表打印 */
+#define CLI_ENABLE_ADVANCED_COMPLETION 1
+
+/* 条件编译：帮助系统（--help 自动生成与用法提示） */
+#define CLI_ENABLE_HELP 1
+
+/* 条件编译：命令链（支持 && 分隔的多命令链式执行） */
+#define CLI_ENABLE_CMD_CHAIN 1
+
+/* 条件编译：自动运行（CLI_AUTO_CMD 注册的开机自动执行命令） */
+#define CLI_ENABLE_AUTO_RUN 1
+
 /*命令历史记录条目数量（嵌入式环境不建议太大）*/
 #define HISTORY_MAX 4
 
@@ -34,8 +52,8 @@
 
 /* 版本号 */
 #define CLI_VERSION_MAJOR 1
-#define CLI_VERSION_MINOR 8
-#define CLI_VERSION_PATCH 4
+#define CLI_VERSION_MINOR 9
+#define CLI_VERSION_PATCH 0
 
 /* 内存池配置 */
 #define CLI_MPOOL_COUNT 6

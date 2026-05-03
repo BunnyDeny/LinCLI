@@ -5,7 +5,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_TESTS && CLI_ENABLE_VAR
 #include "cli_var.h"
 #include "cli_io.h"
 
@@ -22,8 +22,8 @@ CLI_VAR(g_device_name, "g_device_name", STRING, "Device name");
 static bool g_verbose = false;
 CLI_VAR(g_verbose, "g_verbose", BOOL, "Verbose output flag");
 
-static double g_kp = 2.5;
-CLI_VAR_RO(g_kp, "g_kp", DOUBLE, "PID Kp parameter (read-only)");
+static float g_kp = 2.5f;
+CLI_VAR_RO(g_kp, "g_kp", FLOAT, "PID Kp parameter (read-only)");
 
 /* ============================================================
  * 自定义类型测试：二维坐标点
@@ -109,4 +109,4 @@ CLI_VAR_TYPE(pid, pid_from_str, pid_to_str);
 static pid_params_t g_pid = { 2000, 100, 50 };
 CLI_VAR_CUSTOM(g_pid, "g_pid", "pid", "Motor PID parameters");
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_TESTS && CLI_ENABLE_VAR */

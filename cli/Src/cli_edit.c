@@ -99,24 +99,7 @@ void replace_cmdline_token(const char *replacement, int repl_len,
 				  int append_space)
 {
 	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	int new_size = tok_start + repl_len;
-
-	if (append_space && new_size < CMD_LINE_BUF_SIZE - 1)
-		new_size++;
-	if (new_size > CMD_LINE_BUF_SIZE)
-		new_size = CMD_LINE_BUF_SIZE;
-
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	memcpy(new_buf + tok_start, replacement, repl_len);
-	if (append_space && tok_start + repl_len < CMD_LINE_BUF_SIZE - 1)
-		new_buf[tok_start + repl_len] = ' ';
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	replace_token_at(tok_start, replacement, repl_len, append_space);
 }
 
 void replace_token_at(int seg_start, const char *token, int tok_len,
@@ -145,85 +128,38 @@ void replace_token_at(int seg_start, const char *token, int tok_len,
 	cli_mpool_free(new_buf);
 }
 
-void replace_long_opt_at(int tok_start, const char *long_opt,
-				int long_len)
+static void do_replace_long_opt(int tok_start, const char *long_opt,
+				   int long_len, int append_space)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = '-';
-	memcpy(new_buf + tok_start + 2, long_opt, long_len);
-	int new_size = tok_start + 2 + long_len;
-	if (new_size < CMD_LINE_BUF_SIZE - 1)
-		new_buf[new_size++] = ' ';
+	char tmp[CMD_LINE_BUF_SIZE];
+	tmp[0] = '-';
+	tmp[1] = '-';
+	memcpy(tmp + 2, long_opt, long_len);
+	if (tok_start < 0)
+		tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
+	replace_token_at(tok_start, tmp, 2 + long_len, append_space);
+}
 
-	memset(cmd_line.buf, 0, CMD_LINE_BUF_SIZE);
-	memcpy(cmd_line.buf, new_buf, new_size);
-	cmd_line.size = new_size;
-	cmd_line.pos = new_size;
-	cli_mpool_free(new_buf);
+void replace_long_opt_at(int tok_start, const char *long_opt, int long_len)
+{
+	do_replace_long_opt(tok_start, long_opt, long_len, 1);
 }
 
 void replace_long_option_only(const char *long_opt, int long_len)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = '-';
-	memcpy(new_buf + tok_start + 2, long_opt, long_len);
-	int new_size = tok_start + 2 + long_len;
-	if (new_size < CMD_LINE_BUF_SIZE - 1) {
-		new_buf[new_size] = ' ';
-		new_size++;
-	}
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	do_replace_long_opt(-1, long_opt, long_len, 1);
 }
 
 void replace_long_option(const char *long_opt, int long_len)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = '-';
-	memcpy(new_buf + tok_start + 2, long_opt, long_len);
-	int new_size = tok_start + 2 + long_len;
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	do_replace_long_opt(-1, long_opt, long_len, 0);
 }
 
 void replace_short_option(char c)
 {
-	char *new_buf = cli_mpool_alloc();
-	if (!new_buf) {
-		pr_err("out of memory\r\n");
-		return;
-	}
-	int tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
-	memcpy(new_buf, cmd_line.buf, tok_start);
-	new_buf[tok_start] = '-';
-	new_buf[tok_start + 1] = c;
-	int new_size = tok_start + 2;
-	if (new_size < CMD_LINE_BUF_SIZE - 1) {
-		new_buf[new_size] = ' ';
-		new_size++;
-	}
-	cmd_line_replace(new_buf, new_size);
-	cli_mpool_free(new_buf);
+	char tmp[2] = { '-', c };
+	replace_token_at(get_last_token_start(cmd_line.buf, cmd_line.size),
+			 tmp, 2, 1);
 }
 
 int valid_char_append(char ch)
@@ -276,21 +212,25 @@ int get_current_segment_start(const char *buf, int size)
 	return start;
 }
 
-int delete_in_middle(void)
+static int do_delete(int is_backspace)
 {
 	int status;
-	for (int i = cmd_line.pos; i < cmd_line.size; i++) {
-		cmd_line.buf[i] = cmd_line.buf[i + 1];
+	int pos = is_backspace ? cmd_line.pos - 1 : cmd_line.pos;
+	if (is_backspace) {
+		status = cli_out_push((_u8 *)"\b \b", 4);
+		if (status < 0)
+			return status;
 	}
+	for (int i = pos; i < cmd_line.size - 1; i++)
+		cmd_line.buf[i] = cmd_line.buf[i + 1];
 	cmd_line.buf[cmd_line.size - 1] = ' ';
-	int writeNums = cmd_line.size - cmd_line.pos;
-	status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos], writeNums);
+	int writeNums = cmd_line.size - pos;
+	status = cli_out_push((_u8 *)&cmd_line.buf[pos], writeNums);
 	if (status < 0)
 		return status;
 	if (cli_out_sync())
 		return CLI_ERR_IO_SYNC;
-	int pos_move_cnt = cmd_line.size - cmd_line.pos;
-	while (pos_move_cnt--) {
+	while (writeNums--) {
 		status = cli_out_push((_u8 *)"\033[D", 4);
 		if (status < 0)
 			return status;
@@ -298,44 +238,12 @@ int delete_in_middle(void)
 			return CLI_ERR_IO_SYNC;
 	}
 	cmd_line.size--;
+	if (is_backspace)
+		cmd_line.pos--;
 	return CLI_OK;
 }
 
-int backspace_at_tail(void)
-{
-	int status = cli_out_push((_u8 *)"\b \b", 4);
-	if (status < 0)
-		return status;
-	cmd_line.size--;
-	cmd_line.pos--;
-	return CLI_OK;
-}
-
-int backspace_in_middle(void)
-{
-	int status = cli_out_push((_u8 *)"\b \b", 4);
-	if (status < 0)
-		return status;
-	for (int i = cmd_line.pos - 1; i < cmd_line.size - 1; i++) {
-		cmd_line.buf[i] = cmd_line.buf[i + 1];
-	}
-	cmd_line.buf[cmd_line.size - 1] = ' ';
-	status = cli_out_push((_u8 *)&cmd_line.buf[cmd_line.pos - 1],
-			      cmd_line.size - cmd_line.pos + 1);
-	if (status < 0)
-		return status;
-	if (cli_out_sync())
-		return CLI_ERR_IO_SYNC;
-	int pos_move_cnt = cmd_line.size - cmd_line.pos + 1;
-	while (pos_move_cnt--) {
-		status = cli_out_push((_u8 *)"\033[D", 4);
-		if (status < 0)
-			return status;
-		if (cli_out_sync())
-			return CLI_ERR_IO_SYNC;
-	}
-	cmd_line.size--;
-	cmd_line.pos--;
-	return CLI_OK;
-}
+int delete_in_middle(void) { return do_delete(0); }
+int backspace_at_tail(void) { return do_delete(1); }
+int backspace_in_middle(void) { return do_delete(1); }
 

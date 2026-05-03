@@ -10,11 +10,15 @@
 #include "cli_parse.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
+#include "cli_float.h"
+#include "cli_vsnprintf.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+
+#if CLI_ENABLE_VAR
 
 /* ============================================================
  * 查找变量
@@ -59,15 +63,15 @@ void cli_var_print(const cli_var_t *var)
 	if (type && type->ops.to_string) {
 		char *buf = cli_mpool_alloc();
 		if (!buf) {
-			all_printk("%s (%s) = <oom>\r\n", var->name,
+			all_printk("%s=%s?<oom>\r\n", var->name,
 				   var->type_name);
 			return;
 		}
 		type->ops.to_string(var->addr, var->size, buf, CLI_MPOOL_SIZE);
-		all_printk("%s (%s) = %s\r\n", var->name, var->type_name, buf);
+		all_printk("%s=%s:%s\r\n", var->name, var->type_name, buf);
 		cli_mpool_free(buf);
 	} else {
-		all_printk("%s (%s) = <unprintable>\r\n", var->name,
+		all_printk("%s=%s?<n/a>\r\n", var->name,
 			   var->type_name);
 	}
 }
@@ -80,12 +84,12 @@ static const cli_var_type_t *cli_var_set_lookup_type(const cli_var_t *var)
 {
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (!type) {
-		pr_err("unknown type '%s' for variable '%s'\r\n",
+		pr_err("unk type %s:%s\r\n",
 			var->type_name, var->name);
 		return NULL;
 	}
 	if (!type->ops.from_string) {
-		pr_err("type '%s' does not support write\r\n",
+		pr_err("type %s RO\r\n",
 			var->type_name);
 		return NULL;
 	}
@@ -117,12 +121,12 @@ int cli_var_set(const cli_var_t *var, const char *value)
 		return CLI_ERR_NULL;
 
 	if (var->readonly) {
-		pr_err("'%s' is read-only\r\n", var->name);
+		pr_err("'%s' RO\r\n", var->name);
 		return -1;
 	}
 
 	if (!var->type_name) {
-		pr_err("variable '%s' has no type\r\n", var->name);
+		pr_err("'%s' no type\r\n", var->name);
 		return -1;
 	}
 
@@ -158,7 +162,7 @@ static int var_handle_read(const char *name)
 {
 	const cli_var_t *var = cli_var_find(name);
 	if (!var) {
-		pr_err("unknown variable: %s\r\n", name);
+		pr_err("unknown: %s\r\n", name);
 		return -1;
 	}
 	cli_var_print(var);
@@ -169,7 +173,7 @@ static int var_handle_write(const char *name, const char *val)
 {
 	const cli_var_t *var = cli_var_find(name);
 	if (!var) {
-		pr_err("unknown variable: %s\r\n", name);
+		pr_err("unknown: %s\r\n", name);
 		return -1;
 	}
 	return cli_var_set(var, val);
@@ -186,21 +190,20 @@ static int var_handler(void *_args)
 	if (args->write)
 		return var_handle_write(args->write, args->val);
 
-	pr_err("usage: var -r <name>  or  var -w <name> --val <value>"
-	       "  or  var -l\r\n");
+	pr_err("var -r <n> | var -w <n> --val <v> | var -l\r\n");
 	return -1;
 }
 
-CLI_COMMAND(var_cmd, "var", "Read/write exported variables",
-	    USAGE("var -r <name>", "var -w <name> --val <value>", "var -l"),
+CLI_COMMAND(var_cmd, "var", "Variables",
+	    USAGE("var -r <n>", "var -w <n> --val <v>", "var -l"),
 	    var_handler, (struct var_args *)0,
-	    OPTION('r', "read", STRING, "Read variable name", struct var_args,
+	    OPTION('r', "read", STRING, "", struct var_args,
 		   read, 0, NULL, "write list", false),
-	    OPTION('w', "write", STRING, "Write variable name", struct var_args,
+	    OPTION('w', "write", STRING, "", struct var_args,
 		   write, 0, NULL, "read list", false),
-	    OPTION('l', "list", BOOL, "List all exported variables",
+	    OPTION('l', "list", BOOL, "",
 		   struct var_args, list, 0, NULL, "read write", false),
-	    OPTION(0, "val", STRING, "Value to write", struct var_args, val, 0,
+	    OPTION(0, "val", STRING, "", struct var_args, val, 0,
 		   "write", NULL, false),
 	    END_OPTIONS);
 
@@ -208,75 +211,48 @@ CLI_COMMAND(var_cmd, "var", "Read/write exported variables",
  * 列表辅助函数
  * ============================================================ */
 
-static void cli_var_format_attr(const cli_var_t *var, char *buf, size_t size)
-{
-	if (var->readonly)
-		snprintf(buf, size, "RO");
-	else
-		buf[0] = '\0';
-}
-
 static void cli_var_format_value(const cli_var_t *var, char *buf, size_t size)
 {
 	if (!var->type_name) {
-		snprintf(buf, size, "?");
+		cli_snprintf(buf, (int)size, "?");
 		return;
 	}
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (type && type->ops.to_string) {
 		type->ops.to_string(var->addr, var->size, buf, size);
 	} else {
-		snprintf(buf, size, "?");
+		cli_snprintf(buf, (int)size, "?");
 	}
 }
 
-static void cli_var_print_entry(const cli_var_t *var, const char *value_buf,
-				const char *attr_buf)
+static void cli_var_print_entry(const cli_var_t *var, const char *value_buf)
 {
-	all_printk("%-20s %-16s %-20s %-4s %s\r\n", var->name,
-		   var->type_name ? var->type_name : "UNKNOWN",
-		   value_buf, attr_buf, var->doc ? var->doc : "");
+	all_printk("%s %s %s\r\n", var->name,
+		   var->type_name ? var->type_name : "?",
+		   value_buf);
 }
 
-static int cli_var_alloc_entry_bufs(char **value_buf, char **attr_buf)
+static char *cli_var_alloc_value_buf(void)
 {
-	*value_buf = cli_mpool_alloc();
-	*attr_buf = cli_mpool_alloc();
-	if (!*value_buf || !*attr_buf) {
-		if (*value_buf)
-			cli_mpool_free(*value_buf);
-		if (*attr_buf)
-			cli_mpool_free(*attr_buf);
-		all_printk("<oom>\r\n");
-		return -1;
-	}
-	(*value_buf)[0] = '\0';
-	(*attr_buf)[0] = '\0';
-	return 0;
+	char *buf = cli_mpool_alloc();
+	if (buf)
+		buf[0] = '\0';
+	return buf;
 }
 
 void cli_var_list_all(void)
 {
 	const cli_var_t *var;
-	all_printk("\r\n%-20s %-16s %-20s %-4s %s\r\n", "NAME", "TYPE", "VALUE",
-		   "ATTR", "DOC");
-	all_printk(
-		"-------------------------------------------------------------------"
-		"\r\n");
+
 
 	_FOR_EACH_CLI_VAR(_cli_vars_start, _cli_vars_end, var)
 	{
-		char *value_buf;
-		char *attr_buf;
-		if (cli_var_alloc_entry_bufs(&value_buf, &attr_buf) < 0)
+		char *value_buf = cli_var_alloc_value_buf();
+		if (!value_buf)
 			continue;
-
-		cli_var_format_attr(var, attr_buf, CLI_MPOOL_SIZE);
 		cli_var_format_value(var, value_buf, CLI_MPOOL_SIZE);
-		cli_var_print_entry(var, value_buf, attr_buf);
-
+		cli_var_print_entry(var, value_buf);
 		cli_mpool_free(value_buf);
-		cli_mpool_free(attr_buf);
 	}
 }
 
@@ -329,7 +305,7 @@ static void cli_var_candidate_init(void *arg)
 	cli_var_collect_candidates();
 
 	const cli_command_t *cmd;
-	_FOR_EACH_CLI_COMMAND(_cli_commands_start, _cli_commands_end, cmd)
+	_FOR_EACH_CLI_COMMAND(cmd)
 	{
 		if (!cmd || !cmd->name || strcmp(cmd->name, "var") != 0)
 			continue;
@@ -342,7 +318,7 @@ _EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL, cli_var_candidate_init);
  * 内建类型回调实现
  * ============================================================
  *
- * INT / DOUBLE / BOOL / STRING 统一基于 cli_var_type_ops_t 实现，
+ * INT / FLOAT / BOOL / STRING 统一基于 cli_var_type_ops_t 实现，
  * 通过 CLI_VAR_TYPE 宏注册到 .cli_var_types 段。
  * 对用户完全透明，CLI_VAR() 宏底层走的就是这套机制。
  */
@@ -359,23 +335,24 @@ static int builtin_int_from_str(void *addr, size_t size, const char *str)
 static int builtin_int_to_str(const void *addr, size_t size, char *buf,
 			      size_t buf_size)
 {
-	snprintf(buf, buf_size, "%d", *(const int *)addr);
+	cli_snprintf(buf, (int)buf_size, "%d", *(const int *)addr);
 	return 0;
 }
 
-static int builtin_double_from_str(void *addr, size_t size, const char *str)
+static int builtin_float_from_str(void *addr, size_t size, const char *str)
 {
-	double val;
-	if (cli_parse_double(str, &val) < 0)
+	float val;
+	if (cli_parse_float(str, &val) < 0)
 		return -1;
-	*(double *)addr = val;
+	*(float *)addr = val;
 	return 0;
 }
 
-static int builtin_double_to_str(const void *addr, size_t size, char *buf,
+static int builtin_float_to_str(const void *addr, size_t size, char *buf,
 				 size_t buf_size)
 {
-	snprintf(buf, buf_size, "%.6f", *(const double *)addr);
+	(void)size;
+	cli_ftoa(*(const float *)addr, buf, (int)buf_size, 6);
 	return 0;
 }
 
@@ -386,7 +363,7 @@ static int builtin_bool_from_str(void *addr, size_t size, const char *str)
 	else if (strcmp(str, "false") == 0 || strcmp(str, "0") == 0)
 		*(bool *)addr = false;
 	else {
-		pr_err("bool value must be true/false or 1/0\r\n");
+		pr_err("bool: true/false/1/0\r\n");
 		return -1;
 	}
 	return 0;
@@ -395,7 +372,7 @@ static int builtin_bool_from_str(void *addr, size_t size, const char *str)
 static int builtin_bool_to_str(const void *addr, size_t size, char *buf,
 			       size_t buf_size)
 {
-	snprintf(buf, buf_size, "%s",
+	cli_snprintf(buf, (int)buf_size, "%s",
 		 *(const bool *)addr ? "true" : "false");
 	return 0;
 }
@@ -406,7 +383,7 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 		return -1;
 	size_t len = strlen(str);
 	if (len >= size) {
-		pr_warn("string truncated: %zu -> %zu chars\r\n", len,
+		pr_warn("str trunc %u>%u\r\n", (unsigned int)len,
 			size - 1);
 		len = size - 1;
 	}
@@ -418,12 +395,14 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 static int builtin_string_to_str(const void *addr, size_t size, char *buf,
 				 size_t buf_size)
 {
-	snprintf(buf, buf_size, "\"%s\"", (const char *)addr);
+	cli_snprintf(buf, (int)buf_size, "\"%s\"", (const char *)addr);
 	return 0;
 }
 
 /* 注册内建类型到 .cli_var_types 段 */
 CLI_VAR_TYPE(INT, builtin_int_from_str, builtin_int_to_str);
-CLI_VAR_TYPE(DOUBLE, builtin_double_from_str, builtin_double_to_str);
+CLI_VAR_TYPE(FLOAT, builtin_float_from_str, builtin_float_to_str);
 CLI_VAR_TYPE(BOOL, builtin_bool_from_str, builtin_bool_to_str);
 CLI_VAR_TYPE(STRING, builtin_string_from_str, builtin_string_to_str);
+
+#endif /* CLI_ENABLE_VAR */
