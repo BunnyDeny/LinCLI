@@ -4,12 +4,13 @@
 # Compares "with LinCLI" vs "without LinCLI" in the same STM32 HAL project.
 #
 # Usage:
-#   ./tools/measure_size.sh              # use example_project default flags
+#   ./tools/measure_size.sh              # default: no LTO
 #   ./tools/measure_size.sh -O0          # override optimization
-#   ./tools/measure_size.sh --no-lto     # disable LTO
+#   ./tools/measure_size.sh --lto        # enable LTO
 #   ./tools/measure_size.sh --no-user    # disable user system
 #   ./tools/measure_size.sh --no-env     # disable env system
 #   ./tools/measure_size.sh --no-var     # disable var system
+#   ./tools/measure_size.sh --no-advanced-completion  # disable advanced tab completion
 #
 
 set -e
@@ -22,10 +23,11 @@ CONFIG_H="${PROJECT_ROOT}/include/cli_config.h"
 
 # --- defaults ---
 OPT=""
-LTO=""
+LTO="--no-lto"
 NO_USER=""
 NO_ENV=""
 NO_VAR=""
+NO_ADV_CMP=""
 
 # --- parse args ---
 for arg in "$@"; do
@@ -33,8 +35,8 @@ for arg in "$@"; do
 		-O0|-Os|-O1|-O2|-O3|-Oz)
 			OPT="$arg"
 			;;
-		--no-lto)
-			LTO="--no-lto"
+		--lto)
+			LTO=""
 			;;
 		--no-user)
 			NO_USER=1
@@ -45,8 +47,55 @@ for arg in "$@"; do
 		--no-var)
 			NO_VAR=1
 			;;
+		--no-advanced-completion)
+			NO_ADV_CMP=1
+			;;
 		-h|--help)
-			echo "Usage: $0 [-O0|-Os|-O1|-O2|-O3] [--no-lto] [--no-user] [--no-env] [--no-var]"
+			cat <<'EOF'
+LinCLI Flash/RAM size measurement — delta method
+
+DESCRIPTION:
+  Builds the stm32g431_gcc_example_project twice (with / without LinCLI)
+  and prints the size delta. This gives the true cost of LinCLI alone.
+
+USAGE:
+  ./tools/measure_size.sh [OPTIONS]
+
+OPTIMIZATION:
+  -O0 | -Os | -O1 | -O2 | -O3 | -Oz   Override optimization level (default: Makefile default)
+
+LTO:
+  --lto                                Enable LTO (default: disabled)
+
+FEATURE TRIMMING (all default to ENABLED, use --no-* to disable):
+
+  --no-user                            Disable user management system
+                                       Effect: removes login/su/permission checks
+                                       Stub: current_user = root (always permitted)
+
+  --no-env                             Disable environment variable expansion ($VAR)
+                                       Effect: removes env command & built-in vars
+                                       Stub: cli_env_replace() copies input verbatim
+
+  --no-var                             Disable variable export system (CLI_VAR macros)
+                                       Effect: removes var command & type registries
+                                       Macros expand to nothing
+
+  --no-advanced-completion             Disable advanced Tab completion
+                                       Effect: keeps command-name prefix match + list
+                                       Removes: option completion, value completion,
+                                       candidate highlight cycling, completer tables
+
+COMBINATION EXAMPLES:
+  # Minimal build: disable all optional modules
+  ./tools/measure_size.sh --no-user --no-env --no-var --no-advanced-completion
+
+  # Check size with smallest optimization, no LTO
+  ./tools/measure_size.sh -Os
+
+  # Disable only env + advanced completion
+  ./tools/measure_size.sh --no-env --no-advanced-completion
+EOF
 			exit 0
 			;;
 	esac
@@ -66,7 +115,7 @@ if [ ! -d "$EXAMPLE_DIR" ]; then
 fi
 
 # --- backup & override cli_config.h ---
-if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ]; then
+if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ] || [ -n "$NO_ADV_CMP" ]; then
 	cp "$CONFIG_H" "${CONFIG_H}.orig"
 	if [ -n "$NO_USER" ]; then
 		sed -i 's/#define CLI_ENABLE_USER 1/#define CLI_ENABLE_USER 0/' "$CONFIG_H"
@@ -76,6 +125,9 @@ if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ]; then
 	fi
 	if [ -n "$NO_VAR" ]; then
 		sed -i 's/#define CLI_ENABLE_VAR  1/#define CLI_ENABLE_VAR  0/' "$CONFIG_H"
+	fi
+	if [ -n "$NO_ADV_CMP" ]; then
+		sed -i 's/#define CLI_ENABLE_ADVANCED_COMPLETION 1/#define CLI_ENABLE_ADVANCED_COMPLETION 0/' "$CONFIG_H"
 	fi
 fi
 

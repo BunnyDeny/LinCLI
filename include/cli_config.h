@@ -22,6 +22,10 @@
 #define CLI_ENABLE_ENV  1
 #define CLI_ENABLE_VAR  1
 
+/* 条件编译：高级 Tab 补全（选项补全/候选值/高亮循环）
+ * 关闭后仅保留命令名前缀匹配 + 列表打印 */
+#define CLI_ENABLE_ADVANCED_COMPLETION 1
+
 /*命令历史记录条目数量（嵌入式环境不建议太大）*/
 #define HISTORY_MAX 4
 
@@ -40,7 +44,7 @@
 /* 版本号 */
 #define CLI_VERSION_MAJOR 1
 #define CLI_VERSION_MINOR 8
-#define CLI_VERSION_PATCH 20
+#define CLI_VERSION_PATCH 21
 
 /* 内存池配置 */
 #define CLI_MPOOL_COUNT 6
