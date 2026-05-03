@@ -200,6 +200,7 @@ extern const cli_command_t *const _cli_commands_end[];
 #define _OPTION_COUNT_STRING(_stype, _field) 0
 #define _OPTION_COUNT_INT(_stype, _field) 0
 #define _OPTION_COUNT_DOUBLE(_stype, _field) 0
+#define _OPTION_COUNT_FLOAT(_stype, _field) 0
 #define _OPTION_COUNT_CALLBACK(_stype, _field) 0
 #define _OPTION_COUNT_INT_ARRAY(_stype, _field) \
 	CLI_OFFSETOF(_stype, _field##_count)
