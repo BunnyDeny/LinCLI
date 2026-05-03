@@ -48,6 +48,8 @@
 
 #include "cli_state_ids.h"
 
+#define STATE_POOL_SIZE 64
+
 #define STATEM_FORMAT_LOG(fmt, ...)
 
 #define STATEM_SWITCH(from, to)                                        \
@@ -123,6 +125,7 @@ struct tState {
 struct tStateEngine {
 	struct tState *from;
 	struct tState *to;
+	struct tState *state_pool[STATE_POOL_SIZE];
 };
 
 int engine_init(struct tStateEngine *engine, int startup_state_id,

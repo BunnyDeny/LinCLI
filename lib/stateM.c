@@ -12,21 +12,17 @@
 #include "cli_errno.h"
 #include <string.h>
 
-#define STATE_POOL_SIZE 64
-
-static struct tState *state_pool[STATE_POOL_SIZE];
-
-static struct tState *state_pool_search(int state_id)
+static struct tState *state_pool_search(struct tStateEngine *engine, int state_id)
 {
 	if (state_id >= 0 && state_id < STATE_POOL_SIZE)
-		return state_pool[state_id];
+		return engine->state_pool[state_id];
 	return NULL;
 }
 
-static void state_pool_insert(struct tState *state)
+static void state_pool_insert(struct tStateEngine *engine, struct tState *state)
 {
 	if (state->state_id >= 0 && state->state_id < STATE_POOL_SIZE)
-		state_pool[state->state_id] = state;
+		engine->state_pool[state->state_id] = state;
 }
 
 int engine_init(struct tStateEngine *engine, int startup_state_id,
@@ -37,14 +33,14 @@ int engine_init(struct tStateEngine *engine, int startup_state_id,
 	if (sec_start >= sec_end)
 		return CLI_ERR_STATEM_EMPTY;
 	engine->from = NULL;
-	memset(state_pool, 0, sizeof(state_pool));
+	memset(engine->state_pool, 0, sizeof(engine->state_pool));
 	struct tState *state;
 	_FOR_EACH_STATE(sec_start, sec_end, state)
 	{
-		state_pool_insert(state);
+		state_pool_insert(engine, state);
 	}
 
-	struct tState *_to = state_pool_search(startup_state_id);
+	struct tState *_to = state_pool_search(engine, startup_state_id);
 	if (_to == NULL) {
 		return CLI_ERR_NOTFOUND;
 	}
@@ -81,7 +77,7 @@ int state_switch(struct tStateEngine *engine, int state_id)
 {
 	if (engine == NULL)
 		return CLI_ERR_NULL;
-	struct tState *_to = state_pool_search(state_id);
+	struct tState *_to = state_pool_search(engine, state_id);
 	if (_to == NULL)
 		return CLI_ERR_NOTFOUND;
 	if (_to == engine->from)
