@@ -39,6 +39,24 @@ CLI_ENV(echo, "_echo --msg");
  *  echo 命令：系统内置打印命令
  * ============================================================ */
 
+struct echo_args {
+	char *msg;
+};
+
+static int _echo_handler(void *_args)
+{
+	struct echo_args *args = _args;
+	cli_printk("%s\r\n", args->msg ? args->msg : "");
+	return 0;
+}
+
+CLI_COMMAND(_echo, "_echo", "Print msg",
+	    USAGE("_echo --msg <str>"), _echo_handler,
+	    (struct echo_args *)0,
+	    OPTION(0, "msg", STRING, "", struct echo_args, msg, 0, NULL, NULL,
+		   false),
+	    END_OPTIONS);
+
 /* ============================================================
  *  纯整数名字检测与注册过滤
  * ============================================================ */
