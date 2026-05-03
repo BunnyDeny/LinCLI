@@ -22,8 +22,8 @@ CLI_VAR(g_device_name, "g_device_name", STRING, "Device name");
 static bool g_verbose = false;
 CLI_VAR(g_verbose, "g_verbose", BOOL, "Verbose output flag");
 
-static double g_kp = 2.5;
-CLI_VAR_RO(g_kp, "g_kp", DOUBLE, "PID Kp parameter (read-only)");
+static float g_kp = 2.5f;
+CLI_VAR_RO(g_kp, "g_kp", FLOAT, "PID Kp parameter (read-only)");
 
 /* ============================================================
  * 自定义类型测试：二维坐标点

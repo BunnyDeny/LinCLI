@@ -50,10 +50,10 @@ const char *cli_strerror(int err)
 		return "integer out of range";
 	case CLI_ERR_INT_FMT:
 		return "invalid integer format";
-	case CLI_ERR_DOUBLE_RANGE:
-		return "double out of range";
-	case CLI_ERR_DOUBLE_FMT:
-		return "invalid double format";
+	case CLI_ERR_FLOAT_RANGE:
+		return "float out of range";
+	case CLI_ERR_FLOAT_FMT:
+		return "invalid float format";
 	case CLI_ERR_ARRAY_MAX:
 		return "array exceeds max size";
 	case CLI_ERR_BUF_INSUFF:

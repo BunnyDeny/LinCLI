@@ -24,6 +24,7 @@
 #include "cli_cmd_line.h"
 #include "cli_mpool.h"
 #include "cli_parse.h"
+#include "cli_vsnprintf.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
@@ -236,11 +237,12 @@ static int *ensure_int_array(cli_option_t *opt, void *arg_struct,
 		return arr;
 	size_t need = opt->max_args * sizeof(int);
 	if (need > state->scratch_remain) {
-		long shortfall = (long)need - (long)state->scratch_remain;
+		int shortfall = (int)need - (int)state->scratch_remain;
 		pr_err("option -%c/--%s insufficient buffer, missing "
-		       "%ld bytes (requires %zu b contiguous space)\r\n",
+		       "%d bytes (requires %u b contiguous space)\r\n",
 		       opt->short_opt ? opt->short_opt : ' ',
-		       opt->long_opt ? opt->long_opt : "", shortfall, need);
+		       opt->long_opt ? opt->long_opt : "", shortfall,
+		       (unsigned int)need);
 		return NULL;
 	}
 	arr = (int *)state->scratch_pool;
@@ -293,8 +295,8 @@ static int parse_value_by_type(const char *arg, void *arg_struct,
 		return 0;
 	case CLI_TYPE_INT:
 		return cli_parse_int(arg, (int *)dst);
-	case CLI_TYPE_DOUBLE:
-		return cli_parse_double(arg, (double *)dst);
+	case CLI_TYPE_FLOAT:
+		return cli_parse_float(arg, (float *)dst);
 	case CLI_TYPE_INT_ARRAY:
 		return parse_int_array(state->cur_opt, arg, arg_struct, state);
 	default:
@@ -447,10 +449,10 @@ static int alloc_scratch_string(size_t need, struct parse_state *state,
 				char **dest)
 {
 	if (need > state->scratch_remain) {
-		long shortfall = (long)need - (long)state->scratch_remain;
+		int shortfall = (int)need - (int)state->scratch_remain;
 		pr_err("string argument too long, missing "
-		       "%ld bytes (%zu b required)\r\n",
-		       shortfall, need);
+		       "%d bytes (%u b required)\r\n",
+		       shortfall, (unsigned int)need);
 		return CLI_ERR_BUF_INSUFF;
 	}
 	*dest = state->scratch_pool;
@@ -534,8 +536,8 @@ static int alloc_opt_seen(const cli_command_t *cmd, char **scratch,
 	size_t need = cmd->option_count * sizeof(bool);
 	long avail = (long)*scratch_size;
 	if (avail < (long)need) {
-		pr_err("command %s insufficient buffer, missing %ld bytes\r\n",
-		       cmd->name, (long)need - avail);
+		pr_err("command %s insufficient buffer, missing %d bytes\r\n",
+		       cmd->name, (int)need - (int)avail);
 		return CLI_ERR_BUF_INSUFF;
 	}
 	bool *opt_seen = (bool *)*scratch;
@@ -633,15 +635,15 @@ static void build_opt_marks(cli_option_t *opt, char *req_mark,
 	req_mark[0] = '\0';
 	dep_mark[0] = '\0';
 	if (opt->required)
-		snprintf(req_mark, CLI_HELP_REQ_MARK_SIZE, " [required]");
+		cli_snprintf(req_mark, CLI_HELP_REQ_MARK_SIZE, " [required]");
 	if (opt->depends && opt->depends[0]) {
-		snprintf(dep_mark, dep_mark_size, " [depends:%s]",
+		cli_snprintf(dep_mark, dep_mark_size, " [depends:%s]",
 			 opt->depends);
 	}
 	if (opt->conflicts && opt->conflicts[0]) {
 		size_t len = strlen(dep_mark);
 		if (len < dep_mark_size - 1) {
-			snprintf(dep_mark + len, dep_mark_size - len,
+			cli_snprintf(dep_mark + len, dep_mark_size - len,
 				 " [conflicts:%s]", opt->conflicts);
 		}
 	}
@@ -766,10 +768,10 @@ static int ensure_cmd_buf(const cli_command_t **cmd_def_p)
 static bool validate_cmd_buf_size(const cli_command_t *cmd_def, int *cmd_ret)
 {
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
-		pr_err("command %s struct size %zu bytes, "
-		       "exceeds buffer by %zu bytes\r\n",
-		       cmd_def->name, cmd_def->arg_struct_size,
-		       cmd_def->arg_buf_size);
+		pr_err("command %s struct size %u bytes, "
+		       "exceeds buffer by %u bytes\r\n",
+		       cmd_def->name, (unsigned int)cmd_def->arg_struct_size,
+		       (unsigned int)cmd_def->arg_buf_size);
 		cmd_parse_cleanup(cmd_def);
 		*cmd_ret = -1;
 		return false;

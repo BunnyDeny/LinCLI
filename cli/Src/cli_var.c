@@ -10,6 +10,8 @@
 #include "cli_parse.h"
 #include "cmd_dispose.h"
 #include "init_d.h"
+#include "cli_float.h"
+#include "cli_vsnprintf.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -211,7 +213,7 @@ CLI_COMMAND(var_cmd, "var", "Read/write exported variables",
 static void cli_var_format_attr(const cli_var_t *var, char *buf, size_t size)
 {
 	if (var->readonly)
-		snprintf(buf, size, "RO");
+		cli_snprintf(buf, (int)size, "RO");
 	else
 		buf[0] = '\0';
 }
@@ -219,14 +221,14 @@ static void cli_var_format_attr(const cli_var_t *var, char *buf, size_t size)
 static void cli_var_format_value(const cli_var_t *var, char *buf, size_t size)
 {
 	if (!var->type_name) {
-		snprintf(buf, size, "?");
+		cli_snprintf(buf, (int)size, "?");
 		return;
 	}
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (type && type->ops.to_string) {
 		type->ops.to_string(var->addr, var->size, buf, size);
 	} else {
-		snprintf(buf, size, "?");
+		cli_snprintf(buf, (int)size, "?");
 	}
 }
 
@@ -342,7 +344,7 @@ _EXPORT_INIT_SYMBOL(cli_var_candidate_init, 15, NULL, cli_var_candidate_init);
  * 内建类型回调实现
  * ============================================================
  *
- * INT / DOUBLE / BOOL / STRING 统一基于 cli_var_type_ops_t 实现，
+ * INT / FLOAT / BOOL / STRING 统一基于 cli_var_type_ops_t 实现，
  * 通过 CLI_VAR_TYPE 宏注册到 .cli_var_types 段。
  * 对用户完全透明，CLI_VAR() 宏底层走的就是这套机制。
  */
@@ -359,23 +361,24 @@ static int builtin_int_from_str(void *addr, size_t size, const char *str)
 static int builtin_int_to_str(const void *addr, size_t size, char *buf,
 			      size_t buf_size)
 {
-	snprintf(buf, buf_size, "%d", *(const int *)addr);
+	cli_snprintf(buf, (int)buf_size, "%d", *(const int *)addr);
 	return 0;
 }
 
-static int builtin_double_from_str(void *addr, size_t size, const char *str)
+static int builtin_float_from_str(void *addr, size_t size, const char *str)
 {
-	double val;
-	if (cli_parse_double(str, &val) < 0)
+	float val;
+	if (cli_parse_float(str, &val) < 0)
 		return -1;
-	*(double *)addr = val;
+	*(float *)addr = val;
 	return 0;
 }
 
-static int builtin_double_to_str(const void *addr, size_t size, char *buf,
+static int builtin_float_to_str(const void *addr, size_t size, char *buf,
 				 size_t buf_size)
 {
-	snprintf(buf, buf_size, "%.6f", *(const double *)addr);
+	(void)size;
+	cli_ftoa(*(const float *)addr, buf, (int)buf_size, 6);
 	return 0;
 }
 
@@ -395,7 +398,7 @@ static int builtin_bool_from_str(void *addr, size_t size, const char *str)
 static int builtin_bool_to_str(const void *addr, size_t size, char *buf,
 			       size_t buf_size)
 {
-	snprintf(buf, buf_size, "%s",
+	cli_snprintf(buf, (int)buf_size, "%s",
 		 *(const bool *)addr ? "true" : "false");
 	return 0;
 }
@@ -406,7 +409,7 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 		return -1;
 	size_t len = strlen(str);
 	if (len >= size) {
-		pr_warn("string truncated: %zu -> %zu chars\r\n", len,
+		pr_warn("string truncated: %u -> %u chars\r\n", (unsigned int)len,
 			size - 1);
 		len = size - 1;
 	}
@@ -418,12 +421,12 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 static int builtin_string_to_str(const void *addr, size_t size, char *buf,
 				 size_t buf_size)
 {
-	snprintf(buf, buf_size, "\"%s\"", (const char *)addr);
+	cli_snprintf(buf, (int)buf_size, "\"%s\"", (const char *)addr);
 	return 0;
 }
 
 /* 注册内建类型到 .cli_var_types 段 */
 CLI_VAR_TYPE(INT, builtin_int_from_str, builtin_int_to_str);
-CLI_VAR_TYPE(DOUBLE, builtin_double_from_str, builtin_double_to_str);
+CLI_VAR_TYPE(FLOAT, builtin_float_from_str, builtin_float_to_str);
 CLI_VAR_TYPE(BOOL, builtin_bool_from_str, builtin_bool_to_str);
 CLI_VAR_TYPE(STRING, builtin_string_from_str, builtin_string_to_str);
