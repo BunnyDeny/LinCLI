@@ -36,10 +36,10 @@ int cli_memcmp(const void *s1, const void *s2, size_t n)
 
 size_t cli_strlen(const char *s)
 {
-	size_t n = 0;
-	while (s[n])
-		n++;
-	return n;
+	const char *p = s;
+	while (*p)
+		p++;
+	return (size_t)(p - s);
 }
 
 int cli_strcmp(const char *s1, const char *s2)
@@ -119,14 +119,19 @@ void *cli_memmove(void *dst, const void *src, size_t n)
 }
 
 /* Expose standard C names as aliases */
-__attribute__((alias("cli_memcpy"))) void *memcpy(void *dst, const void *src, size_t n);
+__attribute__((alias("cli_memcpy"))) void *memcpy(void *dst, const void *src,
+						  size_t n);
 __attribute__((alias("cli_memset"))) void *memset(void *s, int c, size_t n);
-__attribute__((alias("cli_memcmp"))) int memcmp(const void *s1, const void *s2, size_t n);
+__attribute__((alias("cli_memcmp"))) int memcmp(const void *s1, const void *s2,
+						size_t n);
 __attribute__((alias("cli_strlen"))) size_t strlen(const char *s);
 __attribute__((alias("cli_strcmp"))) int strcmp(const char *s1, const char *s2);
 __attribute__((alias("cli_strcpy"))) char *strcpy(char *dst, const char *src);
-__attribute__((alias("cli_strncpy"))) char *strncpy(char *dst, const char *src, size_t n);
+__attribute__((alias("cli_strncpy"))) char *strncpy(char *dst, const char *src,
+						    size_t n);
 __attribute__((alias("cli_strcat"))) char *strcat(char *dst, const char *src);
-__attribute__((alias("cli_strncmp"))) int strncmp(const char *s1, const char *s2, size_t n);
+__attribute__((alias("cli_strncmp"))) int strncmp(const char *s1,
+						  const char *s2, size_t n);
 __attribute__((alias("cli_strchr"))) char *strchr(const char *s, int c);
-__attribute__((alias("cli_memmove"))) void *memmove(void *dst, const void *src, size_t n);
+__attribute__((alias("cli_memmove"))) void *memmove(void *dst, const void *src,
+						    size_t n);
