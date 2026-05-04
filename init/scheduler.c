@@ -46,7 +46,6 @@ __attribute__((weak)) void cli_prompt_print(void)
 
 void start_entry(void *private)
 {
-	pr_info("init routines\r\n");
 	CALL_INIT_D;
 }
 int start_task(void *private)
@@ -64,8 +63,8 @@ int start_task(void *private)
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(scheduler_start, STATE_ID_scheduler_start, start_entry, start_task, NULL,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_start, STATE_ID_scheduler_start, start_entry,
+		     start_task, NULL, ".scheduler");
 
 void scheduler_get_char_entry(void *private)
 {
@@ -109,9 +108,9 @@ void scheduler_get_char_exit(void *arg)
 {
 	set_cli_in_push_lock();
 }
-_EXPORT_STATE_SYMBOL(scheduler_get_char, STATE_ID_scheduler_get_char, scheduler_get_char_entry,
-		     scheduler_get_char_task, scheduler_get_char_exit,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_get_char, STATE_ID_scheduler_get_char,
+		     scheduler_get_char_entry, scheduler_get_char_task,
+		     scheduler_get_char_exit, ".scheduler");
 
 /* ============================================================
  * 命令执行上下文与新增 scheduler_cmd_run 状态
@@ -186,8 +185,8 @@ void scheduler_cmd_run_exit(void *private)
 	}
 
 	if (cmd_ctx.cmd_ret < 0 && cmd_ctx.cmd_def) {
-		pr_err("cmd '%s' failed: %d\r\n",
-		       cmd_ctx.cmd_def->name, cmd_ctx.cmd_ret);
+		pr_err("cmd '%s' failed: %d\r\n", cmd_ctx.cmd_def->name,
+		       cmd_ctx.cmd_ret);
 	}
 
 	cmd_parse_cleanup(cmd_ctx.cmd_def);
@@ -199,9 +198,9 @@ void scheduler_cmd_run_exit(void *private)
 	}
 }
 
-_EXPORT_STATE_SYMBOL(scheduler_cmd_run, STATE_ID_scheduler_cmd_run, scheduler_cmd_run_entry,
-		     scheduler_cmd_run_task, scheduler_cmd_run_exit,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_cmd_run, STATE_ID_scheduler_cmd_run,
+		     scheduler_cmd_run_entry, scheduler_cmd_run_task,
+		     scheduler_cmd_run_exit, ".scheduler");
 
 /* ============================================================
  * 自启动命令状态（改造为异步状态驱动）
@@ -266,7 +265,8 @@ int scheduler_auto_run_task(void *private)
 {
 	(void)private;
 	if (auto_run_should_exit())
-		return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
+		return state_switch(&scheduler_eng,
+				    STATE_ID_scheduler_get_char);
 	const char *cmd = cli_auto_cmds[cmd_ctx.auto_run_idx];
 	if (!cmd) {
 		cmd_ctx.auto_run_idx++;
@@ -276,8 +276,8 @@ int scheduler_auto_run_task(void *private)
 	auto_run_env_replace();
 	return auto_run_try_dispatch();
 }
-_EXPORT_STATE_SYMBOL(scheduler_auto_run, STATE_ID_scheduler_auto_run, NULL, scheduler_auto_run_task, NULL,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_auto_run, STATE_ID_scheduler_auto_run, NULL,
+		     scheduler_auto_run_task, NULL, ".scheduler");
 #endif /* CLI_ENABLE_AUTO_RUN */
 
 /* ============================================================
@@ -455,7 +455,7 @@ static bool try_sub_chain(char *env_buf)
 #endif /* CLI_ENABLE_CMD_CHAIN */
 
 static int apply_env_replace(char *current_cmd, char **env_buf_out,
-			      char **cmd_out)
+			     char **cmd_out)
 {
 	char *env_buf = cli_mpool_alloc();
 	if (!env_buf) {
@@ -510,10 +510,12 @@ int scheduler_dispose_task(void *arg)
 	int ret;
 
 	if (should_dispose_exit())
-		return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
+		return state_switch(&scheduler_eng,
+				    STATE_ID_scheduler_get_char);
 	current_cmd = extract_current_cmd();
 	if (!current_cmd)
-		return state_switch(&scheduler_eng, STATE_ID_scheduler_get_char);
+		return state_switch(&scheduler_eng,
+				    STATE_ID_scheduler_get_char);
 	ret = apply_env_replace(current_cmd, &env_buf, &current_cmd);
 	if (ret < 0)
 		return dispose_fail();
@@ -524,8 +526,8 @@ int scheduler_dispose_task(void *arg)
 		return dispose_fail();
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(scheduler_dispose, STATE_ID_scheduler_dispose, NULL, scheduler_dispose_task, NULL,
-		     ".scheduler");
+_EXPORT_STATE_SYMBOL(scheduler_dispose, STATE_ID_scheduler_dispose, NULL,
+		     scheduler_dispose_task, NULL, ".scheduler");
 
 int scheduler_init(void)
 {
@@ -539,7 +541,6 @@ int scheduler_init(void)
 			 cli_strerror(status), status);
 		return status;
 	}
-	pr_info("[scheduler] initialization successful\r\n");
 	return 0;
 }
 

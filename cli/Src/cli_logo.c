@@ -23,8 +23,9 @@
 
 void pr_logo(void *arg)
 {
-	all_printk("LinCLI v%d.%d.%d\r\n",
-		CLI_VERSION_MAJOR, CLI_VERSION_MINOR, CLI_VERSION_PATCH);
+	all_printk("\x1b[H\x1b[2J");
+	all_printk("LinCLI v%d.%d.%d\r\n", CLI_VERSION_MAJOR, CLI_VERSION_MINOR,
+		   CLI_VERSION_PATCH);
 }
 
 _EXPORT_INIT_SYMBOL(logo, 21, NULL, pr_logo);

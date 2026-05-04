@@ -34,7 +34,6 @@ extern struct tState *const _cli_cmd_line_end[];
 
 static bool is_valid_char(char c);
 
-
 struct origin_cmd origin_cmd = {
 	.size = 0,
 };
@@ -62,8 +61,8 @@ static int cmd_line_start_task(void *pch)
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(cmd_line_start, STATE_ID_cmd_line_start, NULL, cmd_line_start_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cmd_line_start, STATE_ID_cmd_line_start, NULL,
+		     cmd_line_start_task, NULL, ".cli_cmd_line");
 
 static int valid_char_task(void *pch)
 {
@@ -86,7 +85,8 @@ static int valid_char_task(void *pch)
 		return status;
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(valid_char, STATE_ID_valid_char, NULL, valid_char_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(valid_char, STATE_ID_valid_char, NULL, valid_char_task,
+		     NULL, ".cli_cmd_line");
 
 static int invalid_char_task(void *pch)
 {
@@ -126,8 +126,8 @@ static int invalid_char_task(void *pch)
 		return status;
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(invalid_char, STATE_ID_invalid_char, NULL, invalid_char_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(invalid_char, STATE_ID_invalid_char, NULL,
+		     invalid_char_task, NULL, ".cli_cmd_line");
 
 /* ------------------------------------------------------------
  * ESC 序列解析与分发状态
@@ -252,7 +252,8 @@ static int ESC_handler(void *pch)
 		return status;
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(ESC_handler, STATE_ID_ESC_handler, NULL, ESC_handler, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(ESC_handler, STATE_ID_ESC_handler, NULL, ESC_handler, NULL,
+		     ".cli_cmd_line");
 
 /* ------------------------------------------------------------
  * 光标移动状态
@@ -266,8 +267,8 @@ static int cursor_left_task(void *pch)
 	}
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(cursor_left, STATE_ID_cursor_left, NULL, cursor_left_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cursor_left, STATE_ID_cursor_left, NULL, cursor_left_task,
+		     NULL, ".cli_cmd_line");
 
 static int cursor_right_task(void *pch)
 {
@@ -277,8 +278,8 @@ static int cursor_right_task(void *pch)
 	}
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(cursor_right, STATE_ID_cursor_right, NULL, cursor_right_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cursor_right, STATE_ID_cursor_right, NULL,
+		     cursor_right_task, NULL, ".cli_cmd_line");
 
 #if CLI_ENABLE_ADVANCED_COMPLETION
 /* ------------------------------------------------------------
@@ -291,10 +292,10 @@ static int cycle_left_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_left, STATE_ID_cmd_cycle_left, NULL, cycle_left_task, NULL,
-		     ".cli_cmd_line");
-_EXPORT_STATE_SYMBOL(opt_cycle_left, STATE_ID_opt_cycle_left, NULL, cycle_left_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cmd_cycle_left, STATE_ID_cmd_cycle_left, NULL,
+		     cycle_left_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_left, STATE_ID_opt_cycle_left, NULL,
+		     cycle_left_task, NULL, ".cli_cmd_line");
 
 static int cycle_right_task(void *pch)
 {
@@ -302,10 +303,10 @@ static int cycle_right_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_right, STATE_ID_cmd_cycle_right, NULL, cycle_right_task, NULL,
-		     ".cli_cmd_line");
-_EXPORT_STATE_SYMBOL(opt_cycle_right, STATE_ID_opt_cycle_right, NULL, cycle_right_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cmd_cycle_right, STATE_ID_cmd_cycle_right, NULL,
+		     cycle_right_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_right, STATE_ID_opt_cycle_right, NULL,
+		     cycle_right_task, NULL, ".cli_cmd_line");
 
 static int cycle_up_task(void *pch)
 {
@@ -313,10 +314,10 @@ static int cycle_up_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_up, STATE_ID_cmd_cycle_up, NULL, cycle_up_task, NULL,
-		     ".cli_cmd_line");
-_EXPORT_STATE_SYMBOL(opt_cycle_up, STATE_ID_opt_cycle_up, NULL, cycle_up_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cmd_cycle_up, STATE_ID_cmd_cycle_up, NULL, cycle_up_task,
+		     NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_up, STATE_ID_opt_cycle_up, NULL, cycle_up_task,
+		     NULL, ".cli_cmd_line");
 
 static int cycle_down_task(void *pch)
 {
@@ -324,10 +325,10 @@ static int cycle_down_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(cmd_cycle_down, STATE_ID_cmd_cycle_down, NULL, cycle_down_task, NULL,
-		     ".cli_cmd_line");
-_EXPORT_STATE_SYMBOL(opt_cycle_down, STATE_ID_opt_cycle_down, NULL, cycle_down_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(cmd_cycle_down, STATE_ID_cmd_cycle_down, NULL,
+		     cycle_down_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(opt_cycle_down, STATE_ID_opt_cycle_down, NULL,
+		     cycle_down_task, NULL, ".cli_cmd_line");
 
 /* ------------------------------------------------------------
  * 值候选列表导航状态
@@ -342,8 +343,8 @@ static int value_cycle_prev_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(value_cycle_prev, STATE_ID_value_cycle_prev, NULL, value_cycle_prev_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(value_cycle_prev, STATE_ID_value_cycle_prev, NULL,
+		     value_cycle_prev_task, NULL, ".cli_cmd_line");
 
 static int value_cycle_next_task(void *pch)
 {
@@ -354,8 +355,8 @@ static int value_cycle_next_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(value_cycle_next, STATE_ID_value_cycle_next, NULL, value_cycle_next_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(value_cycle_next, STATE_ID_value_cycle_next, NULL,
+		     value_cycle_next_task, NULL, ".cli_cmd_line");
 #endif /* CLI_ENABLE_ADVANCED_COMPLETION */
 
 /* ------------------------------------------------------------
@@ -379,7 +380,8 @@ static int history_up_task(void *pch)
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(history_up, STATE_ID_history_up, NULL, history_up_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(history_up, STATE_ID_history_up, NULL, history_up_task,
+		     NULL, ".cli_cmd_line");
 
 static int history_down_task(void *pch)
 {
@@ -401,8 +403,8 @@ static int history_down_task(void *pch)
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(history_down, STATE_ID_history_down, NULL, history_down_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(history_down, STATE_ID_history_down, NULL,
+		     history_down_task, NULL, ".cli_cmd_line");
 
 /* ------------------------------------------------------------
  * Tab 补全状态（仅处理首次补全）
@@ -436,8 +438,8 @@ static int tab_complete_task(void *pch)
 
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(tab_complete, STATE_ID_tab_complete, NULL, tab_complete_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(tab_complete, STATE_ID_tab_complete, NULL,
+		     tab_complete_task, NULL, ".cli_cmd_line");
 
 #if CLI_ENABLE_ADVANCED_COMPLETION
 /* ------------------------------------------------------------
@@ -449,8 +451,8 @@ static int tab_cycle_enter_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(tab_cycle_enter, STATE_ID_tab_cycle_enter, NULL, tab_cycle_enter_task, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(tab_cycle_enter, STATE_ID_tab_cycle_enter, NULL,
+		     tab_cycle_enter_task, NULL, ".cli_cmd_line");
 
 /* ------------------------------------------------------------
  * Tab 循环继续状态（已在高亮循环中，切到下一个）
@@ -462,13 +464,13 @@ static int tab_cycle_task(void *pch)
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(tab_cycle, STATE_ID_tab_cycle, NULL, tab_cycle_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(tab_cycle, STATE_ID_tab_cycle, NULL, tab_cycle_task, NULL,
+		     ".cli_cmd_line");
 #endif /* CLI_ENABLE_ADVANCED_COMPLETION */
 
 /* ------------------------------------------------------------
  * Delete / Backspace / Clear / Enter / Exit
  * ------------------------------------------------------------ */
-
 
 static int delete_task(void *pch)
 {
@@ -482,7 +484,8 @@ static int delete_task(void *pch)
 		return status;
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(delete, STATE_ID_delete, NULL, delete_task, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(delete, STATE_ID_delete, NULL, delete_task, NULL,
+		     ".cli_cmd_line");
 
 static int backspace_handler(void *pch)
 {
@@ -502,8 +505,8 @@ static int backspace_handler(void *pch)
 		return status;
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
-_EXPORT_STATE_SYMBOL(backspace_handler, STATE_ID_backspace_handler, NULL, backspace_handler, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(backspace_handler, STATE_ID_backspace_handler, NULL,
+		     backspace_handler, NULL, ".cli_cmd_line");
 
 static int clear_handler(void *arg)
 {
@@ -527,7 +530,8 @@ static int clear_handler(void *arg)
 	}
 	return CLI_OK;
 }
-_EXPORT_STATE_SYMBOL(clear, STATE_ID_clear, NULL, clear_handler, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(clear, STATE_ID_clear, NULL, clear_handler, NULL,
+		     ".cli_cmd_line");
 
 static void enter_entry(void *pch)
 {
@@ -553,7 +557,8 @@ static int enter_press(void *pch)
 	cmd_line.pos = 0;
 	return cmd_line_enter_press;
 }
-_EXPORT_STATE_SYMBOL(enter, STATE_ID_enter, enter_entry, enter_press, NULL, ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(enter, STATE_ID_enter, enter_entry, enter_press, NULL,
+		     ".cli_cmd_line");
 
 static int cmd_line_exit_handler(void *pch)
 {
@@ -564,20 +569,50 @@ static int cmd_line_exit_handler(void *pch)
 	reset_cli_in_push_lock();
 	return cmd_line_exit;
 }
-_EXPORT_STATE_SYMBOL(exit_handler, STATE_ID_exit_handler, NULL, cmd_line_exit_handler, NULL,
-		     ".cli_cmd_line");
+_EXPORT_STATE_SYMBOL(exit_handler, STATE_ID_exit_handler, NULL,
+		     cmd_line_exit_handler, NULL, ".cli_cmd_line");
 
 __attribute__((used)) static bool is_valid_char(char c)
 {
-	if (c >= 'a' && c <= 'z') return true;
-	if (c >= 'A' && c <= 'Z') return true;
-	if (c >= '0' && c <= '9') return true;
+	if (c >= 'a' && c <= 'z')
+		return true;
+	if (c >= 'A' && c <= 'Z')
+		return true;
+	if (c >= '0' && c <= '9')
+		return true;
 	switch (c) {
-	case ' ': case '~': case '!': case '@': case '#': case '$': case '%':
-	case '^': case '&': case '*': case '(': case ')': case '-': case '_':
-	case '=': case '+': case '[': case ']': case '{': case '}': case '|':
-	case '\\': case ';': case ':': case '\'': case '"': case ',': case '.':
-	case '<': case '>': case '/': case '?':
+	case ' ':
+	case '~':
+	case '!':
+	case '@':
+	case '#':
+	case '$':
+	case '%':
+	case '^':
+	case '&':
+	case '*':
+	case '(':
+	case ')':
+	case '-':
+	case '_':
+	case '=':
+	case '+':
+	case '[':
+	case ']':
+	case '{':
+	case '}':
+	case '|':
+	case '\\':
+	case ';':
+	case ':':
+	case '\'':
+	case '"':
+	case ',':
+	case '.':
+	case '<':
+	case '>':
+	case '/':
+	case '?':
 		return true;
 	}
 	return false;
@@ -599,8 +634,6 @@ int cli_cmd_line_task(char ch)
 	while (status != cmd_line_exit) {
 		status = stateEngineRun(&cmd_line_mec, &ch);
 		if (status < 0) {
-			pr_err("cli_cmd_line状态机异常，错误码: %d\r\n",
-			       status);
 			return status;
 		}
 		if (status == cmd_line_enter_press) {
