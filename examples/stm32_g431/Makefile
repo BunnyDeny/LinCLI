@@ -60,30 +60,30 @@ Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c \
 Core/Src/system_stm32g4xx.c \
 Core/Src/sysmem.c \
 Core/Src/syscalls.c \
-../../lib/cli_float.c \
-../../lib/cli_vsnprintf.c \
-../../lib/cli_string.c \
-../../lib/cli_atoi.c \
-../../cli/Src/cli_candidate.c \
-../../cli/Src/cli_cmd_line.c \
-../../cli/Src/cli_completion.c \
-../../cli/Src/cli_edit.c \
-../../cli/Src/cli_env.c \
-../../cli/Src/cli_history.c \
-../../cli/Src/cli_io.c \
-../../cli/Src/cli_logo.c \
-../../cli/Src/cli_parse.c \
-../../cli/Src/cli_user.c \
-../../cli/Src/cli_var.c \
-../../cli/Src/cmd_dispose.c \
-../../init/critical_default.c \
-../../init/init_d.c \
-../../init/scheduler.c \
-../../init/section_markers.c \
-../../lib/cli_errno.c \
-../../lib/cli_mpool.c \
-../../lib/stateM.c \
-../../lib/tVector.c \
+../../src/lib/cli_float.c \
+../../src/lib/cli_vsnprintf.c \
+../../src/lib/cli_string.c \
+../../src/lib/cli_atoi.c \
+../../src/cli/cli_candidate.c \
+../../src/cli/cli_cmd_line.c \
+../../src/cli/cli_completion.c \
+../../src/cli/cli_edit.c \
+../../src/cli/cli_env.c \
+../../src/cli/cli_history.c \
+../../src/cli/cli_io.c \
+../../src/cli/cli_logo.c \
+../../src/cli/cli_parse.c \
+../../src/cli/cli_user.c \
+../../src/cli/cli_var.c \
+../../src/cli/cmd_dispose.c \
+../../src/init/critical_default.c \
+../../src/init/init_d.c \
+../../src/init/scheduler.c \
+../../src/init/section_markers.c \
+../../src/lib/cli_errno.c \
+../../src/lib/cli_mpool.c \
+../../src/lib/stateM.c \
+../../src/lib/tVector.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -149,7 +149,7 @@ C_INCLUDES =  \
 -IDrivers/STM32G4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32G4xx/Include \
 -IDrivers/CMSIS/Include	\
--I../../cli/Inc \
+-I../../include \
 -I../../include \
 -IDrivers/CMSIS/Include
 

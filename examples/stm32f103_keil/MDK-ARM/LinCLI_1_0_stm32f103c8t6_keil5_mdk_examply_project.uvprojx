@@ -506,178 +506,178 @@
             <File>
               <FileName>cli_cmd_line.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_cmd_line.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_cmd_line.c</FilePath>
             </File>
             <File>
               <FileName>cli_io.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_io.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_io.c</FilePath>
             </File>
             <File>
               <FileName>cli_logo.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_logo.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_logo.c</FilePath>
             </File>
             <File>
               <FileName>cmd_dispose.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cmd_dispose.c</FilePath>
+              <FilePath>..\..\..\src\cli\cmd_dispose.c</FilePath>
             </File>
             <File>
               <FileName>critical_default.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\init\critical_default.c</FilePath>
+              <FilePath>..\..\..\src\init\critical_default.c</FilePath>
             </File>
             <File>
               <FileName>init_d.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\init\init_d.c</FilePath>
+              <FilePath>..\..\..\src\init\init_d.c</FilePath>
             </File>
             <File>
               <FileName>scheduler.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\init\scheduler.c</FilePath>
+              <FilePath>..\..\..\src\init\scheduler.c</FilePath>
             </File>
             <File>
               <FileName>section_markers.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\init\section_markers.c</FilePath>
+              <FilePath>..\..\..\src\init\section_markers.c</FilePath>
             </File>
             <File>
               <FileName>cli_errno.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\lib\cli_errno.c</FilePath>
+              <FilePath>..\..\..\src\lib\cli_errno.c</FilePath>
             </File>
             <File>
               <FileName>cli_mpool.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\lib\cli_mpool.c</FilePath>
+              <FilePath>..\..\..\src\lib\cli_mpool.c</FilePath>
             </File>
             <File>
             <File>
               <FileName>stateM.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\lib\stateM.c</FilePath>
+              <FilePath>..\..\..\src\lib\stateM.c</FilePath>
             </File>
             <File>
               <FileName>tVector.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\lib\tVector.c</FilePath>
+              <FilePath>..\..\..\src\lib\tVector.c</FilePath>
             </File>
             <File>
               <FileName>test_auto_cmd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_auto_cmd.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_auto_cmd.c</FilePath>
             </File>
             <File>
               <FileName>test_bool.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_bool.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_bool.c</FilePath>
             </File>
             <File>
               <FileName>test_buf_insufficient.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_buf_insufficient.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_buf_insufficient.c</FilePath>
             </File>
             <File>
               <FileName>test_callback.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_callback.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_callback.c</FilePath>
             </File>
             <File>
               <FileName>test_conflicts.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_conflicts.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_conflicts.c</FilePath>
             </File>
             <File>
               <FileName>test_double.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_double.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_double.c</FilePath>
             </File>
             <File>
               <FileName>test_init_d.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_init_d.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_init_d.c</FilePath>
             </File>
             <File>
               <FileName>test_int.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_int.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_int.c</FilePath>
             </File>
             <File>
               <FileName>test_int_array.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_int_array.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_int_array.c</FilePath>
             </File>
             <File>
               <FileName>test_key_interaction.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_key_interaction.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_key_interaction.c</FilePath>
             </File>
             <File>
               <FileName>test_log.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_log.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_log.c</FilePath>
             </File>
             <File>
               <FileName>test_required.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_required.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_required.c</FilePath>
             </File>
             <File>
               <FileName>test_string.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_string.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_string.c</FilePath>
             </File>
             <File>
               <FileName>test_with_buf.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_with_buf.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_with_buf.c</FilePath>
             </File>
             <File>
               <FileName>test_led.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_led.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_led.c</FilePath>
             </File>
             <File>
               <FileName>test_cli_var.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_cli_var.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_cli_var.c</FilePath>
             </File>
             <File>
               <FileName>test_motor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\tests\test_motor.c</FilePath>
+              <FilePath>..\..\..\tests\commands\test_motor.c</FilePath>
             </File>
             <File>
               <FileName>cli_candidate.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_candidate.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_candidate.c</FilePath>
             </File>
             <File>
               <FileName>cli_completion.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_completion.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_completion.c</FilePath>
             </File>
             <File>
               <FileName>cli_edit.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_edit.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_edit.c</FilePath>
             </File>
             <File>
               <FileName>cli_history.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_history.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_history.c</FilePath>
             </File>
             <File>
               <FileName>cli_parse.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_parse.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_parse.c</FilePath>
             </File>
             <File>
               <FileName>cli_var.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\cli\Src\cli_var.c</FilePath>
+              <FilePath>..\..\..\src\cli\cli_var.c</FilePath>
             </File>
           </Files>
         </Group>

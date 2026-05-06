@@ -8,33 +8,38 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 # LinCLI 框架静态库
 # ============================================================
 set(LINCLI_SRC
-    lib/cli_string.c
-    lib/cli_atoi.c
-    lib/cli_float.c
-    lib/cli_mpool.c
-    lib/cli_vsnprintf.c
-    lib/cli_errno.c
-    lib/stateM.c
-    lib/tVector.c
-    cli/Src/cli_io.c
-    cli/Src/cli_cmd_line.c
-    cli/Src/cli_completion.c
-    cli/Src/cli_edit.c
-    cli/Src/cli_env.c
-    cli/Src/cli_history.c
-    cli/Src/cli_logo.c
-    cli/Src/cli_parse.c
-    cli/Src/cli_user.c
-    cli/Src/cli_var.c
-    cli/Src/cmd_dispose.c
-    cli/Src/cli_candidate.c
+    src/lib/cli_string.c
+    src/lib/cli_atoi.c
+    src/lib/cli_float.c
+    src/lib/cli_mpool.c
+    src/lib/cli_vsnprintf.c
+    src/lib/cli_errno.c
+    src/lib/stateM.c
+    src/lib/tVector.c
+    src/cli/cli_io.c
+    src/cli/cli_cmd_line.c
+    src/cli/cli_completion.c
+    src/cli/cli_edit.c
+    src/cli/cli_env.c
+    src/cli/cli_history.c
+    src/cli/cli_logo.c
+    src/cli/cli_parse.c
+    src/cli/cli_user.c
+    src/cli/cli_var.c
+    src/cli/cmd_dispose.c
+    src/cli/cli_candidate.c
+    src/init/scheduler.c
+    src/init/init_d.c
+    src/init/section_markers.c
+    src/init/critical_default.c
 )
 
 add_library(lincli STATIC ${LINCLI_SRC})
 target_include_directories(lincli PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/cli/Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/init
 )
 
 # ============================================================
@@ -46,11 +51,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cli.ld ${CMAKE_BINARY_DIR}/cli.ld COPYONLY)
 
 add_executable(${OUTPUT_NAME}
-    init/main.c
-    init/scheduler.c
-    init/init_d.c
-    init/section_markers.c
-    init/critical_default.c
+    examples/pc_linux/main.c
 )
 target_link_libraries(${OUTPUT_NAME} PRIVATE lincli)
 set_target_properties(${OUTPUT_NAME} PROPERTIES
@@ -65,6 +66,6 @@ if(LINCLI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
     # 将演示示例中的交互式测试命令也链接到 a.out
-    target_link_libraries(${OUTPUT_NAME} PRIVATE tests)
+    target_link_libraries(${OUTPUT_NAME} PRIVATE tests_commands)
     add_test(NAME unit_tests COMMAND unit_tests)
 endif()

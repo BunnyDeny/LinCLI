@@ -10,7 +10,7 @@ USER_SRCS    := $(wildcard *.c)
 BUILD_DIR    := $(PWD)/build
 OUTPUT       := $(BUILD_DIR)/my_app
 
-INJECT_DIR   := $(LINCLI_ROOT)/tests
+INJECT_DIR   := $(LINCLI_ROOT)/tests/commands
 
 .PHONY: all clean run
 
