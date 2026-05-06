@@ -11,8 +11,15 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
-/* 是否编译 tests 文件夹下的测试命令 */
+/*
+ * 是否编译 tests/commands/ 下的演示命令。
+ * 在 CMake 构建中，当 LINCLI_BUILD_TESTS=ON 时，该宏会自动被定义为 1，
+ * 无需手动修改此文件。保留此宏是为了方便非 CMake 环境（如 Keil MDK、
+ * 裸机 Makefile）统一开关所有演示命令。
+ */
+#ifndef CLI_ENABLE_TESTS
 #define CLI_ENABLE_TESTS 0
+#endif
 
 /*启用尾行模式测试*/
 #define INLINE_TEST_EN 0
