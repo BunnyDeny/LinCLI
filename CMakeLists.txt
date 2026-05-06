@@ -7,7 +7,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 # ============================================================
 # 构建选项（统一放在开头，方便手动修改）
 # ============================================================
-option(LINCLI_BUILD_TESTS "Build LinCLI tests" OFF)
+option(LINCLI_BUILD_UNITY_TESTS "Build Unity unit tests" ON)
+option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" OFF)
 option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
 
 # ============================================================
@@ -37,10 +38,15 @@ set_target_properties(${OUTPUT_NAME} PROPERTIES
 # ============================================================
 # 测试（可选）
 # ============================================================
-if(LINCLI_BUILD_TESTS)
-    enable_testing()
+if(LINCLI_BUILD_UNITY_TESTS OR LINCLI_BUILD_TEST_COMMANDS)
     add_subdirectory(tests)
-    # 将演示示例中的交互式测试命令也链接到 a.out
-    target_link_libraries(${OUTPUT_NAME} PRIVATE tests_commands)
+endif()
+
+if(LINCLI_BUILD_UNITY_TESTS)
+    enable_testing()
     add_test(NAME unit_tests COMMAND unit_tests)
+endif()
+
+if(LINCLI_BUILD_TEST_COMMANDS)
+    target_link_libraries(${OUTPUT_NAME} PRIVATE tests_commands)
 endif()
