@@ -16,7 +16,7 @@ _EXPORT_INIT_SYMBOL(obj, priority, private, init_entry)
 
 ### ⚙️ 使用示例
 
-参考项目中的 `cli/Src/cli_logo.c`，这是一个非常简单的例子：
+参考项目中的 `src/cli/cli_logo.c`，这是一个非常简单的例子：
 
 ```c
 #include "cli_io.h"
@@ -60,9 +60,9 @@ _EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);
 > 
 > 🐛 `init_entry` 的签名为 `void (*)(void *)`，没有返回值。如果初始化过程中出现致命错误，建议通过日志打印错误信息，并由用户自行决定是否进入后续流程。
 
-### 📌 测试用例 `tests/test_init_d.c`
+### 📌 测试用例 `tests/commands/test_init_d.c`
 
-项目中提供了专门的初始化优先级排序测试用例。打开 `tests/test_init_d.c` 中的开关宏 `INIT_D_TEST_EN`（设为 `1`）后编译运行，可直观验证优先级排序效果：
+项目中提供了专门的初始化优先级排序测试用例。打开 `tests/commands/test_init_d.c` 中的开关宏 `INIT_D_TEST_EN`（设为 `1`）后编译运行，可直观验证优先级排序效果：
 
 ```c
 #define INIT_D_TEST_EN 1

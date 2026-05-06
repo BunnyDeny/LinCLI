@@ -5,7 +5,7 @@
 - ✅ **PC 模拟环境**：**Debian / Ubuntu** Linux（GCC + CMake）
 - 🔹 **嵌入式真实环境**：**Keil5 MDK** + **STM32CubeMX**（目标芯片 **STM32F103C8T6**）
 
-> 💡 项目 `example_project/` 目录下提供了完整的 Keil5 示例工程，可直接打开使用。
+> 💡 项目 `examples/` 目录下提供了完整的 Keil5 示例工程，可直接打开使用。
 
 ## 🚀 依赖
 

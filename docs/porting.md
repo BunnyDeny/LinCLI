@@ -6,7 +6,7 @@
 PC 模拟中，`cli_in_entry` 线程不断调用 `getchar()` 并把字符通过 `cli_in_push()` 写入内部 FIFO：
 
 ```c
-// PC 版本（init/main.c）
+// PC 版本（examples/pc_linux/main.c）
 void *cli_in_entry(void *arg)
 {
     int ch;
@@ -67,7 +67,7 @@ __attribute__((weak)) void cli_enter_critical(void) {}
 __attribute__((weak)) void cli_exit_critical(void)  {}
 ```
 
-所有对 `cli_io.in` / `cli_io.out` 缓冲区的访问（`cli_in_push`、`cli_in_pop`、`cli_get_in_size` 等）都会调用这两个钩子。在 PC 模拟中，我们在 `init/main.c` 里用原子自旋锁实现：
+所有对 `cli_io.in` / `cli_io.out` 缓冲区的访问（`cli_in_push`、`cli_in_pop`、`cli_get_in_size` 等）都会调用这两个钩子。在 PC 模拟中，我们在 `examples/pc_linux/main.c` 里用原子自旋锁实现：
 
 ```c
 /* PC 模拟层：用原子自旋锁模拟 MCU 的关中断/开中断 */
@@ -115,7 +115,7 @@ void cli_exit_critical(void)
 
 ### 🔹 4. 实现单字符输出 —— 替换 `cli_putc`
 
-与临界区钩子一样，`cli_putc` 也是 `cli_io.c` 中定义的 **weak** 函数。PC 模拟层把它和临界区一起放在 `init/main.c` 中：
+与临界区钩子一样，`cli_putc` 也是 `cli_io.c` 中定义的 **weak** 函数。PC 模拟层把它和临界区一起放在 `examples/pc_linux/main.c` 中：
 
 ```c
 void cli_putc(char ch)
@@ -160,7 +160,7 @@ LinCLI 依赖链接器将分散在各个目标文件中的自定义段聚合成�
 **如果你不确定如何在keil5 MDK工具链中完成stm32的链接脚本适配，请直接参考本项目提供的示例工程：**
 
 ```
-example_project/LinCLI_1_0_stm32f103c8t6_keil5_mdk_examply_project/
+examples/stm32f103_keil/
 ```
 
 该工程是一个基于 **STM32F103C8T6 + Keil MDK (AC5)** 的完整移植示例，展示了：

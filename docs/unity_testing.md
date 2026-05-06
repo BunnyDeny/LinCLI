@@ -456,7 +456,7 @@ cd build && make -j$(nproc) && ctest --output-on-failure
 - Unity 官方仓库：https://github.com/ThrowTheSwitch/Unity
 - ThrowTheSwitch 组织（还开发了 CMock 和 Ceedling）：https://throwtheswitch.org
 - 本文档配套的已有测试文件：`tests/unit/*.c`
-- 项目原有的交互式测试说明：`Documentation/tests.md`
+- 项目原有的交互式测试说明：`docs/tests.md`
 
 ---
 

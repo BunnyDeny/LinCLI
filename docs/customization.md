@@ -51,7 +51,7 @@ log_level[0] = '4';
 每条日志级别的前缀文本和颜色都是通过一组 `__attribute__((weak))` 函数生成的。如果你想统一修改样式（例如去掉前缀、改成自己的项目配色），只需在工程中重新实现对应函数：
 
 ```c
-/* 默认定义在 cli/Src/cli_io.c 中，可被覆盖 */
+/* 默认定义在 src/cli/cli_io.c 中，可被覆盖 */
 const char *pre_ERR_gen(void)
 {
     return "[ERR] ";  /* 去掉默认红色，改成纯文本 */
@@ -67,7 +67,7 @@ const char *pre_INFO_gen(void)
 
 ### ⚙️ 命令提示符样式
 
-命令提示符（`lin@linCli>`）通过 `cli_prompt_print` 输出，它也是一个弱定义函数（默认定义在 `init/scheduler.c`）。你可以在自己的项目中覆盖它，改成你想要的提示符：
+命令提示符（`lin@linCli>`）通过 `cli_prompt_print` 输出，它也是一个弱定义函数（默认定义在 `src/init/scheduler.c`）。你可以在自己的项目中覆盖它，改成你想要的提示符：
 
 ```c
 void cli_prompt_print(void)

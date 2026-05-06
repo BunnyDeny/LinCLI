@@ -22,7 +22,7 @@ LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。�
 
 在开始写命令之前，先把环境搭好并运行起来。
 
-- ✅ **[环境搭建与编译运行](Documentation/setup.md)** — 涵盖 GCC、CMake 安装，以及 PC 端编译、运行、退出方式。
+- ✅ **[环境搭建与编译运行](docs/setup.md)** — 涵盖 GCC、CMake 安装，以及 PC 端编译、运行、退出方式。
 
 ### 💡 启用内置测试命令
 
@@ -246,7 +246,7 @@ lin@linCli>
 > 📝 OPTION(0, "on", INT, "Turn LED on with brightness", struct led_args, brightness, 0, NULL, "off", false)
 > 📝 ```
 >
-> 💡 这样用户只需输入 `led --on 80` 即可同时完成「开灯」和「设置亮度为 80」两个语义。`INT` 类型选项的完整用法可参考 `tests/test_int.c`。
+> 💡 这样用户只需输入 `led --on 80` 即可同时完成「开灯」和「设置亮度为 80」两个语义。`INT` 类型选项的完整用法可参考 `tests/commands/test_int.c`。
 >
 > 💡 此外，框架支持的选项类型远不止 `BOOL` 和 `INT`。同一个参数结构体中可以自由混用 **`STRING`**（字符串）、**`DOUBLE`**（浮点数）、**`INT_ARRAY`**（整数数组）等类型，同一个类型也可以定义多个不同名字的字段，彼此之间完全独立。欲了解各类型的详细用法和约束，请参考 [进阶指南](#进阶指南) 相关章节，或者直接查看 `tests/` 目录下的测试用例（如 `test_string.c`、`test_double.c`、`test_int_array.c` 等）。
 
@@ -486,7 +486,7 @@ const int cli_auto_cmds_count = sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0])
 >
 > 📝 因此，LinCLI 在启动时只需要检查 `cli_auto_cmds` 是否为 `NULL`，就可以安全地判断用户是否需要自动执行命令。**你不需要注册、不需要开关宏、不需要写空数组占位**——什么都不做，功能就自动关闭。
 >
-> 💡 项目中 `tests/test_auto_cmd.c` 里的示例默认是被注释掉的，原因正是如此：如果打开它，每次启动都会先打印几条测试命令的输出，影响开机界面的美观；而注释掉之后，由于 `weak` 机制，程序链接、运行都不会报错，直接平滑跳过自动执行阶段。
+> 💡 项目中 `tests/commands/test_auto_cmd.c` 里的示例默认是被注释掉的，原因正是如此：如果打开它，每次启动都会先打印几条测试命令的输出，影响开机界面的美观；而注释掉之后，由于 `weak` 机制，程序链接、运行都不会报错，直接平滑跳过自动执行阶段。
 
 ### 📌 命令链 `&&`
 
@@ -567,27 +567,27 @@ lin@linCli> level
 
 以下主题适合在掌握基本命令注册之后进一步阅读：
 
-- ✅ **[项目结构与核心机制](Documentation/architecture.md)** — 介绍 `cli/`、`lib/`、`init/`、`tests/` 各目录职责，以及链接脚本段自动收集命令的核心原理。适合在注册完第一个命令之后，想要理解框架内部工作机制时阅读。
+- ✅ **[项目结构与核心机制](docs/architecture.md)** — 介绍 `src/cli/`、`src/lib/`、`src/init/`、`tests/` 各目录职责，以及链接脚本段自动收集命令的核心原理。适合在注册完第一个命令之后，想要理解框架内部工作机制时阅读。
 
-- 🔹 **[异步非阻塞命令](Documentation/async_commands.md)** — 介绍 `CLI_COMMAND_ASYNC` 宏与 `entry/task/exit` 三阶段接口。把耗时操作（电机控制、传感器等待、Flash 擦写等）拆成多次调度周期分片执行，避免阻塞 CLI 主循环。包含返回值语义、状态流转图和完整示例。
+- 🔹 **[异步非阻塞命令](docs/async_commands.md)** — 介绍 `CLI_COMMAND_ASYNC` 宏与 `entry/task/exit` 三阶段接口。把耗时操作（电机控制、传感器等待、Flash 擦写等）拆成多次调度周期分片执行，避免阻塞 CLI 主循环。包含返回值语义、状态流转图和完整示例。
 
-- 📌 **[开机初始化函数](Documentation/init.md)** — 通过 `_EXPORT_INIT_SYMBOL` 宏自动收集开机初始化例程，无需在 `main()` 中手动调用。支持按优先级排序执行，非常适合 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
+- 📌 **[开机初始化函数](docs/init.md)** — 通过 `_EXPORT_INIT_SYMBOL` 宏自动收集开机初始化例程，无需在 `main()` 中手动调用。支持按优先级排序执行，非常适合 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
 
-- 🆕 **[移植到单片机](Documentation/porting.md)** — 将 LinCLI 从 PC 模拟环境移植到 MCU 的完整指南，包括 UART 中断输入映射、调度循环集成、临界区保护实现、单字符输出覆盖，以及 GCC/LD 和 Keil MDK 的链接脚本适配示例。
+- 🆕 **[移植到单片机](docs/porting.md)** — 将 LinCLI 从 PC 模拟环境移植到 MCU 的完整指南，包括 UART 中断输入映射、调度循环集成、临界区保护实现、单字符输出覆盖，以及 GCC/LD 和 Keil MDK 的链接脚本适配示例。
 
-- 💎 **[测试用例详解](Documentation/tests.md)** — 所有内置测试命令（`tb`、`ts`、`ti`、`td`、`ta`、`tc`、`tr`、`tcf`、`tw` 等）的功能说明、可用选项和终端操作示例。
+- 💎 **[测试用例详解](docs/tests.md)** — 所有内置测试命令（`tb`、`ts`、`ti`、`td`、`ta`、`tc`、`tr`、`tcf`、`tw` 等）的功能说明、可用选项和终端操作示例。
 
-- ✅ **[用户可定制接口](Documentation/customization.md)** — 介绍如何通过弱定义（`weak`）覆盖框架的默认行为，包括日志系统 `cli_printk`、日志过滤与颜色、命令提示符样式等。
+- ✅ **[用户可定制接口](docs/customization.md)** — 介绍如何通过弱定义（`weak`）覆盖框架的默认行为，包括日志系统 `cli_printk`、日志过滤与颜色、命令提示符样式等。
 
-- 🔹 **[变量系统](Documentation/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象。需开启 `#define CLI_ENABLE_VAR 1`。
+- 🔹 **[变量系统](docs/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象。需开启 `#define CLI_ENABLE_VAR 1`。
 
-- 📌 **[环境变量系统](Documentation/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对。需开启 `#define CLI_ENABLE_ENV 1`。
+- 📌 **[环境变量系统](docs/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对。需开启 `#define CLI_ENABLE_ENV 1`。
 
-- 🆕 **[Tab 补全候选列表](Documentation/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
+- 🆕 **[Tab 补全候选列表](docs/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 
-- 🛡️ **[用户管理系统](Documentation/cli_user.md)** — 通过 `CLI_USER` 宏注册用户并分配命令级权限。需开启 `#define CLI_ENABLE_USER 1`。
+- 🛡️ **[用户管理系统](docs/cli_user.md)** — 通过 `CLI_USER` 宏注册用户并分配命令级权限。需开启 `#define CLI_ENABLE_USER 1`。
 
-- 💎 **[尾行模式打印支持](Documentation/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
+- 💎 **[尾行模式打印支持](docs/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
 
 
 LinCLI 的设计目标是：**让命令注册像定义变量一样简单**，同时保持极低的运行时开销。得益于 GCC `section` 属性 + 自定义链接脚本的组合，开发者只需要关心业务命令和选项的定义，剩下的收集、解析、校验工作全部交给框架自动完成。无论是 Linux 仿真开发还是 MCU 裸机移植，都能快速落地。

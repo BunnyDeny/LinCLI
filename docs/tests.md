@@ -166,7 +166,7 @@ lin@linCli>
 
 ### 📌 10. `var` — 变量系统测试（内建命令）
 
-**命令描述**：框架内建的变量读写命令，支持查看和修改所有通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量。测试文件位于 `tests/test_cli_var.c`。
+**命令描述**：框架内建的变量读写命令，支持查看和修改所有通过 `CLI_VAR` / `CLI_VAR_CUSTOM` 注册的变量。测试文件位于 `tests/commands/test_cli_var.c`。
 
 **测试覆盖内容**：
 - 🔹 内建类型变量：`INT`、`DOUBLE`、`BOOL`、`STRING`
