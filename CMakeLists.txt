@@ -7,40 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 # ============================================================
 # LinCLI 框架静态库
 # ============================================================
-set(LINCLI_SRC
-    src/lib/cli_string.c
-    src/lib/cli_atoi.c
-    src/lib/cli_float.c
-    src/lib/cli_mpool.c
-    src/lib/cli_vsnprintf.c
-    src/lib/cli_errno.c
-    src/lib/stateM.c
-    src/lib/tVector.c
-    src/cli/cli_io.c
-    src/cli/cli_cmd_line.c
-    src/cli/cli_completion.c
-    src/cli/cli_edit.c
-    src/cli/cli_env.c
-    src/cli/cli_history.c
-    src/cli/cli_logo.c
-    src/cli/cli_parse.c
-    src/cli/cli_user.c
-    src/cli/cli_var.c
-    src/cli/cmd_dispose.c
-    src/cli/cli_candidate.c
-    src/init/scheduler.c
-    src/init/init_d.c
-    src/init/section_markers.c
-    src/init/critical_default.c
-)
-
-add_library(lincli STATIC ${LINCLI_SRC})
-target_include_directories(lincli PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/init
-)
+add_subdirectory(src)
 
 # ============================================================
 # PC 端演示可执行文件
