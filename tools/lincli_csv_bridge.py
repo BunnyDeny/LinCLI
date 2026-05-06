@@ -147,6 +147,7 @@ class LivePlotter:
         self.ax.set_title('LinCLI Real-time Scope')
         plt.ion()
         plt.show(block=False)
+        plt.pause(0.001)  # force window to appear
 
     def update(self):
         if self.fig is None:
@@ -266,6 +267,10 @@ class SubprocessBridge:
             self.raw_mode = False
 
     def run(self):
+        # Init plotter window before tty raw mode to avoid Tk init issues
+        if self.plotter:
+            self.plotter._init_plot()
+
         self.setup_tty()
 
         master_fd, slave_fd = pty.openpty()
@@ -328,20 +333,22 @@ class SubprocessBridge:
             proc.wait()
 
     def _process_buffer(self, buf):
+        # scope data lines are separated by \r (carriage return without \n)
         while True:
-            idx = buf.find(b'\n')
+            idx = buf.find(b'\r')
             if idx == -1:
                 return buf
-            line = buf[:idx]
+            frame = buf[:idx]
             buf = buf[idx + 1:]
-            text = line.decode('utf-8', errors='replace')
-            if text.startswith('\r'):
-                row = DataParser.parse(text)
-                if row:
-                    self.csv.write(row)
-                    if self.plotter:
-                        self.plotter.add(row)
-                    print(f"[CSV] {row}", file=sys.stderr)
+            text = frame.decode('utf-8', errors='replace').lstrip('\n')
+            if not text:
+                continue
+            row = DataParser.parse(text)
+            if row:
+                self.csv.write(row)
+                if self.plotter:
+                    self.plotter.add(row)
+                print(f"[CSV] {row}", file=sys.stderr)
 
 
 def main():
