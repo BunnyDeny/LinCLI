@@ -21,8 +21,14 @@
 #define CLI_ENABLE_TESTS 0
 #endif
 
-/*启用尾行模式测试*/
+/*
+ * 启用调度器内联测试模式：每 50 次调度循环打印一行计数，
+ * 用于粗略观察调度器是否仍在运行。
+ * CMake 中可通过 -DLINCLI_ENABLE_INLINE_TEST=ON 开启。
+ */
+#ifndef INLINE_TEST_EN
 #define INLINE_TEST_EN 0
+#endif
 
 /* 条件编译：用户/环境变量/变量导出系统 */
 #define CLI_ENABLE_USER 1

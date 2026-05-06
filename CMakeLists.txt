@@ -7,7 +7,11 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 # ============================================================
 # LinCLI 框架静态库
 # ============================================================
+option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
 add_subdirectory(src)
+if(LINCLI_ENABLE_INLINE_TEST)
+    target_compile_definitions(lincli_obj PRIVATE INLINE_TEST_EN=1)
+endif()
 
 # ============================================================
 # PC 端演示可执行文件
