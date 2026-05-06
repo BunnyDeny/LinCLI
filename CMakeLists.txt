@@ -30,7 +30,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cli.ld ${CMAKE_BINARY_DIR}/cli.ld COP
 add_executable(${OUTPUT_NAME}
     examples/pc_linux/main.c
 )
-target_link_libraries(${OUTPUT_NAME} PRIVATE lincli)
+target_link_libraries(${OUTPUT_NAME} PRIVATE lincli m)
 set_target_properties(${OUTPUT_NAME} PROPERTIES
     LINK_FLAGS "-T ${LINKER_SCRIPT}"
 )
