@@ -5,9 +5,14 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 
 # ============================================================
+# 构建选项（统一放在开头，方便手动修改）
+# ============================================================
+option(LINCLI_BUILD_TESTS "Build LinCLI tests" OFF)
+option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
+
+# ============================================================
 # LinCLI 框架库（OBJECT + INTERFACE）
 # ============================================================
-option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
 add_subdirectory(src)
 if(LINCLI_ENABLE_INLINE_TEST)
     target_compile_definitions(lincli_obj PRIVATE INLINE_TEST_EN=1)
@@ -32,7 +37,6 @@ set_target_properties(${OUTPUT_NAME} PROPERTIES
 # ============================================================
 # 测试（可选）
 # ============================================================
-option(LINCLI_BUILD_TESTS "Build LinCLI tests" OFF)
 if(LINCLI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
