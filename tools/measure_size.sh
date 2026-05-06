@@ -17,7 +17,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-EXAMPLE_DIR="${PROJECT_ROOT}/example_project/stm32g431_gcc_example_project"
+EXAMPLE_DIR="${PROJECT_ROOT}/examples/stm32_g431"
 BUILD_DIR="${EXAMPLE_DIR}/build"
 CONFIG_H="${PROJECT_ROOT}/include/cli_config.h"
 
@@ -212,13 +212,13 @@ echo "========================================"
 cp Makefile Makefile.baseline
 
 # Remove LinCLI / init / lib / tests sources
-sed -i '/\.\.\/\.\.\/lib\//d' Makefile.baseline
-sed -i '/\.\.\/\.\.\/cli\/Src\//d' Makefile.baseline
-sed -i '/\.\.\/\.\.\/init\//d' Makefile.baseline
-sed -i '/\.\.\/\.\.\/tests\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/src\/lib\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/src\/cli\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/src\/init\//d' Makefile.baseline
+sed -i '/\.\.\/\.\.\/tests\/commands\//d' Makefile.baseline
 
 # Remove LinCLI include paths
-sed -i '/-I\.\.\/\.\.\/cli\/Inc/d' Makefile.baseline
+sed -i '/-I\.\.\/\.\.\/include/d' Makefile.baseline
 sed -i '/-I\.\.\/\.\.\/include/d' Makefile.baseline
 
 # Use baseline main.c (no LinCLI)
