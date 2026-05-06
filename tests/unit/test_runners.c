@@ -52,6 +52,25 @@ extern void test_vector_full(void);
 extern void test_vector_empty_pop(void);
 extern void test_vector_at_out_of_range(void);
 
+/* ==== test_unit_vsnprintf.c ==== */
+extern void test_cli_snprintf_basic(void);
+extern void test_cli_snprintf_unsigned(void);
+extern void test_cli_snprintf_percent(void);
+extern void test_cli_snprintf_width(void);
+extern void test_cli_snprintf_truncate(void);
+extern void test_cli_snprintf_null_string(void);
+extern void test_cli_snprintf_negative(void);
+
+/* ==== test_unit_statem.c ==== */
+extern void test_statem_init_and_run(void);
+extern void test_statem_switch(void);
+extern void test_statem_switch_same(void);
+extern void test_statem_invalid_switch(void);
+
+/* ==== test_unit_errno.c ==== */
+extern void test_cli_strerror_returns_string(void);
+extern void test_cli_strerror_consistency(void);
+
 static void run_string_tests(void)
 {
 	RUN_TEST(test_cli_strlen_normal);
@@ -106,6 +125,31 @@ static void run_vector_tests(void)
 	RUN_TEST(test_vector_at_out_of_range);
 }
 
+static void run_vsnprintf_tests(void)
+{
+	RUN_TEST(test_cli_snprintf_basic);
+	RUN_TEST(test_cli_snprintf_unsigned);
+	RUN_TEST(test_cli_snprintf_percent);
+	RUN_TEST(test_cli_snprintf_width);
+	RUN_TEST(test_cli_snprintf_truncate);
+	RUN_TEST(test_cli_snprintf_null_string);
+	RUN_TEST(test_cli_snprintf_negative);
+}
+
+static void run_statem_tests(void)
+{
+	RUN_TEST(test_statem_init_and_run);
+	RUN_TEST(test_statem_switch);
+	RUN_TEST(test_statem_switch_same);
+	RUN_TEST(test_statem_invalid_switch);
+}
+
+static void run_errno_tests(void)
+{
+	RUN_TEST(test_cli_strerror_returns_string);
+	RUN_TEST(test_cli_strerror_consistency);
+}
+
 int main(void)
 {
 	UNITY_BEGIN();
@@ -114,5 +158,8 @@ int main(void)
 	run_float_tests();
 	run_mpool_tests();
 	run_vector_tests();
+	run_vsnprintf_tests();
+	run_statem_tests();
+	run_errno_tests();
 	return UNITY_END();
 }

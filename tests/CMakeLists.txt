@@ -28,6 +28,9 @@ set(UNIT_TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_unit_float.c
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_unit_mpool.c
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_unit_vector.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_unit_vsnprintf.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_unit_statem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_unit_errno.c
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_runners.c
     ${CMAKE_SOURCE_DIR}/init/critical_default.c
 )
