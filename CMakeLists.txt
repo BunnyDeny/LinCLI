@@ -32,7 +32,7 @@ set_target_properties(${OUTPUT_NAME} PROPERTIES
 # ============================================================
 # 测试（可选）
 # ============================================================
-option(LINCLI_BUILD_TESTS "Build LinCLI tests" ON)
+option(LINCLI_BUILD_TESTS "Build LinCLI tests" OFF)
 if(LINCLI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
