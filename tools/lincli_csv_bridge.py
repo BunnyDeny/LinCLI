@@ -21,6 +21,7 @@ The script:
 import argparse
 import csv
 import os
+import pty
 import re
 import select
 import subprocess
@@ -249,9 +250,13 @@ class SubprocessBridge:
 
     def setup_tty(self):
         self.fd = sys.stdin.fileno()
-        self.old_settings = termios.tcgetattr(self.fd)
-        tty.setraw(self.fd)
-        self.raw_mode = True
+        if os.isatty(self.fd):
+            try:
+                self.old_settings = termios.tcgetattr(self.fd)
+                tty.setraw(self.fd)
+                self.raw_mode = True
+            except termios.error:
+                self.raw_mode = False
 
     def restore_tty(self):
         if self.raw_mode:
@@ -279,12 +284,10 @@ class SubprocessBridge:
         os.close(slave_fd)
 
         buf = b""
-        stdin_is_tty = sys.stdin.isatty()
+        stdin_fd = sys.stdin.fileno()
         try:
             while proc.poll() is None:
-                rfds = [master_fd]
-                if stdin_is_tty:
-                    rfds.append(sys.stdin)
+                rfds = [master_fd, stdin_fd]
 
                 r, _, _ = select.select(rfds, [], [], 0.01)
 
@@ -293,17 +296,20 @@ class SubprocessBridge:
                         data = os.read(master_fd, 1024)
                     except OSError:
                         break
-                    if data:
-                        sys.stdout.buffer.write(data)
-                        sys.stdout.flush()
-                        buf = self._process_buffer(buf + data)
+                    if not data:
+                        break
+                    sys.stdout.buffer.write(data)
+                    sys.stdout.flush()
+                    buf = self._process_buffer(buf + data)
 
-                if stdin_is_tty and sys.stdin in r:
-                    key = os.read(sys.stdin.fileno(), 1)
-                    if key:
-                        os.write(master_fd, key)
-                        sys.stdout.buffer.write(key)
-                        sys.stdout.flush()
+                if stdin_fd in r:
+                    try:
+                        key = os.read(stdin_fd, 1024)
+                    except OSError:
+                        break
+                    if not key:
+                        break
+                    os.write(master_fd, key)
 
         except KeyboardInterrupt:
             proc.terminate()
