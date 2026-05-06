@@ -74,18 +74,20 @@ git merge --no-ff dev
 
 ### 推送前强制检查清单
 
-提交之前**必须**显式读取 `include/cli_config.h` 的第 15 行和第 18 行，逐字确认以下两个开关的值：
+提交之前**必须**显式读取根目录 `CMakeLists.txt` 开头的两个 `option()` 定义，确认默认值：
 
-```c
-#define CLI_ENABLE_TESTS 0   /* 测试命令编译开关，第 15 行 */
-#define INLINE_TEST_EN   0   /* 尾行模式测试开关，第 18 行 */
+```cmake
+option(LINCLI_BUILD_TESTS "Build LinCLI tests" OFF)
+option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode" OFF)
 ```
 
 **硬性要求**：
 - 禁止凭记忆跳过此步骤，每次提交前必须实际读取文件确认
-- 若任一为 `1`，**必须先改为 `0`**，再执行提交
-- 关闭后再编译一次，确保没有因开关关闭而引入的编译错误
-- 只有确认两个开关都为 `0` 且编译通过后，才允许提交推送
+- 若任一被临时改为 `ON`，**必须先改回 `OFF`**，再执行提交
+- 改回后再编译一次，确保没有因开关关闭而引入的编译错误
+- 只有确认两个选项都为 `OFF` 且编译通过后，才允许提交推送
+
+> 说明：`CLI_ENABLE_TESTS` 和 `INLINE_TEST_EN` 这两个 C 宏已由 CMake 统一管理（`cli_config.h` 中用 `#ifndef` 包裹）。CMake 构建时通过 `target_compile_definitions()` 自动注入，非 CMake 环境仍可手动定义。提交前只需检查 CMake 的 `option` 默认值即可。
 
 ## 3. 提交日志语言
 
@@ -107,9 +109,9 @@ cli_mpool_free(buf);
 
 ## 5. 函数行数限制
 
-**适用范围**：`cli/`、`init/`、`tests/` 目录下的源文件。
+**适用范围**：`src/cli/`、`src/init/`、`tests/` 目录下的源文件。
 
-**不适用范围**：`lib/` 目录下的成熟基础库代码（如状态机、红黑树、内存池等），无需为此类代码做行数拆分。
+**不适用范围**：`src/lib/` 目录下的成熟基础库代码（如状态机、红黑树、内存池等），无需为此类代码做行数拆分。
 
 适用范围内的函数不得超过 **25 行**（物理行数，含空行与注释）。超过时必须拆分为更小的函数。
 
@@ -135,19 +137,19 @@ cli_mpool_free(buf);
 
 1. **README.md** — 项目总览、快速开始、命令注册示例
 2. **Documentation/*.md** — 所有专题文档：
-   - `architecture.md` — 架构与核心机制
-   - `async_commands.md` — 非阻塞命令
-   - `init.md` — 开机初始化
-   - `porting.md` — MCU 移植
-   - `customization.md` — 日志定制
-   - `cli_var.md` — 变量系统
-   - `candidates.md` — Tab 补全候选
-   - `inline_print.md` — 尾行模式
-   - `tests.md` — 测试用例说明
+   - `docs/architecture.md` — 架构与核心机制
+   - `docs/async_commands.md` — 非阻塞命令
+   - `docs/init.md` — 开机初始化
+   - `docs/porting.md` — MCU 移植
+   - `docs/customization.md` — 日志定制
+   - `docs/cli_var.md` — 变量系统
+   - `docs/candidates.md` — Tab 补全候选
+   - `docs/inline_print.md` — 尾行模式
+   - `docs/tests.md` — 测试用例说明
 
 ### 必读测试用例
 
-`tests/` 目录下的每个 `.c` 文件都是**用户接口的完整示例程序**：
+`tests/commands/` 目录下的每个 `.c` 文件都是**用户接口的完整示例程序**：
 
 - `test_bool.c`、`test_int.c`、`test_double.c`、`test_string.c` — 基础选项类型用法
 - `test_int_array.c`、`test_conflicts.c`、`test_required.c` — 高级选项特性
@@ -158,5 +160,7 @@ cli_mpool_free(buf);
 - `test_key_interaction.c` — 键盘交互测试
 - `test_init_d.c` — 初始化函数测试
 - `test_cli_var.c` — 变量系统测试
+
+`tests/unit/` 目录下是 Unity 单元测试，测试基础库函数（string、atoi、float、mpool、vector、vsnprintf、stateM、errno）。
 
 **规则**：每份测试代码都展示了用户如何注册命令、定义选项、写 handler。新增功能前必须参考同类测试用例，确保新接口与已有风格一致。
