@@ -345,12 +345,15 @@ FAIL
 
 ```bash
 cd /path/to/LinCLI
-rm -rf build && mkdir build && cd build
-cmake ..
-make -j$(nproc)
+make
 ```
 
-编译完成后会生成两个可执行文件：
+项目根目录的 `Makefile` 会自动完成：
+1. `cmake -S . -B build` — 生成构建系统
+2. `make -C build` — 编译框架库 `lincli`、演示程序 `a.out`、单元测试 `unit_tests`
+3. `ctest --test-dir build --output-on-failure` — 运行 47 个 Unity 单元测试
+
+编译完成后生成的产物：
 - `build/bin/a.out` — 交互式 CLI 模拟器（原有功能）
 - `build/bin/unit_tests` — Unity 单元测试程序
 
@@ -441,10 +444,10 @@ int main(void)
 ### 第 3 步：编译验证
 
 ```bash
-cd build && make -j$(nproc) unit_tests && ./bin/unit_tests
+cd build && make -j$(nproc) && ctest --output-on-failure
 ```
 
-如果新增测试编译通过且全部显示 `PASS`，任务完成。
+如果新增测试编译通过且 `ctest` 显示 `100% tests passed`，任务完成。
 
 ---
 

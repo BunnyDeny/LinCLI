@@ -1,17 +1,5 @@
 #include "unity.h"
-
-/* 手动声明被测函数原型（cli_string.c 未提供头文件） */
-extern size_t cli_strlen(const char *s);
-extern char *cli_strcpy(char *dst, const char *src);
-extern char *cli_strncpy(char *dst, const char *src, size_t n);
-extern int cli_strcmp(const char *s1, const char *s2);
-extern int cli_strncmp(const char *s1, const char *s2, size_t n);
-extern char *cli_strcat(char *dst, const char *src);
-extern char *cli_strchr(const char *s, int c);
-extern void *cli_memcpy(void *dst, const void *src, size_t n);
-extern void *cli_memset(void *s, int c, size_t n);
-extern void *cli_memmove(void *dst, const void *src, size_t n);
-extern int cli_memcmp(const void *s1, const void *s2, size_t n);
+#include "cli_string.h"
 
 void test_cli_strlen_normal(void)
 {
