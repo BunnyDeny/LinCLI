@@ -10,6 +10,9 @@ Usage (serial mode - real MCU):
 Usage (subprocess mode - PC simulation via PTY):
     python3 lincli_csv_bridge.py --exec ./build/bin/a.out output.csv [--plot]
 
+Dependencies (install when needed):
+    sudo apt update && sudo apt install python3-serial python3-matplotlib -y
+
 The script:
 1. Opens serial port or launches a subprocess with a pseudo-terminal
 2. Presents a normal CLI terminal (prompts, command input, output)
@@ -167,10 +170,6 @@ class LivePlotter:
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
 
-    def run(self):
-        while True:
-            self.update()
-            time.sleep(0.05)
 
 
 class SerialBridge:
@@ -198,10 +197,9 @@ class SerialBridge:
 
     def run(self):
         self.setup_tty()
-        if self.plotter:
-            threading.Thread(target=self.plotter.run, daemon=True).start()
 
         buf = ""
+        last_plot = 0
         try:
             while True:
                 data = self.ser.read(1024)
@@ -223,6 +221,10 @@ class SerialBridge:
                     self.ser.write(key.encode())
                     sys.stdout.write(key)
                     sys.stdout.flush()
+
+                if self.plotter and time.time() - last_plot > 0.05:
+                    self.plotter.update()
+                    last_plot = time.time()
         except KeyboardInterrupt:
             pass
         finally:
@@ -265,8 +267,6 @@ class SubprocessBridge:
 
     def run(self):
         self.setup_tty()
-        if self.plotter:
-            threading.Thread(target=self.plotter.run, daemon=True).start()
 
         master_fd, slave_fd = pty.openpty()
 
@@ -285,6 +285,7 @@ class SubprocessBridge:
 
         buf = b""
         stdin_fd = sys.stdin.fileno()
+        last_plot = 0
         try:
             while proc.poll() is None:
                 rfds = [master_fd, stdin_fd]
@@ -310,6 +311,10 @@ class SubprocessBridge:
                     if not key:
                         break
                     os.write(master_fd, key)
+
+                if self.plotter and time.time() - last_plot > 0.05:
+                    self.plotter.update()
+                    last_plot = time.time()
 
         except KeyboardInterrupt:
             proc.terminate()
