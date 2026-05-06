@@ -283,13 +283,13 @@ Unity 提供了丰富的断言宏，覆盖整数、浮点、字符串、指针�
 | `lib/cli_mpool.c` | 分配/释放配对、池耗尽、非法指针释放安全 | `test_unit_mpool.c` |
 | `lib/tVector.c` | FIFO 的 push/pop、空/满边界、越界访问 | `test_unit_vector.c` |
 
-### 🟡 建议补充测试
+### ✅ 已补充测试
 
-| 模块 | 测试重点 |
-|------|----------|
-| `lib/cli_vsnprintf.c` | 格式化字符串：各种 `%d`、`%s`、`%f` 组合，缓冲区截断 |
-| `lib/stateM.c` | 状态机切换、非法状态 ID 处理、空指针防御 |
-| `lib/cli_errno.c` | 每个错误码都能映射到正确的字符串 |
+| 模块 | 测试重点 | 测试文件 |
+|------|----------|----------|
+| `lib/cli_vsnprintf.c` | `%d`/`%s`/`%c`/`%u`/`%%` 格式化、宽度对齐、缓冲区截断、NULL 字符串 | `test_unit_vsnprintf.c` |
+| `lib/stateM.c` | 状态机初始化、状态切换、同状态切换、非法状态 ID | `test_unit_statem.c` |
+| `lib/cli_errno.c` | 错误码映射非空、返回值一致性 | `test_unit_errno.c` |
 
 ### ❌ 不适合单元测试（适合集成测试）
 
