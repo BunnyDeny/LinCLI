@@ -60,10 +60,11 @@ class DataParser:
     """Parse \r-prefixed data lines into dicts."""
 
     DATA_RE = re.compile(r'^\s*([^:]+):\s*([-\d.eE]+)\s*$')
+    ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
 
     @staticmethod
     def parse(line):
-        line = line.lstrip('\r').strip()
+        line = DataParser.ANSI_RE.sub('', line.lstrip('\r').strip())
         if not line:
             return None
         # Try simple float list: "0.523,1500.0,2.3"
