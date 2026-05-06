@@ -90,6 +90,9 @@ int scheduler_get_char_task(void *private)
 		if (status < 0) {
 			return status;
 		}
+		if (status == 0) {
+			return CLI_ERR_FIFO_EMPTY;
+		}
 		status = cli_cmd_line_task(ch);
 		if (status < 0) {
 			return status;
@@ -119,6 +122,7 @@ _EXPORT_STATE_SYMBOL(scheduler_get_char, STATE_ID_scheduler_get_char,
 struct scheduler_cmd_ctx {
 	const cli_command_t *cmd_def;
 	int cmd_ret;
+	cmd_parse_ctx_t parse_ctx;
 
 #if CLI_ENABLE_CMD_CHAIN
 	/* 主命令链 */
@@ -189,7 +193,7 @@ void scheduler_cmd_run_exit(void *private)
 		       cmd_ctx.cmd_ret);
 	}
 
-	cmd_parse_cleanup(cmd_ctx.cmd_def);
+	cmd_parse_cleanup(cmd_ctx.cmd_def, &cmd_ctx.parse_ctx);
 	cmd_ctx.cmd_def = NULL;
 
 	if (cmd_ctx.env_buf) {
@@ -250,8 +254,8 @@ static void auto_run_env_replace(void)
 
 static int auto_run_try_dispatch(void)
 {
-	int status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.cmd_def,
-				       &cmd_ctx.cmd_ret);
+	int status = cmd_parse_prepare(origin_cmd.buf, &cmd_ctx.parse_ctx,
+				       &cmd_ctx.cmd_def, &cmd_ctx.cmd_ret);
 	if (status < 0 || status == dispose_exit) {
 		cmd_ctx.auto_run_idx++;
 		return CLI_OK;
@@ -375,7 +379,8 @@ static void scheduler_cleanup(void)
 
 static int dispatch_cmd(char *cmd)
 {
-	int status = cmd_parse_prepare(cmd, &cmd_ctx.cmd_def, &cmd_ctx.cmd_ret);
+	int status = cmd_parse_prepare(cmd, &cmd_ctx.parse_ctx,
+				       &cmd_ctx.cmd_def, &cmd_ctx.cmd_ret);
 	if (status < 0)
 		return -1;
 	if (status == dispose_exit)
@@ -495,7 +500,7 @@ static int handle_dispatch_result(int dispatch_ret, char *env_buf)
 static int dispose_fail(void)
 {
 	if (cmd_ctx.cmd_def) {
-		cmd_parse_cleanup(cmd_ctx.cmd_def);
+		cmd_parse_cleanup(cmd_ctx.cmd_def, &cmd_ctx.parse_ctx);
 		cmd_ctx.cmd_def = NULL;
 	}
 	scheduler_cleanup();

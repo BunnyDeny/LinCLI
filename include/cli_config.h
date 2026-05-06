@@ -53,7 +53,7 @@
 /* 版本号 */
 #define CLI_VERSION_MAJOR 1
 #define CLI_VERSION_MINOR 9
-#define CLI_VERSION_PATCH 6
+#define CLI_VERSION_PATCH 7
 
 /* 内存池配置 */
 #define CLI_MPOOL_COUNT 6

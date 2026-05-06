@@ -202,13 +202,13 @@ static int esc_read_params(char *esc_params)
 	int esc_params_count = 2;
 
 	while (esc_params_count) {
-		if (cli_get_in_size()) {
-			status = cli_in_pop((_u8 *)&ch, 1);
-			if (status < 0)
-				return status;
-			esc_params[2 - esc_params_count] = ch;
-			esc_params_count--;
-		}
+		status = cli_in_pop((_u8 *)&ch, 1);
+		if (status < 0)
+			return status;
+		if (status == 0)
+			return CLI_ERR_FIFO_EMPTY;
+		esc_params[2 - esc_params_count] = ch;
+		esc_params_count--;
 	}
 	return CLI_OK;
 }
@@ -227,6 +227,8 @@ static int esc_resolve_sequence(char seq, int *next_state)
 		status = cli_in_pop((_u8 *)&ch, 1);
 		if (status < 0)
 			return status;
+		if (status == 0)
+			return CLI_ERR_FIFO_EMPTY;
 		if (ch == '~')
 			*next_state = STATE_ID_delete;
 	}

@@ -74,21 +74,18 @@ static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
 	}
 	cli_enter_critical();
 	(*ref)++;
-	int remain_to_pop = size;
-	while (remain_to_pop) {
+	int popped = 0;
+	while (popped < size) {
 		_u8 front;
 		if (at(v, 0, &front) == false) {
-			goto _cli_io_pop_exit;
+			break;
 		}
-		int idx = size - remain_to_pop;
-		*(data + idx) = front;
+		data[popped++] = front;
 		pop_front(v, 1);
-		remain_to_pop--;
 	}
-_cli_io_pop_exit:
 	(*ref)--;
 	cli_exit_critical();
-	return CLI_OK;
+	return popped;
 }
 
 int cli_in_push(_u8 *data, int size)
@@ -140,9 +137,11 @@ int cli_out_sync(void)
 		int status = cli_out_pop((_u8 *)&ch, 1);
 		if (status < 0) {
 			return status;
-		} else {
-			cli_putc(ch);
 		}
+		if (status == 0) {
+			return CLI_ERR_FIFO_EMPTY;
+		}
+		cli_putc(ch);
 	}
 	return 0;
 }
@@ -183,6 +182,9 @@ int cli_in_clear(void)
 		status = cli_in_pop(&tmp, 1);
 		if (status < 0) {
 			return status;
+		}
+		if (status == 0) {
+			return CLI_ERR_FIFO_EMPTY;
 		}
 	}
 	return 0;
@@ -298,22 +300,43 @@ static bool printk_should_drop(const char *pre)
 
 static int printk_format_and_send(const char *pre_str, int raw_len)
 {
-	if (is_kern_level(buffer[0]))
-		memmove(buffer, buffer + 1, CLI_PRINTK_BUF_SIZE - 1);
-	int pre_len = strlen(pre_str);
-	if (raw_len <= 0 || pre_len < 0)
+	if (raw_len <= 0)
 		return 0;
-	memmove(buffer + pre_len, buffer, raw_len + 1);
-	memcpy(buffer, pre_str, pre_len);
-	strcat(buffer, COLOR_NONE);
+
+	int pre_len = strlen(pre_str);
+	int suffix_len = strlen(COLOR_NONE);
+
+	/* 如果 buffer[0] 是内核级别字符，跳过它 */
+	const char *content = buffer;
+	int content_len = raw_len;
+	if (is_kern_level(buffer[0])) {
+		content++;
+		content_len--;
+	}
+
+	if (content_len <= 0)
+		return 0;
+
 	if (cli_out_sync())
 		return CLI_ERR_IO_SYNC;
-	int status = cli_out_push((_u8 *)buffer,
-				  pre_len + raw_len + strlen(COLOR_NONE));
+
+	int status;
+
+	status = cli_out_push((_u8 *)pre_str, pre_len);
 	if (status < 0)
 		return status;
+
+	status = cli_out_push((_u8 *)content, content_len);
+	if (status < 0)
+		return status;
+
+	status = cli_out_push((_u8 *)COLOR_NONE, suffix_len);
+	if (status < 0)
+		return status;
+
 	if (cli_out_sync())
 		return CLI_ERR_IO_SYNC;
+
 	return 0;
 }
 

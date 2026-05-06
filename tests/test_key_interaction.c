@@ -70,6 +70,9 @@ static int key_task(void *_args)
 		if (status < 0) {
 			return status;
 		}
+		if (status == 0) {
+			return CLI_ERR_FIFO_EMPTY;
+		}
 
 		if (ch == (char)4) {
 			cli_printk("\r\n");

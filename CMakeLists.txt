@@ -21,3 +21,9 @@ add_executable(${OUTPUT_NAME}
 set_target_properties(${OUTPUT_NAME} PROPERTIES
     LINK_FLAGS "-T ${LINKER_SCRIPT}"
 )
+
+# ============================================================
+# CTest 集成（Unity 单元测试）
+# ============================================================
+enable_testing()
+add_test(NAME unit_tests COMMAND unit_tests)

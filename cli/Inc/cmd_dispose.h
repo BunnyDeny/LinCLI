@@ -93,6 +93,13 @@ extern const cli_command_t *const _cli_commands_end[];
 
 #define CLI_OFFSETOF(type, field) offsetof(type, field)
 
+#define CLI_MAX_ARGV 64
+
+typedef struct {
+	char *argv[CLI_MAX_ARGV];
+	cli_command_t cmd_runtime;
+} cmd_parse_ctx_t;
+
 /* ============================================================
  * OPTION 宏定义（统一 10 参数）
  * ============================================================
@@ -260,8 +267,7 @@ extern const cli_command_t *const _cli_commands_end[];
  * 若用户结构体超过内存池单块大小，请使用 CLI_COMMAND_WITH_BUF 宏自行指定缓冲区。
  */
 
-#define _CLI_SIZEOF_POINTEE(ptr) \
-	((size_t)(((char *)((ptr) + 1)) - ((char *)(ptr))))
+#define _CLI_SIZEOF_POINTEE(ptr) sizeof(*(ptr))
 
 /* 用法字符串数组辅助宏，展开为 NULL 结尾的数组指针。
  * 数组元素个数由 _EXPORT_CLI_COMMAND_SYMBOL 内部通过 sizeof 自动计算。
@@ -341,9 +347,9 @@ extern const cli_command_t *const _cli_commands_end[];
  * 新增：命令解析准备与清理接口（取代 dispose_mec 状态机）
  * ============================================================ */
 
-int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
-		      int *cmd_ret);
-void cmd_parse_cleanup(const cli_command_t *cmd_def);
+int cmd_parse_prepare(char *cmd, cmd_parse_ctx_t *ctx,
+		      const cli_command_t **out_cmd_def, int *cmd_ret);
+void cmd_parse_cleanup(const cli_command_t *cmd_def, cmd_parse_ctx_t *ctx);
 
 
 

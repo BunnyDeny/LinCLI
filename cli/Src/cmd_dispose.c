@@ -32,7 +32,6 @@
 
 #define CLI_HELP_REQ_MARK_SIZE 16
 #define CLI_HELP_DEP_MARK_SIZE 128
-#define CLI_MAX_ARGV 64
 
 /**
  * @brief 在链接脚本段中按名称查找已注册的命令。
@@ -728,8 +727,6 @@ static bool handle_help_request(const cli_command_t *cmd_def, int argc,
 /**
  * @brief dispose 状态机的起始任务，完成完整的命令分派闭环。
  */
-static cli_command_t cmd_runtime;
-
 static const cli_command_t *lookup_cmd_def(char *cmd_name, int *cmd_ret)
 {
 	const cli_command_t *cmd_def = cli_command_find(cmd_name);
@@ -740,35 +737,39 @@ static const cli_command_t *lookup_cmd_def(char *cmd_name, int *cmd_ret)
 	return cmd_def;
 }
 
-static int ensure_cmd_buf(const cli_command_t **cmd_def_p)
+static int ensure_cmd_buf(const cli_command_t **cmd_def_p,
+			  cmd_parse_ctx_t *ctx)
 {
 	const cli_command_t *cmd_def = *cmd_def_p;
 	if (cmd_def->arg_buf)
 		return 0;
-	memcpy(&cmd_runtime, cmd_def, sizeof(cli_command_t));
-	cmd_runtime.arg_buf = cli_mpool_alloc();
-	if (!cmd_runtime.arg_buf) {
+	memcpy(&ctx->cmd_runtime, cmd_def, sizeof(cli_command_t));
+	ctx->cmd_runtime.arg_buf = cli_mpool_alloc();
+	if (!ctx->cmd_runtime.arg_buf) {
 		pr_err("%s OOM\r\n", cmd_def->name);
 		return -1;
 	}
-	*cmd_def_p = &cmd_runtime;
+	*cmd_def_p = &ctx->cmd_runtime;
 	return 0;
 }
 
-static bool validate_cmd_buf_size(const cli_command_t *cmd_def, int *cmd_ret)
+static bool validate_cmd_buf_size(const cli_command_t *cmd_def, int *cmd_ret,
+				    cmd_parse_ctx_t *ctx)
 {
 	if (cmd_def->arg_struct_size > cmd_def->arg_buf_size) {
 		pr_err("cmd %s sz %u>%u\r\n",
 		       cmd_def->name, (unsigned int)cmd_def->arg_struct_size,
 		       (unsigned int)cmd_def->arg_buf_size);
-		cmd_parse_cleanup(cmd_def);
+		cmd_parse_cleanup(cmd_def, ctx);
 		*cmd_ret = -1;
 		return false;
 	}
 	return true;
 }
 
-static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
+static const cli_command_t *prepare_cmd_def(int argc, char **argv,
+					    int *cmd_ret,
+					    cmd_parse_ctx_t *ctx)
 {
 	if (argc < 1) {
 		*cmd_ret = 0;
@@ -787,11 +788,11 @@ static const cli_command_t *prepare_cmd_def(int argc, char **argv, int *cmd_ret)
 	if (handle_help_request(cmd_def, argc, argv, cmd_ret))
 		return NULL;
 #endif
-	if (ensure_cmd_buf(&cmd_def) < 0) {
+	if (ensure_cmd_buf(&cmd_def, ctx) < 0) {
 		*cmd_ret = -1;
 		return NULL;
 	}
-	if (!validate_cmd_buf_size(cmd_def, cmd_ret))
+	if (!validate_cmd_buf_size(cmd_def, cmd_ret, ctx))
 		return NULL;
 	return cmd_def;
 }
@@ -812,7 +813,7 @@ static void cli_print_usage(const cli_command_t *cmd)
 #endif
 
 static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
-			   int *cmd_ret)
+			   int *cmd_ret, cmd_parse_ctx_t *ctx)
 {
 	int status = cli_auto_parse(cmd_def, argc, argv);
 	if (status < 0) {
@@ -821,36 +822,36 @@ static int execute_parsing(const cli_command_t *cmd_def, int argc, char **argv,
 		cli_print_usage(cmd_def);
 		pr_err("use %s -h\r\n", cmd_def->name);
 #endif
-		cmd_parse_cleanup(cmd_def);
+		cmd_parse_cleanup(cmd_def, ctx);
 		*cmd_ret = -1;
 		return status;
 	}
 	return CLI_OK;
 }
 
-int cmd_parse_prepare(char *cmd, const cli_command_t **out_cmd_def,
-		      int *cmd_ret)
+int cmd_parse_prepare(char *cmd, cmd_parse_ctx_t *ctx,
+		      const cli_command_t **out_cmd_def, int *cmd_ret)
 {
-	static char *argv[CLI_MAX_ARGV];
-	int argc = tokenize(cmd, argv, CLI_MAX_ARGV);
+	int argc = tokenize(cmd, ctx->argv, CLI_MAX_ARGV);
 	all_printk("\r\n");
 	all_printk("\033[K");
-	const cli_command_t *cmd_def = prepare_cmd_def(argc, argv, cmd_ret);
+	const cli_command_t *cmd_def = prepare_cmd_def(argc, ctx->argv,
+						       cmd_ret, ctx);
 	if (!cmd_def)
 		return dispose_exit;
 	memset(cmd_def->arg_buf, 0, cmd_def->arg_buf_size);
-	int ret = execute_parsing(cmd_def, argc, argv, cmd_ret);
+	int ret = execute_parsing(cmd_def, argc, ctx->argv, cmd_ret, ctx);
 	if (ret < 0)
 		return ret;
 	*out_cmd_def = cmd_def;
 	return CLI_OK;
 }
 
-void cmd_parse_cleanup(const cli_command_t *cmd_def)
+void cmd_parse_cleanup(const cli_command_t *cmd_def, cmd_parse_ctx_t *ctx)
 {
-	if (cmd_def == &cmd_runtime && cmd_runtime.arg_buf) {
-		cli_mpool_free(cmd_runtime.arg_buf);
-		cmd_runtime.arg_buf = NULL;
+	if (cmd_def == &ctx->cmd_runtime && ctx->cmd_runtime.arg_buf) {
+		cli_mpool_free(ctx->cmd_runtime.arg_buf);
+		ctx->cmd_runtime.arg_buf = NULL;
 	}
 }
 

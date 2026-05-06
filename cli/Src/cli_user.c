@@ -132,7 +132,7 @@ static int su_read_input(void)
 
 	for (int i = 0; i < size; i++) {
 		char ch;
-		if (cli_in_pop((_u8 *)&ch, 1) < 0)
+		if (cli_in_pop((_u8 *)&ch, 1) <= 0)
 			break;
 		if (ch == '\r' || ch == '\n')
 			return su_verify_pwd();
