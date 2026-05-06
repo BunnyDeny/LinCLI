@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 
 # ============================================================
-# LinCLI 框架静态库
+# LinCLI 框架库（OBJECT + INTERFACE）
 # ============================================================
 option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
 add_subdirectory(src)
