@@ -5,7 +5,7 @@ lincli_csv_bridge.py
 LinCLI serial/PTY bridge with real-time CSV capture and optional live plotting.
 
 Usage (serial mode - real MCU):
-    python3 lincli_csv_bridge.py /dev/ttyUSB0 115200 output.csv
+    python3 lincli_csv_bridge.py /dev/ttyUSB0 115200 output.csv [--plot]
 
 Usage (subprocess mode - PC simulation via PTY):
     python3 lincli_csv_bridge.py --exec ./build/bin/a.out output.csv [--plot]
