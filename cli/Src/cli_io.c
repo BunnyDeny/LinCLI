@@ -322,17 +322,21 @@ static int printk_format_and_send(const char *pre_str, int raw_len)
 
 	int status;
 
-	status = cli_out_push((_u8 *)pre_str, pre_len);
-	if (status < 0)
-		return status;
+	if (pre_len > 0) {
+		status = cli_out_push((_u8 *)pre_str, pre_len);
+		if (status < 0)
+			return status;
+	}
 
 	status = cli_out_push((_u8 *)content, content_len);
 	if (status < 0)
 		return status;
 
-	status = cli_out_push((_u8 *)COLOR_NONE, suffix_len);
-	if (status < 0)
-		return status;
+	if (suffix_len > 0) {
+		status = cli_out_push((_u8 *)COLOR_NONE, suffix_len);
+		if (status < 0)
+			return status;
+	}
 
 	if (cli_out_sync())
 		return CLI_ERR_IO_SYNC;
