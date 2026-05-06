@@ -376,7 +376,7 @@ int cli_printk(const char *fmt, ...)
  *  内存池占用情况打印（分配失败时自动调用，不申请内存）
  * ============================================================ */
 
-void cli_mpool_dump_usage(void)
+__attribute__((weak)) void cli_mpool_dump_usage(void)
 {
 	const char *owners[CLI_MPOOL_COUNT];
 	int used_count = 0;
