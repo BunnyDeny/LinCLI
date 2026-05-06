@@ -50,6 +50,8 @@ static void scope_entry(void *_args)
 	struct scope_args *args = _args;
 	(void)args;
 	scope_tick = 0;
+	/* Unlock input buffer so we can catch Ctrl+D during scope run */
+	reset_cli_in_push_lock();
 	/* Print CSV header (normal line, not \r prefixed) */
 	cli_printk("timestamp,theta,speed,iq\r\n");
 }
@@ -58,6 +60,16 @@ static int scope_task(void *_args)
 {
 	struct scope_args *args = _args;
 	int timestamp, theta, speed, iq;
+
+	/* Check for Ctrl+D (ASCII 4) to exit */
+	if (cli_get_in_size() > 0) {
+		char ch;
+		int status = cli_in_pop((_u8 *)&ch, 1);
+		if (status > 0 && ch == (char)4) {
+			cli_printk("\r\n");
+			return 0;
+		}
+	}
 
 	scope_generate_data(&timestamp, &theta, &speed, &iq);
 
