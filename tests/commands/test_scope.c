@@ -40,12 +40,10 @@ static int scope_check_exit(void)
 	return 0;
 }
 
-static void scope_compute(int tick, int *timestamp, int *theta,
-			  int *speed, int *iq)
+static void scope_compute(int tick, int *theta, int *speed, int *iq)
 {
 	int phase, phase2;
 
-	*timestamp = tick * 10; /* ms */
 	/* theta: sine wave via 64-point lookup table */
 	*theta = sin_table[tick % 64];
 	/* speed: 1000 ~ 2000 (triangular wave) */
@@ -70,25 +68,25 @@ static void scope_entry(void *_args)
 	/* Notify host to reset CSV and open a new plot window */
 	cli_printk("\r$SCOPE_START\r\n");
 	/* Print CSV header (normal line, not \r prefixed) */
-	cli_printk("timestamp,theta,speed,iq\r\n");
+	cli_printk("theta,speed,iq\r\n");
 }
 
 static int scope_task(void *_args)
 {
 	static int tick = 0;
-	int timestamp, theta, speed, iq;
+	int theta, speed, iq;
 
 	(void)_args;
 
 	if (scope_check_exit())
 		return 0;
 
-	scope_compute(tick, &timestamp, &theta, &speed, &iq);
+	scope_compute(tick, &theta, &speed, &iq);
 
 	/* \r brings cursor to line start, single-line refresh.
 	 * Values are scaled x1000; Python side divides by 1000.
 	 */
-	cli_printk("\r %d,%d,%d,%d", timestamp, theta, speed, iq);
+	cli_printk("\r theta:%d,speed:%d,iq:%d", theta, speed, iq);
 
 	tick++;
 	return CLI_CONTINUE;
