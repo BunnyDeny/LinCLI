@@ -240,7 +240,6 @@ class SerialBridge:
             self.csv.write(row)
             if self.plotter:
                 self.plotter.add(row)
-            print(f"[CSV] {row}", file=sys.stderr)
 
 
 class SubprocessBridge:
@@ -349,7 +348,6 @@ class SubprocessBridge:
                 self.csv.write(row)
                 if self.plotter:
                     self.plotter.add(row)
-                print(f"[CSV] {row}", file=sys.stderr)
 
 
 def main():
