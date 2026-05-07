@@ -2,10 +2,20 @@
 
 > 📝 **如何开启测试命令**
 >
-> `tests/` 目录下的所有测试命令默认**不参与编译**。使用前请在 `include/cli_config.h` 中开启：
-> ```c
-> #define CLI_ENABLE_TESTS 1
-> ```
+> `tests/` 目录下的所有测试命令默认**不参与编译**。需要同时满足以下两个条件：
+>
+> 1. **CMake 开关**：在根目录 `CMakeLists.txt` 中确保测试命令开关为 `ON`：
+>    ```cmake
+>    option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
+>    ```
+>
+> 2. **C 宏开关**：在 `include/cli_config.h` 中开启：
+>    ```c
+>    #define CLI_ENABLE_TESTS 1
+>    ```
+>
+> > 📝 **为什么需要两处都开？** `LINCLI_BUILD_TEST_COMMANDS` 控制 CMake 是否把 `tests/commands/` 下的源文件加入编译目标；`CLI_ENABLE_TESTS` 控制这些源文件内部的条件编译（`#if CLI_ENABLE_TESTS`）。只有两处都打开，测试命令才会真正链接进可执行文件。修改后必须执行 `make clean && make` 重新编译。
+>
 > 此外，部分测试命令依赖对应的子功能模块，请确保相关宏也处于开启状态：
 > | 测试命令 | 依赖模块宏 |
 > |----------|-----------|

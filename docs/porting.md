@@ -298,7 +298,11 @@ Keil MDK 使用 `.sct`（分散加载文件）作为链接脚本。核心思路�
 移植完成后，你需要通过串口终端工具连接单片机，与 LinCLI 进行交互。以下是不同平台下的常用工具推荐：
 
 - 📌 **Linux**
-  - 🆕 **`picocom`**：轻量、稳定，推荐首选。安装命令：`sudo apt install picocom`
+  - 🆕 **`picocom`**：轻量、稳定，通用串口终端首选。安装命令：`sudo apt install picocom`
+  - 🎯 **`lincli_csv_bridge.py`**：LinCLI 官方配套桥接终端，除正常 CLI 交互外，还支持实时 CSV 记录与 matplotlib 曲线绘制。用法：
+    ```bash
+    python3 tools/lincli_csv_bridge.py /dev/ttyUSB0 115200 output.csv --plot
+    ```
   - 💎 其他替代：`minicom`、`screen`、`tio` 等
 
 - ✅ **Windows**

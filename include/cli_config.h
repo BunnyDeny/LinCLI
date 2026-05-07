@@ -18,7 +18,7 @@
  * 裸机 Makefile）统一开关所有演示命令。
  */
 #ifndef CLI_ENABLE_TESTS
-#define CLI_ENABLE_TESTS 0
+#define CLI_ENABLE_TESTS 1
 #endif
 
 /*
@@ -65,7 +65,7 @@
 
 /* 版本号 */
 #define CLI_VERSION_MAJOR 1
-#define CLI_VERSION_MINOR 11
+#define CLI_VERSION_MINOR 12
 #define CLI_VERSION_PATCH 0
 
 /* 内存池配置 */

@@ -331,7 +331,7 @@ LinCLI 的源码结构清晰分层：
 - 🆕 `cli/` —— 命令解析、命令行编辑、终端交互
 - 💎 `lib/` —— 状态机、红黑树、内存池、错误码（纯逻辑，无平台相关）
 - ✅ `init/` —— PC 模拟入口（`main.c` + `scheduler.c`）
-- 🔹 `tests/` —— 内置测试命令
+- 🔹 `tests/` —— 内置测试命令（需在 `CMakeLists.txt` 中开启 `LINCLI_BUILD_TEST_COMMANDS=ON` 才会编译进目标）
 
 PC 端用 `pthread` 双线程模拟输入/调度，裸终端直接跑。想切到 STM32？
 

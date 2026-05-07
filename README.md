@@ -26,13 +26,21 @@ LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。�
 
 ### 💡 启用内置测试命令
 
-`tests/` 目录下包含框架自带的测试命令（如 `tb`、`ti`、`ts`、`td` 等）。这些命令默认**不参与编译**，需要通过 `include/cli_config.h` 中的宏手动开启：
+`tests/` 目录下包含框架自带的测试命令（如 `tb`、`ti`、`ts`、`td` 等）。这些命令默认**不参与编译**，需要同时满足以下两个条件：
 
-```c
-#define CLI_ENABLE_TESTS 1
-```
+1. **CMake 开关**：在根目录 `CMakeLists.txt` 中确保测试命令开关为 `ON`：
+   ```cmake
+   option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
+   ```
 
-将其设为 `1` 后重新编译，即可在终端中使用所有测试命令。设为 `0`（默认值）时，测试文件会被编译成空目标，不占用任何 Flash/RAM。
+2. **C 宏开关**：在 `include/cli_config.h` 中开启：
+   ```c
+   #define CLI_ENABLE_TESTS 1
+   ```
+
+> 📝 **为什么需要两处都开？** `LINCLI_BUILD_TEST_COMMANDS` 控制 CMake 是否把 `tests/commands/` 下的源文件加入编译目标；`CLI_ENABLE_TESTS` 控制这些源文件内部的条件编译（`#if CLI_ENABLE_TESTS`）。只有两处都打开，测试命令才会真正链接进可执行文件。
+>
+> 📝 修改后必须执行 `make clean && make` 重新编译，否则旧目标文件不会自动链接测试命令。
 
 ---
 
@@ -570,6 +578,8 @@ lin@linCli> level
 - ✅ **[项目结构与核心机制](docs/architecture.md)** — 介绍 `src/cli/`、`src/lib/`、`src/init/`、`tests/` 各目录职责，以及链接脚本段自动收集命令的核心原理。适合在注册完第一个命令之后，想要理解框架内部工作机制时阅读。
 
 - 🔹 **[异步非阻塞命令](docs/async_commands.md)** — 介绍 `CLI_COMMAND_ASYNC` 宏与 `entry/task/exit` 三阶段接口。把耗时操作（电机控制、传感器等待、Flash 擦写等）拆成多次调度周期分片执行，避免阻塞 CLI 主循环。包含返回值语义、状态流转图和完整示例。
+
+- 🎯 **[实时数据示波器](docs/scope_bridge.md)** — 通过 `scope` 命令 + `lincli_csv_bridge.py` 脚本，把 MCU / 仿真程序变成实时数据源。支持 PC 端实时 matplotlib 曲线绘制、CSV 自动记录、多次启动自动重置。零配置上上位机，一行命令即可观测波形。
 
 - 📌 **[开机初始化函数](docs/init.md)** — 通过 `_EXPORT_INIT_SYMBOL` 宏自动收集开机初始化例程，无需在 `main()` 中手动调用。支持按优先级排序执行，非常适合 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
 

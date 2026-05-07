@@ -20,6 +20,12 @@ $(OUTPUT): $(USER_SRCS)
 	@echo "==> 注入外部源文件到 $(INJECT_DIR)..."
 	@cp $(USER_SRCS) $(INJECT_DIR)/
 
+	@echo "==> 重新配置 LinCLI (开启 TEST_COMMANDS)..."
+	@cmake -S $(LINCLI_ROOT) -B $(LINCLI_ROOT)/build -DLINCLI_BUILD_TEST_COMMANDS=ON > /dev/null 2>&1 || \
+		(rm -f $(INJECT_DIR)/$(notdir $(USER_SRCS)); \
+		 echo "[ERR] CMake 配置失败，已清理注入文件"; \
+		 exit 1)
+
 	@echo "==> 在 LinCLI 中编译..."
 	@$(MAKE) -C $(LINCLI_ROOT) build > /dev/null 2>&1 || \
 		(rm -f $(INJECT_DIR)/$(notdir $(USER_SRCS)); \

@@ -89,3 +89,5 @@ Objects/*.d
 *.uvoptx
 *.uvopt
 
+tools/__pycache__/lincli_csv_bridge.cpython-313.pyc
+scope_data.csv
