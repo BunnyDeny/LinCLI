@@ -433,6 +433,7 @@ def main():
                 sys.exit(1)
             bridge = SerialBridge(args.port_or_csv, int(args.baud_or_exec), args.csv_file, plot=args.plot)
             bridge.run()
+        print("\n👋 Bye! See you next time.")
     except KeyboardInterrupt:
         print("\n👋 Bye! See you next time.")
 
