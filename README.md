@@ -571,6 +571,8 @@ lin@linCli> level
 
 - 🔹 **[异步非阻塞命令](docs/async_commands.md)** — 介绍 `CLI_COMMAND_ASYNC` 宏与 `entry/task/exit` 三阶段接口。把耗时操作（电机控制、传感器等待、Flash 擦写等）拆成多次调度周期分片执行，避免阻塞 CLI 主循环。包含返回值语义、状态流转图和完整示例。
 
+- 🎯 **[实时数据示波器](docs/scope_bridge.md)** — 通过 `scope` 命令 + `lincli_csv_bridge.py` 脚本，把 MCU / 仿真程序变成实时数据源。支持 PC 端实时 matplotlib 曲线绘制、CSV 自动记录、多次启动自动重置。零配置上上位机，一行命令即可观测波形。
+
 - 📌 **[开机初始化函数](docs/init.md)** — 通过 `_EXPORT_INIT_SYMBOL` 宏自动收集开机初始化例程，无需在 `main()` 中手动调用。支持按优先级排序执行，非常适合 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
 
 - 🆕 **[移植到单片机](docs/porting.md)** — 将 LinCLI 从 PC 模拟环境移植到 MCU 的完整指南，包括 UART 中断输入映射、调度循环集成、临界区保护实现、单字符输出覆盖，以及 GCC/LD 和 Keil MDK 的链接脚本适配示例。
