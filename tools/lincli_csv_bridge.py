@@ -134,7 +134,7 @@ class LivePlotter:
     def add(self, data_dict):
         with self.lock:
             self._sample_idx += 1
-            ts = self._sample_idx * 0.01  # fixed 10 ms step, keeps curve smooth
+            ts = self._sample_idx  # 1:1 mapping with CSV data row index
             for k, v in data_dict.items():
                 if k == '_raw':
                     for i, val in enumerate(v, start=1):
@@ -145,7 +145,7 @@ class LivePlotter:
 
     def _init_plot(self):
         self.fig, self.ax = plt.subplots(dpi=150)
-        self.ax.set_xlabel('time (s)')
+        self.ax.set_xlabel('sample index')
         self.ax.set_ylabel('value')
         self.ax.set_title('LinCLI Real-time Scope')
         plt.ion()
