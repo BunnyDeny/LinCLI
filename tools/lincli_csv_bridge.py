@@ -114,30 +114,31 @@ class CsvWriter:
 class LivePlotter:
     """Real-time matplotlib plotter (optional)."""
 
-    def __init__(self, maxlen=1000):
+    def __init__(self, maxlen=5000):
         self.maxlen = maxlen
         self.data = {}
         self.lock = threading.Lock()
         self.fig = None
         self.ax = None
         self.lines = {}
-        self.t0 = time.time()
+        self.labels = {'ch1': 'theta', 'ch2': 'speed', 'ch3': 'iq'}
 
     def add(self, data_dict):
         with self.lock:
-            t = time.time() - self.t0
             for k, v in data_dict.items():
-                if k == '_raw':
-                    for i, val in enumerate(v):
+                if k == '_raw' and len(v) >= 4:
+                    # Use the data's own timestamp (first column, ms -> s)
+                    ts = float(v[0]) / 1000.0
+                    for i, val in enumerate(v[1:], start=1):
                         key = f'ch{i}'
                         if key not in self.data:
                             self.data[key] = deque(maxlen=self.maxlen)
-                        self.data[key].append((t, val))
-                else:
+                        self.data[key].append((ts, float(val)))
+                elif k != '_raw':
                     if k not in self.data:
                         self.data[k] = deque(maxlen=self.maxlen)
                     try:
-                        self.data[k].append((t, float(v)))
+                        self.data[k].append((time.time(), float(v)))
                     except (ValueError, TypeError):
                         pass
 
@@ -148,7 +149,7 @@ class LivePlotter:
         self.ax.set_title('LinCLI Real-time Scope')
         plt.ion()
         plt.show(block=False)
-        plt.pause(0.001)  # force window to appear
+        plt.pause(0.001)
 
     def update(self):
         if self.fig is None:
@@ -160,8 +161,12 @@ class LivePlotter:
                     continue
                 xs = [p[0] for p in series]
                 ys = [p[1] for p in series]
+                label = self.labels.get(key, key)
                 if key not in self.lines:
-                    self.lines[key], = self.ax.plot(xs, ys, label=key)
+                    self.lines[key], = self.ax.plot(
+                        xs, ys, label=label,
+                        linewidth=1.2, marker='.', markersize=3,
+                        antialiased=True)
                 else:
                     self.lines[key].set_data(xs, ys)
 
