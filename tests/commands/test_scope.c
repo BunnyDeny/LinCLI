@@ -22,15 +22,26 @@ struct scope_args {
 
 static int scope_tick = 0;
 
-/* Simple simulated motor data using integer math (scaled x1000) */
+/* 64-point sine lookup table: 0 ~ 6283 (scaled x1000) */
+static const int sin_table[64] = {
+	3141, 3449, 3754, 4053, 4343, 4622, 4886, 5134,
+	5362, 5569, 5753, 5912, 6043, 6147, 6222, 6267,
+	6283, 6267, 6222, 6147, 6043, 5912, 5753, 5569,
+	5362, 5134, 4886, 4622, 4343, 4053, 3754, 3449,
+	3141, 2833, 2528, 2229, 1939, 1660, 1396, 1148,
+	 920,  713,  529,  370,  239,  135,   60,   15,
+	   0,   15,   60,  135,  239,  370,  529,  713,
+	 920, 1148, 1396, 1660, 1939, 2229, 2528, 2833,
+};
+
 static void scope_generate_data(int *timestamp,
-				int *theta,
-				int *speed,
-				int *iq)
+					int *theta,
+					int *speed,
+					int *iq)
 {
-	/* theta: 0 ~ 6283 (0 ~ 2*pi, scaled x1000) */
 	*timestamp = scope_tick * 10; /* ms */
-	*theta = (scope_tick * 628) % 6283;
+	/* theta: sine wave via 64-point lookup table */
+	*theta = sin_table[scope_tick % 64];
 	/* speed: 1000 ~ 2000 (三角波) */
 	int phase = scope_tick % 200;
 	if (phase < 100)
