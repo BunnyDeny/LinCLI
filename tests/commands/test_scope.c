@@ -13,7 +13,6 @@
 #if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
-#include <math.h>
 
 struct scope_args {
 	char *vars;
