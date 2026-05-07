@@ -8,7 +8,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 # 构建选项（统一放在开头，方便手动修改）
 # ============================================================
 option(LINCLI_BUILD_UNITY_TESTS "Build Unity unit tests" ON)
-option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
+option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" OFF)
 option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
 
 # ============================================================
