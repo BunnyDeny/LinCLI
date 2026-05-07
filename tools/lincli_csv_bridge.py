@@ -167,11 +167,14 @@ class LivePlotter:
                     plt.close(self.fig)
                 except Exception:
                     pass
-                self.fig = None
-                self.ax = None
+            self.fig = None
+            self.ax = None
+            # Re-create window only on explicit reset (scope command)
+            self._init_plot()
 
     def update(self):
-        # Detect if user closed the plot window and clean up references
+        # Detect if user closed the plot window and clean up references.
+        # Do NOT auto-recreate; window will be reopened on next $SCOPE_START.
         if self.fig is not None:
             try:
                 if not plt.fignum_exists(self.fig.number):
@@ -184,7 +187,7 @@ class LivePlotter:
                 self.lines.clear()
 
         if self.fig is None:
-            self._init_plot()
+            return
 
         with self.lock:
             for key, series in self.data.items():

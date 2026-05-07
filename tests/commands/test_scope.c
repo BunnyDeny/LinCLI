@@ -14,13 +14,6 @@
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
-struct scope_args {
-	char *vars;
-	int period_ms;
-	int duration_s;
-};
-
-static int scope_tick = 0;
 
 /* 64-point sine lookup table: 0 ~ 6283 (scaled x1000) */
 static const int sin_table[64] = {
@@ -34,22 +27,35 @@ static const int sin_table[64] = {
 	 920, 1148, 1396, 1660, 1939, 2229, 2528, 2833,
 };
 
-static void scope_generate_data(int *timestamp,
-					int *theta,
-					int *speed,
-					int *iq)
+static int scope_check_exit(void)
 {
-	*timestamp = scope_tick * 10; /* ms */
+	if (cli_get_in_size() > 0) {
+		char ch;
+		int status = cli_in_pop((_u8 *)&ch, 1);
+		if (status > 0 && ch == (char)4) {
+			cli_printk("\r\n");
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void scope_compute(int tick, int *timestamp, int *theta,
+			  int *speed, int *iq)
+{
+	int phase, phase2;
+
+	*timestamp = tick * 10; /* ms */
 	/* theta: sine wave via 64-point lookup table */
-	*theta = sin_table[scope_tick % 64];
-	/* speed: 1000 ~ 2000 (三角波) */
-	int phase = scope_tick % 200;
+	*theta = sin_table[tick % 64];
+	/* speed: 1000 ~ 2000 (triangular wave) */
+	phase = tick % 200;
 	if (phase < 100)
 		*speed = 1000 + phase * 10;
 	else
 		*speed = 2000 - (phase - 100) * 10;
-	/* iq: 500 ~ 3500 (另一个三角波) */
-	int phase2 = scope_tick % 134;
+	/* iq: 500 ~ 3500 (another triangular wave) */
+	phase2 = tick % 134;
 	if (phase2 < 67)
 		*iq = 500 + phase2 * 45;
 	else
@@ -58,9 +64,7 @@ static void scope_generate_data(int *timestamp,
 
 static void scope_entry(void *_args)
 {
-	struct scope_args *args = _args;
-	(void)args;
-	scope_tick = 0;
+	(void)_args;
 	/* Unlock input buffer so we can catch Ctrl+D during scope run */
 	reset_cli_in_push_lock();
 	/* Notify host to reset CSV and open a new plot window */
@@ -71,42 +75,28 @@ static void scope_entry(void *_args)
 
 static int scope_task(void *_args)
 {
-	struct scope_args *args = _args;
+	static int tick = 0;
 	int timestamp, theta, speed, iq;
 
-	/* Check for Ctrl+D (ASCII 4) to exit */
-	if (cli_get_in_size() > 0) {
-		char ch;
-		int status = cli_in_pop((_u8 *)&ch, 1);
-		if (status > 0 && ch == (char)4) {
-			cli_printk("\r\n");
-			return 0;
-		}
-	}
+	(void)_args;
 
-	scope_generate_data(&timestamp, &theta, &speed, &iq);
+	if (scope_check_exit())
+		return 0;
+
+	scope_compute(tick, &timestamp, &theta, &speed, &iq);
 
 	/* \r brings cursor to line start, single-line refresh.
 	 * Values are scaled x1000; Python side divides by 1000.
 	 */
 	cli_printk("\r %d,%d,%d,%d", timestamp, theta, speed, iq);
 
-	scope_tick++;
-
-	if (args->duration_s > 0 &&
-	    scope_tick * args->period_ms >= args->duration_s * 1000)
-		return 0;
-
+	tick++;
 	return CLI_CONTINUE;
 }
 
 CLI_COMMAND_ASYNC(scope, "scope", "Real-time data scope for CSV bridge",
-		  USAGE("scope [-p <ms>] [-d <s>]"),
+		  USAGE("scope"),
 		  scope_entry, scope_task, NULL,
-		  (struct scope_args *)0,
-		  OPTION('p', "period", INT, "Sample period in ms (default 100)",
-			 struct scope_args, period_ms, 0, NULL, NULL, false),
-		  OPTION('d', "duration", INT, "Duration in seconds, 0=forever",
-			 struct scope_args, duration_s, 0, NULL, NULL, false),
+		  NULL,
 		  END_OPTIONS);
 #endif
