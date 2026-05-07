@@ -368,7 +368,7 @@ class SubprocessBridge:
                     last_plot = time.time()
 
         except KeyboardInterrupt:
-            proc.terminate()
+            pass
         finally:
             self.restore_tty()
             self.csv.close()
@@ -376,16 +376,12 @@ class SubprocessBridge:
                 os.close(master_fd)
             except OSError:
                 pass
-            # Gracefully wait for child; if user hits Ctrl+C again during wait,
-            # force-kill and swallow the exception to avoid ugly traceback.
+            # Kill subprocess immediately and do not block forever
+            proc.kill()
             try:
-                proc.wait()
-            except KeyboardInterrupt:
-                proc.kill()
-                try:
-                    proc.wait()
-                except KeyboardInterrupt:
-                    pass
+                proc.wait(timeout=0.5)
+            except Exception:
+                pass
 
     def _process_buffer(self, buf):
         # scope data lines are separated by \r (carriage return without \n)
