@@ -93,7 +93,7 @@ lin@linCli> scope
 | `ch2` (speed) | 三角波 | 1000 ~ 2000 线性往返 |
 | `ch3` (iq) | 三角波 | 500 ~ 3500 线性往返 |
 
-X 轴为时间（秒），数据来自 `scope` 命令第一列输出的毫秒时间戳。
+X 轴为采样序号（sample index），与 CSV 数据行一一对应。
 
 ### 4️⃣ 关闭与重启
 
@@ -146,7 +146,7 @@ Python 桥接脚本在数据流中识别到 `$SCOPE_START` 后，立即执行：
 握手完成后，你的命令以固定周期输出数据即可：
 
 ```c
-cli_printk("\r %d,%d,%d,%d", timestamp, theta, speed, iq);
+cli_printk("\r%d,%d,%d", theta, speed, iq);
 ```
 
 注意这里的 **`\r`**（回车，不换行）。它的作用是：
@@ -158,21 +158,21 @@ cli_printk("\r %d,%d,%d,%d", timestamp, theta, speed, iq);
 
 ### 3. 数据格式
 
-每帧输出四个整数字段（均为 ×1000 缩放后的定点数，Python 端自动处理）：
+每帧输出三个整数字段（均为 ×1000 缩放后的定点数，Python 端自动处理）：
 
 ```
-timestamp, theta, speed, iq
+theta, speed, iq
 ```
 
 示例：
 
 ```
-0,3141,1000,500
-10,3449,1010,545
-20,3754,1020,590
+3141,1000,500
+3449,1010,545
+3754,1020,590
 ```
 
-Python 脚本把第一列当作毫秒时间戳（除以 1000 转为秒），后续列映射为 `ch1`、`ch2`、`ch3` 曲线。
+Python 脚本解析为 `ch1`、`ch2`、`ch3` 三条曲线，X 轴为固定步长的采样序号。
 
 ---
 
@@ -188,7 +188,7 @@ Python 脚本把第一列当作毫秒时间戳（除以 1000 转为秒），后�
    ```
 2. 📝 在 `task` 函数中按 `\r` 前缀输出 CSV 数据：
    ```c
-   cli_printk("\r %d,%d,%d", timestamp, current, voltage);
+   cli_printk("\r%d,%d,%d", current, voltage, temperature);
    ```
 3. 📝 无需修改 Python 脚本的一行代码。
 
@@ -213,6 +213,24 @@ tail -f output.csv
 # 用 pandas 快速绘图
 python3 -c "import pandas as pd; df = pd.read_csv('output.csv'); df.plot()"
 ```
+
+---
+
+## ⚠️ 性能与速率限制
+
+`lincli_csv_bridge.py` 是一个轻量级调试辅助工具，不是专业高速数据采集软件。为了保证终端交互、CSV 落盘和 matplotlib 绘图的流畅性，**建议 `task` 函数的调度周期不低于 10 ms**（即输出频率 ≤ 100 Hz）。
+
+| 调度周期 | 输出频率 | Python 端表现 |
+|---|---|---|
+| ≥ 10 ms | ≤ 100 Hz | ✅ 流畅，无压力 |
+| 5 ~ 10 ms | 100 ~ 200 Hz | ⚠️ 轻微卡顿，CPU 占用上升 |
+| < 5 ms | > 200 Hz | ❌ 明显丢帧，CSV `flush()` 成为瓶颈 |
+
+如果你的控制环频率很高（如 1 kHz 以上），**不建议把每个采样点都通过串口输出**。典型的做法是：
+
+- 在 MCU 端做降采样，每 10~100 个控制周期取 1 个点输出
+- 或者只在发生异常/调试事件时触发数据上报
+- 需要完整高频记录时，建议使用专业工具（如逻辑分析仪、高速 DAC + 示波器）
 
 ---
 
