@@ -68,7 +68,7 @@ static void scope_entry(void *_args)
 	/* Notify host to reset CSV and open a new plot window */
 	cli_printk("\r$SCOPE_START\r\n");
 	/* Print CSV header (normal line, not \r prefixed) */
-	cli_printk("theta,speed,iq\r\n");
+	cli_printk("ch1,ch2,ch3\r\n");
 }
 
 static int scope_task(void *_args)
@@ -86,7 +86,7 @@ static int scope_task(void *_args)
 	/* \r brings cursor to line start, single-line refresh.
 	 * Values are scaled x1000; Python side divides by 1000.
 	 */
-	cli_printk("\r theta:%d,speed:%d,iq:%d", theta, speed, iq);
+	cli_printk("\r%d,%d,%d", theta, speed, iq);
 
 	tick++;
 	return CLI_CONTINUE;

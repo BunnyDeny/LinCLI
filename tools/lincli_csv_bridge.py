@@ -129,31 +129,19 @@ class LivePlotter:
         self.ax = None
         self.lines = {}
         self.labels = {'ch1': 'theta', 'ch2': 'speed', 'ch3': 'iq'}
-        self._t0 = None
+        self._sample_idx = 0
 
     def add(self, data_dict):
         with self.lock:
-            ts = None
+            self._sample_idx += 1
+            ts = self._sample_idx * 0.01  # fixed 10 ms step, keeps curve smooth
             for k, v in data_dict.items():
-                if k == '_raw' and len(v) >= 4:
-                    # Use the data's own timestamp (first column, ms -> s)
-                    ts = float(v[0]) / 1000.0
-                    for i, val in enumerate(v[1:], start=1):
+                if k == '_raw':
+                    for i, val in enumerate(v, start=1):
                         key = f'ch{i}'
                         if key not in self.data:
                             self.data[key] = deque(maxlen=self.maxlen)
                         self.data[key].append((ts, float(val)))
-                elif k != '_raw':
-                    if ts is None:
-                        if self._t0 is None:
-                            self._t0 = time.time()
-                        ts = time.time() - self._t0
-                    if k not in self.data:
-                        self.data[k] = deque(maxlen=self.maxlen)
-                    try:
-                        self.data[k].append((ts, float(v)))
-                    except (ValueError, TypeError):
-                        pass
 
     def _init_plot(self):
         self.fig, self.ax = plt.subplots(dpi=150)
@@ -168,7 +156,7 @@ class LivePlotter:
         with self.lock:
             self.data.clear()
             self.lines.clear()
-            self._t0 = None
+            self._sample_idx = 0
             if self.fig is not None:
                 try:
                     plt.close(self.fig)
