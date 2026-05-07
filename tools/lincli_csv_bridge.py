@@ -376,7 +376,16 @@ class SubprocessBridge:
                 os.close(master_fd)
             except OSError:
                 pass
-            proc.wait()
+            # Gracefully wait for child; if user hits Ctrl+C again during wait,
+            # force-kill and swallow the exception to avoid ugly traceback.
+            try:
+                proc.wait()
+            except KeyboardInterrupt:
+                proc.kill()
+                try:
+                    proc.wait()
+                except KeyboardInterrupt:
+                    pass
 
     def _process_buffer(self, buf):
         # scope data lines are separated by \r (carriage return without \n)
@@ -410,19 +419,22 @@ def main():
     parser.add_argument('csv_file', nargs='?', help='CSV output file (serial mode)')
     args = parser.parse_args()
 
-    if args.exec:
-        if not args.port_or_csv:
-            print("ERROR: CSV output file required in subprocess mode", file=sys.stderr)
-            sys.exit(1)
-        bridge = SubprocessBridge(args.exec.split(), args.port_or_csv, plot=args.plot)
-        bridge.run()
-    else:
-        if not all([args.port_or_csv, args.baud_or_exec, args.csv_file]):
-            print("Usage (serial): lincli_csv_bridge.py <port> <baud> <csv_file>", file=sys.stderr)
-            print("Usage (subproc): lincli_csv_bridge.py --exec <cmd> <csv_file> [--plot]", file=sys.stderr)
-            sys.exit(1)
-        bridge = SerialBridge(args.port_or_csv, int(args.baud_or_exec), args.csv_file, plot=args.plot)
-        bridge.run()
+    try:
+        if args.exec:
+            if not args.port_or_csv:
+                print("ERROR: CSV output file required in subprocess mode", file=sys.stderr)
+                sys.exit(1)
+            bridge = SubprocessBridge(args.exec.split(), args.port_or_csv, plot=args.plot)
+            bridge.run()
+        else:
+            if not all([args.port_or_csv, args.baud_or_exec, args.csv_file]):
+                print("Usage (serial): lincli_csv_bridge.py <port> <baud> <csv_file>", file=sys.stderr)
+                print("Usage (subproc): lincli_csv_bridge.py --exec <cmd> <csv_file> [--plot]", file=sys.stderr)
+                sys.exit(1)
+            bridge = SerialBridge(args.port_or_csv, int(args.baud_or_exec), args.csv_file, plot=args.plot)
+            bridge.run()
+    except KeyboardInterrupt:
+        print("\n👋 Bye! See you next time.")
 
 
 if __name__ == '__main__':
