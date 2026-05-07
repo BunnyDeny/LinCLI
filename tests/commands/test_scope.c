@@ -13,6 +13,7 @@
 #if CLI_ENABLE_TESTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
+#include <time.h>
 
 struct scope_args {
 	char *vars;
@@ -21,6 +22,7 @@ struct scope_args {
 };
 
 static int scope_tick = 0;
+static struct timespec scope_last_ts;
 
 /* Simple simulated motor data using integer math (scaled x1000) */
 static void scope_generate_data(int *timestamp,
@@ -50,6 +52,7 @@ static void scope_entry(void *_args)
 	struct scope_args *args = _args;
 	(void)args;
 	scope_tick = 0;
+	clock_gettime(CLOCK_MONOTONIC, &scope_last_ts);
 	/* Unlock input buffer so we can catch Ctrl+D during scope run */
 	reset_cli_in_push_lock();
 	/* Print CSV header (normal line, not \r prefixed) */
@@ -70,6 +73,16 @@ static int scope_task(void *_args)
 			return 0;
 		}
 	}
+
+	/* Strict timing: only output when period_ms has elapsed */
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	long elapsed_ms = (now.tv_sec - scope_last_ts.tv_sec) * 1000L +
+			  (now.tv_nsec - scope_last_ts.tv_nsec) / 1000000L;
+	if (elapsed_ms < args->period_ms)
+		return CLI_CONTINUE;
+
+	scope_last_ts = now;
 
 	scope_generate_data(&timestamp, &theta, &speed, &iq);
 

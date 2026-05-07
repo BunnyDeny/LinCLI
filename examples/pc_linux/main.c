@@ -76,7 +76,7 @@ void *cli_task_thread_entry(void *arg)
 		if (status < 0) {
 			printf("scheduler_task err code :%d\n", status);
 		}
-		usleep(1000);  /* 1ms loop for smoother PC simulation */
+		usleep(10000);
 	}
 }
 
