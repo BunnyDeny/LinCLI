@@ -114,7 +114,7 @@ class CsvWriter:
 class LivePlotter:
     """Real-time matplotlib plotter (optional)."""
 
-    def __init__(self, maxlen=200):
+    def __init__(self, maxlen=1000):
         self.maxlen = maxlen
         self.data = {}
         self.lock = threading.Lock()
@@ -142,7 +142,7 @@ class LivePlotter:
                         pass
 
     def _init_plot(self):
-        self.fig, self.ax = plt.subplots()
+        self.fig, self.ax = plt.subplots(dpi=150)
         self.ax.set_xlabel('time (s)')
         self.ax.set_ylabel('value')
         self.ax.set_title('LinCLI Real-time Scope')
@@ -226,7 +226,7 @@ class SerialBridge:
                     sys.stdout.write(key)
                     sys.stdout.flush()
 
-                if self.plotter and time.time() - last_plot > 0.05:
+                if self.plotter and time.time() - last_plot > 0.02:
                     self.plotter.update()
                     last_plot = time.time()
         except KeyboardInterrupt:
@@ -321,7 +321,7 @@ class SubprocessBridge:
                         break
                     os.write(master_fd, key)
 
-                if self.plotter and time.time() - last_plot > 0.05:
+                if self.plotter and time.time() - last_plot > 0.02:
                     self.plotter.update()
                     last_plot = time.time()
 
