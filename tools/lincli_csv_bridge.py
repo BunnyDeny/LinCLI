@@ -220,6 +220,8 @@ class SerialBridge:
 
                 if select.select([sys.stdin], [], [], 0)[0]:
                     key = sys.stdin.read(1)
+                    if key == '\x03':  # Ctrl+C
+                        break
                     self.ser.write(key.encode())
                     sys.stdout.write(key)
                     sys.stdout.flush()
@@ -314,6 +316,8 @@ class SubprocessBridge:
                     except OSError:
                         break
                     if not key:
+                        break
+                    if b'\x03' in key:  # Ctrl+C
                         break
                     os.write(master_fd, key)
 
