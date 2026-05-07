@@ -63,6 +63,8 @@ static void scope_entry(void *_args)
 	scope_tick = 0;
 	/* Unlock input buffer so we can catch Ctrl+D during scope run */
 	reset_cli_in_push_lock();
+	/* Notify host to reset CSV and open a new plot window */
+	cli_printk("\r$SCOPE_START\r\n");
 	/* Print CSV header (normal line, not \r prefixed) */
 	cli_printk("timestamp,theta,speed,iq\r\n");
 }

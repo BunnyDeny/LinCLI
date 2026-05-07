@@ -107,6 +107,13 @@ class CsvWriter:
             self.writer.writerow(data_dict)
             self.file.flush()
 
+    def reset(self):
+        with self.lock:
+            self.file.seek(0)
+            self.file.truncate()
+            self.writer = None
+            self.header_written = False
+
     def close(self):
         self.file.close()
 
@@ -151,7 +158,31 @@ class LivePlotter:
         plt.show(block=False)
         plt.pause(0.001)
 
+    def reset(self):
+        with self.lock:
+            self.data.clear()
+            self.lines.clear()
+            if self.fig is not None:
+                try:
+                    plt.close(self.fig)
+                except Exception:
+                    pass
+                self.fig = None
+                self.ax = None
+
     def update(self):
+        # Detect if user closed the plot window and clean up references
+        if self.fig is not None:
+            try:
+                if not plt.fignum_exists(self.fig.number):
+                    self.fig = None
+                    self.ax = None
+                    self.lines.clear()
+            except Exception:
+                self.fig = None
+                self.ax = None
+                self.lines.clear()
+
         if self.fig is None:
             self._init_plot()
 
@@ -242,6 +273,12 @@ class SerialBridge:
             self.ser.close()
 
     def _handle_frame(self, buf):
+        text = buf.strip()
+        if text == "$SCOPE_START":
+            self.csv.reset()
+            if self.plotter:
+                self.plotter.reset()
+            return
         row = DataParser.parse(buf)
         if row:
             self.csv.write(row)
@@ -274,10 +311,7 @@ class SubprocessBridge:
             self.raw_mode = False
 
     def run(self):
-        # Init plotter window before tty raw mode to avoid Tk init issues
-        if self.plotter:
-            self.plotter._init_plot()
-
+        # Plot window is created lazily on first $SCOPE_START or data arrival
         self.setup_tty()
 
         master_fd, slave_fd = pty.openpty()
@@ -351,6 +385,11 @@ class SubprocessBridge:
             buf = buf[idx + 1:]
             text = frame.decode('utf-8', errors='replace').lstrip('\n')
             if not text:
+                continue
+            if text.strip() == "$SCOPE_START":
+                self.csv.reset()
+                if self.plotter:
+                    self.plotter.reset()
                 continue
             row = DataParser.parse(text)
             if row:
