@@ -62,7 +62,7 @@ _EXPORT_INIT_SYMBOL(logo, 10, NULL, pr_logo);
 
 ### 📌 测试用例 `tests/commands/test_init_d.c`
 
-项目中提供了专门的初始化优先级排序测试用例。打开 `tests/commands/test_init_d.c` 中的开关宏 `INIT_D_TEST_EN`（设为 `1`）后编译运行，可直观验证优先级排序效果：
+项目中提供了专门的初始化优先级排序测试用例。体验前请确保根目录 `CMakeLists.txt` 中 `LINCLI_BUILD_TEST_COMMANDS=ON`，然后在 `tests/commands/test_init_d.c` 中打开开关宏 `INIT_D_TEST_EN`（设为 `1`），执行 `make clean && make` 后运行，即可直观验证优先级排序效果：
 
 ```c
 #define INIT_D_TEST_EN 1

@@ -6,8 +6,6 @@ LinCLI 不仅是一个命令行框架，还提供了一套**零配置上上位�
 
 > 🚀 **核心价值**：一行命令启动，零配置上上位机，数据自动落盘。`scope` 只是示例，协议才是能力。
 
-> 🚀 **核心价值**：一行命令启动，零配置上上位机，数据自动落盘。
-
 ---
 
 ## 📡 能做什么
@@ -38,11 +36,26 @@ sudo apt update && sudo apt install python3-serial python3-matplotlib -y
 
 这是最推荐的入门方式，无需任何硬件。
 
-### 1️⃣ 编译并启动桥接脚本
+### 0️⃣ 启用测试命令编译
+
+`scope` 命令位于 `tests/commands/` 目录下，默认**不参与编译**。你需要先打开根目录 `CMakeLists.txt` 开头的测试开关：
+
+```cmake
+option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
+```
+
+确保该选项为 `ON` 后重新编译：
 
 ```bash
 cd LinCLI
 make
+```
+
+> 📝 如果你之前已经编译过但开关是 `OFF`，修改后必须执行 `make clean && make`，否则测试命令不会链接进可执行文件。
+
+### 1️⃣ 启动桥接脚本
+
+```bash
 python3 tools/lincli_csv_bridge.py --exec ./build/bin/a.out output.csv --plot
 ```
 
