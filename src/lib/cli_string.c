@@ -54,14 +54,22 @@ int cli_strcmp(const char *s1, const char *s2)
 char *cli_strcpy(char *dst, const char *src)
 {
 	char *d = dst;
-	while ((*d++ = *src++)){}
+	while (*src) {
+		*d++ = *src++;
+	}
+	*d = '\0';
 	return dst;
 }
 
 char *cli_strncpy(char *dst, const char *src, size_t n)
 {
 	char *d = dst;
-	while (n && (*d++ = *src++)){n--;}
+	while (n && *src) {
+		*d++ = *src++;
+		n--;
+	}
+	if (n)
+		*d++ = *src;
 	while (n--)
 		*d++ = '\0';
 	return dst;
@@ -72,7 +80,10 @@ char *cli_strcat(char *dst, const char *src)
 	char *d = dst;
 	while (*d)
 		d++;
-	while ((*d++ = *src++)){}
+	while (*src) {
+		*d++ = *src++;
+	}
+	*d = '\0';
 	return dst;
 }
 
