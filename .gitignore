@@ -92,3 +92,7 @@ Objects/*.d
 tools/__pycache__/lincli_csv_bridge.cpython-313.pyc
 scope_data.csv
 output.csv
+
+# Kconfig generated files
+.config
+.config.old

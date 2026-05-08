@@ -11,6 +11,15 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
+#ifdef CLI_KCONFIG_ENABLED
+/* 由 Kconfig / menuconfig 生成的配置头文件 */
+#include "cli_kconfig.h"
+#else
+/* ----------------------------------------------------------
+ * 以下宏为默认值，仅在未使用 Kconfig 时生效。
+ * 若使用 menuconfig，这些值会被 cli_kconfig.h 覆盖。
+ * ---------------------------------------------------------- */
+
 /*
  * 是否编译 tests/commands/ 下的演示命令。
  * 在 CMake 构建中，当 LINCLI_BUILD_TESTS=ON 时，该宏会自动被定义为 1，
@@ -63,18 +72,21 @@
   报错显示命令参数缺少字节，增加这个宏 */
 #define CLI_CMD_BUF_SIZE 128
 
-/* 版本号 */
+/* 内存池配置 */
+#define CLI_MPOOL_COUNT 6
+#define CLI_MPOOL_SIZE CLI_CMD_BUF_SIZE
+
+#endif /* CLI_KCONFIG_ENABLED */
+
+/* ==========================================================
+ * 以下宏与 Kconfig 无关，始终保留。
+ * ========================================================== */
 #define CLI_VERSION_MAJOR 1
 #define CLI_VERSION_MINOR 12
 #define CLI_VERSION_PATCH 0
-
-/* 内存池配置 */
-#define CLI_MPOOL_COUNT 6
-
-#define CLI_MPOOL_SIZE CLI_CMD_BUF_SIZE
 
 #if CLI_MPOOL_COUNT > 32
 #error "CLI_MPOOL_COUNT must not exceed 32"
 #endif
 
-#endif
+#endif /* _CLI_CONFIG_H_ */

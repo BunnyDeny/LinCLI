@@ -1,0 +1,4 @@
+mainmenu "LinCLI Configuration"
+
+# 引入 src 子目录的 Kconfig
+source "src/Kconfig"

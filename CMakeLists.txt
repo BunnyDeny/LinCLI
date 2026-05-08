@@ -12,6 +12,32 @@ option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, mo
 option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode (prints tick count every 50 loops)" OFF)
 
 # ============================================================
+# Kconfig integration
+# ============================================================
+find_program(PYTHON3_EXECUTABLE python3)
+set(KCONFIG_DOT_CONFIG "${CMAKE_SOURCE_DIR}/.config")
+set(KCONFIG_HEADER_DIR "${CMAKE_BINARY_DIR}/include")
+set(KCONFIG_HEADER "${KCONFIG_HEADER_DIR}/cli_kconfig.h")
+
+if(PYTHON3_EXECUTABLE AND EXISTS ${KCONFIG_DOT_CONFIG})
+    message(STATUS "Found .config, generating cli_kconfig.h")
+    execute_process(
+        COMMAND ${PYTHON3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/config_to_header.py
+                ${KCONFIG_DOT_CONFIG} ${KCONFIG_HEADER}
+        RESULT_VARIABLE KCONFIG_GEN_RESULT
+    )
+    if(NOT KCONFIG_GEN_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to generate cli_kconfig.h from .config")
+    endif()
+    add_compile_definitions(CLI_KCONFIG_ENABLED)
+    include_directories(${KCONFIG_HEADER_DIR})
+elseif(NOT PYTHON3_EXECUTABLE)
+    message(WARNING "python3 not found, Kconfig support disabled")
+else()
+    message(STATUS "No .config found, using default cli_config.h values")
+endif()
+
+# ============================================================
 # LinCLI 框架库（OBJECT + INTERFACE）
 # ============================================================
 add_subdirectory(src)

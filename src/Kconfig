@@ -1,0 +1,7 @@
+menu "LinCLI Core"
+
+source "src/cli/Kconfig"
+source "src/lib/Kconfig"
+source "src/init/Kconfig"
+
+endmenu
