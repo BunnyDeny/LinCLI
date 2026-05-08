@@ -31,35 +31,45 @@ if(NOT KCONFIG_GEN_RESULT EQUAL 0)
     message(FATAL_ERROR "Failed to generate cli_kconfig.h from .config")
 endif()
 include_directories(${KCONFIG_HEADER_DIR})
-
-# 让 CMake 在构建时监控 .config 的变化，如有改动则自动重新运行配置阶段
 set_property(DIRECTORY PROPERTY CMAKE_CONFIGURE_DEPENDS ${KCONFIG_DOT_CONFIG})
 
 # ============================================================
-# LinCLI 框架库（OBJECT + INTERFACE）
-# ============================================================
-add_subdirectory(src)
-
-# ============================================================
-# PC 端演示可执行文件
+# Global settings
 # ============================================================
 set(OUTPUT_NAME "a.out")
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/default.ld")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cli.ld ${CMAKE_BINARY_DIR}/cli.ld COPYONLY)
 
+# ============================================================
+# Submodules
+# ============================================================
+set(SUBMODULES src tests)
+
+foreach(submod ${SUBMODULES})
+    add_subdirectory(${submod})
+    list(APPEND OBJECT_FILES $<TARGET_OBJECTS:${submod}>)
+endforeach()
+
+# ============================================================
+# Main executable
+# ============================================================
 add_executable(${OUTPUT_NAME}
     examples/pc_linux/main.c
+    ${OBJECT_FILES}
 )
-target_link_libraries(${OUTPUT_NAME} PRIVATE lincli)
+target_include_directories(${OUTPUT_NAME} PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/cli
+    ${CMAKE_SOURCE_DIR}/src/lib
+    ${CMAKE_SOURCE_DIR}/src/init
+)
 set_target_properties(${OUTPUT_NAME} PROPERTIES
     LINK_FLAGS "-T ${LINKER_SCRIPT}"
 )
 
 # ============================================================
-# 测试
+# CTest
 # ============================================================
-add_subdirectory(tests)
 enable_testing()
 add_test(NAME unit_tests COMMAND unit_tests)
-target_link_libraries(${OUTPUT_NAME} PRIVATE tests_commands)
