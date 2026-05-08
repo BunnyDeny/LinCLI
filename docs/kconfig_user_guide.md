@@ -227,7 +227,7 @@ CONFIG_HISTORY_MAX=10
 `make defconfig` 支持通过 `DEFCONFIG` 参数指定任意配置文件，它会将其**展开为一份完整的 `.config`**（缺失项自动填默认值）：
 
 ```bash
-# 方式 A：直接 make xxx_defconfig，自动去 configs/ 目录查找（支持 <tab> 补全）
+# 方式 A：直接 make xxx_defconfig，自动去 configs/ 目录查找
 make my_board_defconfig
 
 # 方式 B：显式指定路径（任意位置）
