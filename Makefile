@@ -16,8 +16,11 @@ oldconfig:
 	@python3 tools/lincli_oldconfig.py
 
 defconfig:
-	@cp configs/lincli_defconfig .config
-	@echo "Generated .config from configs/lincli_defconfig"
+	@if [ -n "$(DEFCONFIG)" ]; then \
+		python3 tools/lincli_load_defconfig.py $(DEFCONFIG); \
+	else \
+		python3 tools/lincli_load_defconfig.py configs/lincli_defconfig; \
+	fi
 
 savedefconfig:
 	@python3 -c "from kconfiglib import Kconfig; k=Kconfig('Kconfig'); k.load_config('.config'); k.write_min_config('defconfig')"

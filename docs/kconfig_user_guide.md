@@ -187,18 +187,27 @@ CMake 会自动检测 `.config` 的变化，重新生成 `cli_kconfig.h`，并�
 
 除了 `make menuconfig`，还有三个命令在日常开发中非常实用。下面用生活化的例子讲清楚。
 
-### `make defconfig` — 恢复出厂设置
+### `make defconfig` — 加载默认配置（或自定义差异配置）
 
-把仓库预置的 `configs/lincli_defconfig` 复制为 `.config`，相当于"恢复出厂设置"。
+**不带参数**：从仓库预置的 `configs/lincli_defconfig` 加载完整默认配置。
 
 ```bash
 make defconfig
 make
 ```
 
+**带参数**：从任意差异配置（如 `make savedefconfig` 生成的 `defconfig`）一键恢复。这会把差异配置展开为一份**完整的** `.config`（缺失项自动填默认值）。
+
+```bash
+# 假设你之前保存了一份差异配置 my_defconfig
+make defconfig DEFCONFIG=my_defconfig
+make
+```
+
 **什么时候用？**
 - 你的 `.config` 被改乱了，想一键回到仓库默认状态
 - 想确认"默认配置下编译是否通过"
+- 换了台机器，想一键恢复之前保存的个性化配置
 
 > 💡 注意：`make defconfig` 不会删除 `build/` 目录，建议之后执行 `make`（CMake 会自动刷新）。如果编译出错再考虑 `make clean && make`。
 
@@ -260,7 +269,8 @@ CONFIG_HISTORY_MAX=10
 
 **什么时候用？**
 - 保存自己的个性化配置，方便备份或分享
-- 给不同硬件平台做 `pc_defconfig`、`stm32_defconfig`（Linux 内核就是这么玩的）
+- 给不同硬件平台做 `configs/pc_defconfig`、`configs/stm32_defconfig`
+- 换机器时一键恢复：`make savedefconfig` 生成 `defconfig`，复制到新机器，`make defconfig DEFCONFIG=defconfig` 一键加载
 - 看看到底改了哪些配置，心里有个数
 
 ---
