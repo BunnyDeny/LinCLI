@@ -34,5 +34,8 @@ mrproper: clean
 	@rm -f .config .config.old defconfig
 
 sync-kconfig:
-	@python3 tools/config_to_header.py configs/lincli_defconfig include/cli_kconfig.h
-	@echo "Synced include/cli_kconfig.h from configs/lincli_defconfig"
+	@python3 tools/config_to_header.py configs/lincli_defconfig examples/stm32_g431/cli_kconfig.h
+	@python3 tools/config_to_header.py configs/lincli_defconfig examples/stm32f103_keil/cli_kconfig.h
+	@python3 tools/config_to_header.py configs/lincli_defconfig examples/pc_linux/cli_kconfig.h
+	@python3 tools/config_to_header.py configs/lincli_defconfig examples/external_demo/cli_kconfig.h
+	@echo "Synced cli_kconfig.h to all example projects from configs/lincli_defconfig"
