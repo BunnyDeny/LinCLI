@@ -299,15 +299,15 @@ LinCLI 使用 Kconfig 管理所有编译期配置。对于 **PC 端 CMake 构建
 
 但对于 **MCU 裸编译工程**（Keil MDK / GCC Makefile），情况不同：
 
-- MCU 工程通常直接引用仓库根目录的 `include/cli_kconfig.h`（一份预置的默认配置快照）
+- MCU 工程（如 `examples/stm32_g431/`）直接引用工程目录下的 `cli_kconfig.h`（一份预置的默认配置快照）
 - 你在 PC 端通过 `make menuconfig` 修改配置后，生成的是 `build/include/cli_kconfig.h`
 - **这两个文件不会自动同步**
 
 因此，如果你在 PC 端用 Kconfig 调整了配置（比如关闭某些 Demo 命令以节省 Flash），必须**手动**将最新的配置头文件同步到 MCU 工程中：
 
 ```bash
-# 方式 1：直接复制 CMake 生成的头文件（推荐，如果你已用 menuconfig 调好配置）
-cp build/include/cli_kconfig.h include/cli_kconfig.h
+# 方式 1：直接复制 CMake 生成的头文件到对应工程目录（推荐）
+cp build/include/cli_kconfig.h examples/stm32_g431/cli_kconfig.h
 
 # 方式 2：使用仓库提供的快捷命令（一键同步到所有示例工程）
 make sync-kconfig

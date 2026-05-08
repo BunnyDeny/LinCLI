@@ -379,7 +379,7 @@ CMake 只管"编译哪些源文件、链接哪些库"，所有条件编译和数
 >
 > Kconfig 的最终产物只有一件——`build/include/cli_kconfig.h`。对于 **PC 端 CMake 构建**，这个头文件会被自动包含，你无需关心。
 >
-> 但对于 **MCU 裸编译工程**（Keil MDK / GCC Makefile），你需要**手动**将 `build/include/cli_kconfig.h` 的内容复制到工程使用的 `include/cli_kconfig.h` 中，否则 MCU 工程仍然使用的是仓库预置的默认配置快照，而不是你通过 `make menuconfig` 调整后的配置。
+> 但对于 **MCU 裸编译工程**（Keil MDK / GCC Makefile），你需要**手动**将 `build/include/cli_kconfig.h` 的内容复制到对应示例工程目录下的 `cli_kconfig.h` 中（如 `examples/stm32_g431/cli_kconfig.h`），否则 MCU 工程仍然使用的是预置的默认配置快照，而不是你通过 `make menuconfig` 调整后的配置。
 >
 > ⚡ **快捷命令**：`make sync-kconfig`
 >
