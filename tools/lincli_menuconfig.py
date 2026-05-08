@@ -19,6 +19,18 @@ except ImportError as e:
 
 
 def main():
+    # 使用 Linux 内核风格的蓝色背景 + 白色高亮主题
+    # 基于 aquatic，把列表改为蓝底白字，选中项改为白底黑字
+    os.environ["MENUCONFIG_STYLE"] = (
+        "aquatic "
+        "list=fg:white,bg:blue "
+        "selection=fg:black,bg:white,bold "
+        "inv-list=fg:white,bg:blue "
+        "inv-selection=fg:black,bg:white "
+        "show-help=fg:white,bg:blue "
+        "text=fg:white,bg:blue"
+    )
+
     # 从项目根目录的 Kconfig 开始解析
     kconfig = Kconfig("Kconfig")
 
