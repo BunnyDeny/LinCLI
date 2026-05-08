@@ -26,9 +26,25 @@ CONFIG_CLI_MPOOL_SIZE=128
 # end of Library & Memory
 
 #
-# Init & Test
+# Init & Debug
 #
-# CONFIG_CLI_ENABLE_INLINE_TEST is not set
-CONFIG_CLI_ENABLE_TESTS=y
-# end of Init & Test
+# CONFIG_CLI_ENABLE_SCHEDULER_TICK_PRINT is not set
+# end of Init & Debug
 # end of LinCLI Core
+
+#
+# Tests & Demos
+#
+
+#
+# Unit Tests
+#
+CONFIG_CLI_ENABLE_UNIT_TESTS=y
+# end of Unit Tests
+
+#
+# Demo Commands
+#
+# CONFIG_CLI_ENABLE_DEMO_COMMANDS is not set
+# end of Demo Commands
+# end of Tests & Demos

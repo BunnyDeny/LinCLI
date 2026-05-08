@@ -1,0 +1,6 @@
+menu "Tests & Demos"
+
+source "tests/unit/Kconfig"
+source "tests/commands/Kconfig"
+
+endmenu

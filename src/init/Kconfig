@@ -1,17 +1,10 @@
-menu "Init & Test"
+menu "Init & Debug"
 
-config CLI_ENABLE_INLINE_TEST
-    bool "Enable scheduler inline test mode"
+config CLI_ENABLE_SCHEDULER_TICK_PRINT
+    bool "Enable scheduler tick print (debug)"
     default n
     help
       Prints tick count every 50 scheduler loops.
-      Equivalent to old CMake -DLINCLI_ENABLE_INLINE_TEST=ON.
-
-config CLI_ENABLE_TESTS
-    bool "Enable test/demo commands"
-    default y
-    help
-      Build interactive test commands (led, log, motor, etc.).
-      Equivalent to old CMake -DLINCLI_BUILD_TEST_COMMANDS=ON.
+      Useful for rough verification that the scheduler is still running.
 
 endmenu

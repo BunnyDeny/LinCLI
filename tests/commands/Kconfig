@@ -1,0 +1,11 @@
+menu "Demo Commands"
+
+config CLI_ENABLE_DEMO_COMMANDS
+    bool "Enable interactive demo commands (tb, ti, led, etc.)"
+    default n
+    help
+      Register interactive demo commands (led, log, motor, bool test, etc.)
+      into the CLI. The source files are always compiled, but the commands
+      are only registered when this option is enabled.
+
+endmenu

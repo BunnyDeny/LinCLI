@@ -36,7 +36,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_COMMANDS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -58,4 +58,4 @@ CLI_COMMAND(ts, "ts", "Test STRING option",
 	    OPTION('m', "msg", STRING, "Message text", struct string_args, msg,
 		   0, NULL, NULL, false),
 	    END_OPTIONS);
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_COMMANDS */

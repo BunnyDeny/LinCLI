@@ -555,7 +555,7 @@ int scheduler_is_in_get_char(void)
 		scheduler_eng.from->state_id == STATE_ID_scheduler_get_char);
 }
 
-#if INLINE_TEST_EN
+#if CLI_ENABLE_SCHEDULER_TICK_PRINT
 int cnt;
 #endif
 /* Test function */
@@ -570,7 +570,7 @@ int scheduler_task(void)
 	if (cli_out_sync()) {
 		return -2;
 	}
-#if INLINE_TEST_EN
+#if CLI_ENABLE_SCHEDULER_TICK_PRINT
 	cnt++;
 	if ((cnt % 50) == 0)
 		pr_info("test : %7d\r\n", cnt);

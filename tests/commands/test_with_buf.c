@@ -42,7 +42,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_COMMANDS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -79,4 +79,4 @@ CLI_COMMAND_WITH_BUF(tw, "tw", "Test CLI_COMMAND_WITH_BUF with INT_ARRAY",
 			    struct tw_args, nums, 16, NULL, NULL, false),
 		     END_OPTIONS);
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_COMMANDS */

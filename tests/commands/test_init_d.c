@@ -13,7 +13,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_COMMANDS
 #include "init_d.h"
 #include "cli_io.h"
 
@@ -51,4 +51,4 @@ _EXPORT_INIT_SYMBOL(test_init_10, 10, NULL, test_init_10);
 
 #endif
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_COMMANDS */
