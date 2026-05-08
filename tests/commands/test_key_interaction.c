@@ -43,7 +43,7 @@
  */
 #include "cli_config.h"
 
-#if CLI_ENABLE_DEMO_COMMANDS
+#if CLI_ENABLE_DEMO_KEY_INTERACTION
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -108,4 +108,4 @@ CLI_COMMAND_ASYNC(key, "key", "Test key input interaction (async)",
 		  (struct key_args *)0,
 		  END_OPTIONS);
 
-#endif /* CLI_ENABLE_DEMO_COMMANDS */
+#endif /* CLI_ENABLE_DEMO_KEY_INTERACTION */

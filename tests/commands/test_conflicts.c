@@ -35,7 +35,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_DEMO_COMMANDS
+#if CLI_ENABLE_DEMO_CONFLICTS
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -69,4 +69,4 @@ CLI_COMMAND(tcf, "tcf", "Test INT_ARRAY option with conflicts",
 		   nums, 8, NULL, "verbose", false),
 	    END_OPTIONS);
 
-#endif /* CLI_ENABLE_DEMO_COMMANDS */
+#endif /* CLI_ENABLE_DEMO_CONFLICTS */

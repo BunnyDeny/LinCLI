@@ -36,7 +36,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_DEMO_COMMANDS
+#if CLI_ENABLE_DEMO_CALLBACK
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -60,4 +60,4 @@ CLI_COMMAND(tc, "tc", "Test CALLBACK option",
 		   raw, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
-#endif /* CLI_ENABLE_DEMO_COMMANDS */
+#endif /* CLI_ENABLE_DEMO_CALLBACK */

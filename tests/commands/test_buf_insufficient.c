@@ -45,7 +45,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_DEMO_COMMANDS
+#if CLI_ENABLE_DEMO_BUF_INSUFFICIENT
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -96,4 +96,4 @@ CLI_COMMAND_WITH_BUF(big2, "big2", "Test insufficient private buffer",
 			    NULL, NULL, false),
 		     END_OPTIONS);
 
-#endif /* CLI_ENABLE_DEMO_COMMANDS */
+#endif /* CLI_ENABLE_DEMO_BUF_INSUFFICIENT */

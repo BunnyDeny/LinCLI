@@ -40,7 +40,7 @@
  */
 #include "cli_config.h"
 
-#if CLI_ENABLE_DEMO_COMMANDS
+#if CLI_ENABLE_DEMO_DOUBLE
 #include "cmd_dispose.h"
 #include "cli_io.h"
 #include "cli_float.h"
@@ -66,4 +66,4 @@ CLI_COMMAND(td, "td", "Test FLOAT option",
 		   factor, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
-#endif /* CLI_ENABLE_DEMO_COMMANDS */
+#endif /* CLI_ENABLE_DEMO_DOUBLE */

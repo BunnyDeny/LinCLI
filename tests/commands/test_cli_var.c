@@ -1,11 +1,11 @@
 /*
- * LinCLI - Variable export demo for CLI_ENABLE_DEMO_COMMANDS.
+ * LinCLI - Variable export demo for CLI_ENABLE_DEMO_CLI_VAR.
  * Copyright (C) 2026  bunnydeny <guoy55448@gmail.com>
  */
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_DEMO_COMMANDS && CLI_ENABLE_VAR
+#if CLI_ENABLE_DEMO_CLI_VAR && CLI_ENABLE_VAR
 #include "cli_var.h"
 #include "cli_io.h"
 
@@ -109,4 +109,4 @@ CLI_VAR_TYPE(pid, pid_from_str, pid_to_str);
 static pid_params_t g_pid = { 2000, 100, 50 };
 CLI_VAR_CUSTOM(g_pid, "g_pid", "pid", "Motor PID parameters");
 
-#endif /* CLI_ENABLE_DEMO_COMMANDS && CLI_ENABLE_VAR */
+#endif /* CLI_ENABLE_DEMO_CLI_VAR && CLI_ENABLE_VAR */
