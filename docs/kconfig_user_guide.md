@@ -183,7 +183,109 @@ CMake 会自动检测 `.config` 的变化，重新生成 `cli_kconfig.h`，并�
 
 ---
 
-## 6. 直接编辑 .config（不推荐）
+## 6. 配置管理三件套：`defconfig` / `oldconfig` / `savedefconfig`
+
+除了 `make menuconfig`，还有三个命令在日常开发中非常实用。下面用生活化的例子讲清楚。
+
+### `make defconfig` — 恢复出厂设置
+
+把仓库预置的 `default.config` 复制为 `.config`，相当于"恢复出厂设置"。
+
+```bash
+make defconfig
+make
+```
+
+**什么时候用？**
+- 你的 `.config` 被改乱了，想一键回到仓库默认状态
+- 想确认"默认配置下编译是否通过"
+
+> 💡 注意：`make defconfig` 不会删除 `build/` 目录，建议之后执行 `make`（CMake 会自动刷新）。如果编译出错再考虑 `make clean && make`。
+
+---
+
+### `make oldconfig` — 给旧配置"打补丁"
+
+**场景**：你昨天配好了 `.config`，今天 `git pull` 拉到了新代码，作者新增了一个 Kconfig 配置项（比如 `CLI_ENABLE_FOO`）。
+
+**问题**：旧的 `.config` 里没有这个新项，直接编译可能会出问题。
+
+**`make oldconfig` 做的事**：
+
+```bash
+make oldconfig
+# 输出：
+# Loaded existing config: .config
+# Updated .config with defaults for any new symbols
+```
+
+它把新旧合并：
+- 你原来配好的值（比如 `HISTORY_MAX=10`）**原封不动保留**
+- 新增的配置项自动填上**默认值**
+
+**说白了**：就是给旧的 `.config` "打补丁"，补上新出的配置项，但不会问你问题（有默认值就直接用）。
+
+**什么时候用？**
+- `git pull` 后发现代码里多了新的 Kconfig 选项
+- 从别的分支复制了一份 `.config` 过来，想同步到当前 Kconfig 树
+- `.config` 手改乱了，想让它自动对齐当前 Kconfig 的合法状态
+
+---
+
+### `make savedefconfig` — 生成"最小差异配置"
+
+**场景**：你调了 20 个配置项，最终 `.config` 有 50 行。但你其实只改了 3 个地方（比如关掉了高级补全、把历史记录改成了 10）。
+
+**问题**：你想把这份"个性化配置"保存下来发给同事，但直接发 50 行的 `.config` 太啰嗦了。
+
+**`make savedefconfig` 做的事**：
+
+```bash
+make savedefconfig
+cat defconfig
+```
+
+输出可能只有 2 行：
+
+```text
+CONFIG_HISTORY_MAX=10
+# CONFIG_CLI_ENABLE_ADVANCED_COMPLETION is not set
+```
+
+**发现没有？只有 2 行！**
+
+它把 50 行的 `.config` 压缩成了 **只包含与默认值不同的项**。因为其他所有配置都和 `default.config` 一样，没必要重复写。
+
+**说白了**：`savedefconfig` 就是生成一份"最小差异配置"，像 `git diff` 一样只记录你改了什么。
+
+**什么时候用？**
+- 保存自己的个性化配置，方便备份或分享
+- 给不同硬件平台做 `pc_defconfig`、`stm32_defconfig`（Linux 内核就是这么玩的）
+- 看看到底改了哪些配置，心里有个数
+
+---
+
+### 一张图看懂
+
+```text
+default.config          .config（你的个性化配置）
+     │                        │
+     │    make oldconfig      │  ← 新代码新增了 Kconfig 项
+     │        ──────►         │
+     │    补上新项默认值       │
+     │                        │
+     │   make savedefconfig   │
+     │        ──────►         │
+     │                        ▼
+     │                   defconfig（只有差异，2 行）
+     │
+     ▼
+  仓库预置的"出厂设置"
+```
+
+---
+
+## 7. 直接编辑 .config（不推荐）
 
 `.config` 是纯文本，格式非常简单：
 
@@ -215,7 +317,7 @@ make
 
 ```bash
 make defconfig
-make clean && make
+make
 ```
 
 ---
@@ -254,7 +356,7 @@ sudo apt install python3-kconfiglib
 
 ```bash
 sed -i 's/CONFIG_HISTORY_MAX=4/CONFIG_HISTORY_MAX=10/' .config
-make clean && make
+make
 ```
 
 ### Q4: `default.config` 和 `.config` 有什么区别？
@@ -267,7 +369,7 @@ make clean && make
 在 `src/cli/Kconfig`（或 `src/lib/Kconfig`、`src/init/Kconfig`，取决于配置项属于哪个模块）中添加新的 `config` 条目，然后运行 `make menuconfig` 即可在菜单中看到它。修改后需要更新 `default.config`：
 
 ```bash
-rm .config && make clean && make   # 让 CMake 重新生成默认 .config
+rm .config && make   # 让 CMake 重新生成默认 .config
 # 然后把新的 .config 内容复制回 default.config
 cp .config default.config
 ```
