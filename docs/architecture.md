@@ -125,7 +125,7 @@ target_link_libraries(my_app PRIVATE
 
 LinCLI 的核心理念是：**命令注册应当像定义变量一样简单**。你不需要在 `main()` 里写任何初始化代码，也不需要调用注册函数，只要在 C 文件里用 `CLI_COMMAND` 宏写一次，链接器就会自动把它收集到系统的命令表中。
 
-下面以 `tests/commands/test_conflicts.c` 为例（需先在 `CMakeLists.txt` 中开启 `LINCLI_BUILD_TEST_COMMANDS=ON` 并重新编译才能体验），这是一个包含**互斥选项**、**整数数组**和**依赖关系**的相对复杂的命令：
+下面以 `tests/commands/test_conflicts.c` 为例（需先在 `make menuconfig` 中开启 `CLI_ENABLE_DEMO_CONFLICTS` 并重新编译才能体验），这是一个包含**互斥选项**、**整数数组**和**依赖关系**的相对复杂的命令：
 
 ```c
 #include "cmd_dispose.h"

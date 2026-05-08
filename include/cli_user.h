@@ -51,7 +51,8 @@ extern const cli_user_t *const _cli_users_end[];
  *  命令列表辅助宏，复刻 CANDIDATES 实现
  * ============================================================ */
 
-#define USER_CMDS(...) ((char *[]){ __VA_ARGS__ })
+#define USER_CMDS(...) ((char *[]){ __VA_ARGS__, NULL })
+#define USER_CMDS_NONE ((char *[]){NULL})
 
 /* ============================================================
  *  注册宏：定义一个 cli_user_t 并将其指针放入 .cli_users 段
@@ -65,13 +66,13 @@ extern const cli_user_t *const _cli_users_end[];
  *   _cmds        - 命令列表指针（通过 USER_CMDS(...) 宏定义）
  *
  * 说明：
- *   - Root 用户同样需要通过 USER_CMDS() 传入命令列表占位，
+ *   - Root 用户同样需要通过 USER_CMDS_NONE 传入空命令列表占位，
  *     框架在遍历时根据 role 判断，root 自动视为持有所有命令。
- *   - cmd_count 由 sizeof(_cmds) / sizeof(char *) 编译期自动推导，
- *     与 CLI_CANDIDATE 的 argc 计算方式完全一致。
+ *   - cmd_count 由 sizeof(_cmds) / sizeof(char *) - 1 编译期自动推导
+ *     （末尾 NULL 哨兵不计入），与 CLI_CANDIDATE 的 argc 计算方式完全一致。
  *
  * 示例：
- *   CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
+ *   CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS_NONE);
  *   CLI_USER(guest, "guest", "guest", CLI_USER_ROLE_NORMAL,
  *            USER_CMDS("help", "version"));
  */
@@ -82,7 +83,7 @@ extern const cli_user_t *const _cli_users_end[];
 		.username = _username,                                         \
 		.password = _password,                                         \
 		.role = _role,                                                 \
-		.cmd_count = (int)((sizeof(_cmds) / sizeof(char *))),          \
+		.cmd_count = (int)((sizeof(_cmds) / sizeof(char *))) - 1,          \
 		.cmds = _cmds,                                                 \
 	};                                                               \
 	static const cli_user_t *const _cli_user_ptr_##name                \

@@ -1,12 +1,15 @@
 # 🎯 变量系统
 
-> 📝 **使用前请确认宏开关**
+> 📝 **使用前请确认配置**
 >
-> 变量系统默认开启，但使用前请在 `include/cli_config.h` 中确认：
-> ```c
-> #define CLI_ENABLE_VAR 1
+> 变量系统默认开启，但使用前请通过 Kconfig 确认：
+> ```bash
+> make menuconfig
+> # 进入 LinCLI Core → CLI Features → Enable variable system
 > ```
 > 关闭后可节省约 **~2.3 KB** Flash。
+>
+> > 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](kconfig_user_guide.md)。
 
 LinCLI 内建一套变量导出系统，允许你把代码中的全局变量注册为 CLI 可读写对象。用户无需重新编译，即可在运行时查看和修改变量值。这对于现场调试、参数整定、状态监控等场景极其有用。
 

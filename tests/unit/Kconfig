@@ -1,0 +1,6 @@
+config CLI_ENABLE_UNIT_TESTS
+    bool "Enable Unity unit tests"
+    default y
+    help
+      Build the Unity unit test executable (unit_tests).
+      The tests are run automatically during 'make build' via ctest.

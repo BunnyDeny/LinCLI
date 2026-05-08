@@ -636,6 +636,7 @@ int cli_cmd_line_task(char ch)
 	while (status != cmd_line_exit) {
 		status = stateEngineRun(&cmd_line_mec, &ch);
 		if (status < 0) {
+			state_switch(&cmd_line_mec, STATE_ID_cmd_line_start);
 			return status;
 		}
 		if (status == cmd_line_enter_press) {

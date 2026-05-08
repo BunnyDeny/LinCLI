@@ -1,12 +1,15 @@
 # 🛡️ 用户管理系统
 
-> 📝 **使用前请确认宏开关**
+> 📝 **使用前请确认配置**
 >
-> 用户管理系统默认开启，但使用前请在 `include/cli_config.h` 中确认：
-> ```c
-> #define CLI_ENABLE_USER 1
+> 用户管理系统默认开启，但使用前请通过 Kconfig 确认：
+> ```bash
+> make menuconfig
+> # 进入 LinCLI Core → CLI Features → Enable user system
 > ```
 > 关闭后可节省约 **~1.2 KB** Flash。
+>
+> > 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](kconfig_user_guide.md)。
 
 LinCLI 内建一套轻量级用户管理系统 🎯，用于在**产品化阶段**对不同角色进行命令级权限控制 🔐。它并非为多用户并发会话设计，而是为**同一套固件在不同人员手中呈现不同的 CLI 视图** 👀 提供安全收口 ✨。
 
@@ -91,7 +94,7 @@ typedef struct cli_user {
 #include "cli_user.h" /* 🛡️ 用户管理头文件 */
 
 /* 👑 root 用户：持有所有命令 */
-CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
+CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS_NONE);
 
 /* 👤 普通用户：仅持有 help 和 _echo */
 CLI_USER(lin,   "lin",   "lin123",   CLI_USER_ROLE_NORMAL,
@@ -103,7 +106,7 @@ CLI_USER(lin,   "lin",   "lin123",   CLI_USER_ROLE_NORMAL,
 - `username` / `password` 👤🔑：登录凭证
 - `role` 🎭：`CLI_USER_ROLE_ROOT` 或 `CLI_USER_ROLE_NORMAL`
 - `cmds` 📋：通过 `USER_CMDS(...)` 宏定义的命令名列表
-  - 👑 Root 用户传 `USER_CMDS()`（空占位，框架自动视为持有所有命令 ⭐）
+  - 👑 Root 用户传 `USER_CMDS_NONE`（空占位，框架自动视为持有所有命令 ⭐）
   - 👤 Normal 用户必须显式列出可使用的命令名 🔐
 
 > 📝 **命令名必须与 `CLI_COMMAND` 中注册的 `cmd_str` 完全一致** ✅。例如 `_echo` 命令在注册时写的是 `CLI_COMMAND(_echo, "_echo", ...)`，因此 `USER_CMDS` 中也要写 `"_echo"` 🎯。

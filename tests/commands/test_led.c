@@ -36,7 +36,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_LED
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -70,4 +70,4 @@ CLI_COMMAND(led, "led", "Control LED",
 		   brightness, 0, "on", NULL, false),
 	    END_OPTIONS);
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_LED */

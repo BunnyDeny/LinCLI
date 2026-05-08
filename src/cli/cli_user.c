@@ -21,7 +21,7 @@
  *  注册测试用户（验证段收集机制）
  * ============================================================ */
 
-CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
+CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS_NONE);
 CLI_USER(lin, "lin", "lin123", CLI_USER_ROLE_NORMAL,
 	 USER_CMDS("_echo"));
 

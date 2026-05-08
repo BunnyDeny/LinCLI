@@ -10,7 +10,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_SCOPE
 #include "cmd_dispose.h"
 #include "cli_io.h"
 

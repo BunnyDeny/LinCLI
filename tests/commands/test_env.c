@@ -10,7 +10,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS && CLI_ENABLE_ENV
+#if CLI_ENABLE_DEMO_ENV && CLI_ENABLE_ENV
 #include "cmd_dispose.h"
 #include "cli_io.h"
 #include "cli_env.h"
@@ -31,4 +31,4 @@ CLI_ENV(TEST_MIX, "hello-world");
 /* 纯整数名字，应被运行时忽略 */
 CLI_ENV(123, "should_be_ignored");
 
-#endif /* CLI_ENABLE_TESTS && CLI_ENABLE_ENV */
+#endif /* CLI_ENABLE_DEMO_ENV && CLI_ENABLE_ENV */

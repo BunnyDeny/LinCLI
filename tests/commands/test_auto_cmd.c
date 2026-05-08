@@ -12,7 +12,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_AUTO_CMD
 #include "cli_auto_cmd.h"
 
 #define CLI_AUTO_CMDS_TEST_EN 0
@@ -31,4 +31,4 @@ const int cli_auto_cmds_count =
 
 #endif
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_AUTO_CMD */

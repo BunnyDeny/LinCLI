@@ -1,12 +1,15 @@
 # 🎯 环境变量系统
 
-> 📝 **使用前请确认宏开关**
+> 📝 **使用前请确认配置**
 >
-> 环境变量系统默认开启，但使用前请在 `include/cli_config.h` 中确认：
-> ```c
-> #define CLI_ENABLE_ENV 1
+> 环境变量系统默认开启，但使用前请通过 Kconfig 确认：
+> ```bash
+> make menuconfig
+> # 进入 LinCLI Core → CLI Features → Enable environment variables
 > ```
 > 关闭后可节省约 **~1.5 KB** Flash。
+>
+> > 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](kconfig_user_guide.md)。
 
 LinCLI 内建一套**字符串环境变量系统**，允许你在代码中预定义一组字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用它们。环境变量的值可以在运行时通过 `env` 命令动态修改，且替换发生在命令解析之前，因此能无缝享受命令链、`--help` 等后续流程。
 

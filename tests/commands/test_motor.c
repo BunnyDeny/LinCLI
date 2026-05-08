@@ -18,7 +18,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_MOTOR
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -62,4 +62,4 @@ CLI_COMMAND_ASYNC(motor, "motor", "Ramp motor to target RPM",
 			 target_rpm, 0, NULL, NULL, true),
 		  END_OPTIONS);
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_MOTOR */

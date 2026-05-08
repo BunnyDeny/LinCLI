@@ -81,7 +81,7 @@
           </BeforeMake>
           <AfterMake>
             <RunUserProg1>0</RunUserProg1>
-            <RunUserProg2>1</RunUserProg2>
+            <RunUserProg2>0</RunUserProg2>
             <UserProg1Name></UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;../../../cli/Inc;../../../include</IncludePath>
+              <IncludePath>..;../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;..\..\..\include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -361,7 +361,7 @@
             </VariousControls>
           </Aads>
           <LDads>
-            <umfTarg>0</umfTarg>
+            <umfTarg>1</umfTarg>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
             <noStLib>0</noStLib>
@@ -501,12 +501,37 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>LinCLI</GroupName>
+          <GroupName>cli</GroupName>
           <Files>
+            <File>
+              <FileName>cli_candidate.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_candidate.c</FilePath>
+            </File>
             <File>
               <FileName>cli_cmd_line.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\src\cli\cli_cmd_line.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_completion.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_completion.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_edit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_edit.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_env.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_env.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_history.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_history.c</FilePath>
             </File>
             <File>
               <FileName>cli_io.c</FileName>
@@ -517,6 +542,21 @@
               <FileName>cli_logo.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\src\cli\cli_logo.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_parse.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_parse.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_user.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_user.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_var.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\cli\cli_var.c</FilePath>
             </File>
             <File>
               <FileName>cmd_dispose.c</FileName>
@@ -544,9 +584,19 @@
               <FilePath>..\..\..\src\init\section_markers.c</FilePath>
             </File>
             <File>
+              <FileName>cli_atoi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\lib\cli_atoi.c</FilePath>
+            </File>
+            <File>
               <FileName>cli_errno.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\src\lib\cli_errno.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_float.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\lib\cli_float.c</FilePath>
             </File>
             <File>
               <FileName>cli_mpool.c</FileName>
@@ -554,6 +604,15 @@
               <FilePath>..\..\..\src\lib\cli_mpool.c</FilePath>
             </File>
             <File>
+              <FileName>cli_string.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\lib\cli_string.c</FilePath>
+            </File>
+            <File>
+              <FileName>cli_vsnprintf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\lib\cli_vsnprintf.c</FilePath>
+            </File>
             <File>
               <FileName>stateM.c</FileName>
               <FileType>1</FileType>
@@ -585,6 +644,11 @@
               <FilePath>..\..\..\tests\commands\test_callback.c</FilePath>
             </File>
             <File>
+              <FileName>test_cli_var.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\commands\test_cli_var.c</FilePath>
+            </File>
+            <File>
               <FileName>test_conflicts.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\commands\test_conflicts.c</FilePath>
@@ -593,6 +657,11 @@
               <FileName>test_double.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\commands\test_double.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_env.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\commands\test_env.c</FilePath>
             </File>
             <File>
               <FileName>test_init_d.c</FileName>
@@ -615,14 +684,29 @@
               <FilePath>..\..\..\tests\commands\test_key_interaction.c</FilePath>
             </File>
             <File>
+              <FileName>test_led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\commands\test_led.c</FilePath>
+            </File>
+            <File>
               <FileName>test_log.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\commands\test_log.c</FilePath>
             </File>
             <File>
+              <FileName>test_motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\commands\test_motor.c</FilePath>
+            </File>
+            <File>
               <FileName>test_required.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\commands\test_required.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_scope.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\tests\commands\test_scope.c</FilePath>
             </File>
             <File>
               <FileName>test_string.c</FileName>
@@ -633,51 +717,6 @@
               <FileName>test_with_buf.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\tests\commands\test_with_buf.c</FilePath>
-            </File>
-            <File>
-              <FileName>test_led.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\tests\commands\test_led.c</FilePath>
-            </File>
-            <File>
-              <FileName>test_cli_var.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\tests\commands\test_cli_var.c</FilePath>
-            </File>
-            <File>
-              <FileName>test_motor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\tests\commands\test_motor.c</FilePath>
-            </File>
-            <File>
-              <FileName>cli_candidate.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\cli\cli_candidate.c</FilePath>
-            </File>
-            <File>
-              <FileName>cli_completion.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\cli\cli_completion.c</FilePath>
-            </File>
-            <File>
-              <FileName>cli_edit.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\cli\cli_edit.c</FilePath>
-            </File>
-            <File>
-              <FileName>cli_history.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\cli\cli_history.c</FilePath>
-            </File>
-            <File>
-              <FileName>cli_parse.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\cli\cli_parse.c</FilePath>
-            </File>
-            <File>
-              <FileName>cli_var.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\cli\cli_var.c</FilePath>
             </File>
           </Files>
         </Group>

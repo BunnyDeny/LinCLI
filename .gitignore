@@ -89,5 +89,11 @@ Objects/*.d
 *.uvoptx
 *.uvopt
 
-tools/__pycache__/lincli_csv_bridge.cpython-313.pyc
+__pycache__/
+*.pyc
 scope_data.csv
+output.csv
+
+# Kconfig generated files
+.config
+.config.old

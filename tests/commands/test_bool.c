@@ -36,7 +36,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_BOOL
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -60,4 +60,4 @@ CLI_COMMAND(tb, "tb", "Test BOOL option",
 		   verbose, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_BOOL */

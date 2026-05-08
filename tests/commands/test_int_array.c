@@ -38,7 +38,7 @@
 
 #include "cli_config.h"
 
-#if CLI_ENABLE_TESTS
+#if CLI_ENABLE_DEMO_INT_ARRAY
 #include "cmd_dispose.h"
 #include "cli_io.h"
 
@@ -72,4 +72,4 @@ CLI_COMMAND(ta, "ta", "Test INT_ARRAY option with depends",
 		   nums, 8, "verbose", NULL, false),
 	    END_OPTIONS);
 
-#endif /* CLI_ENABLE_TESTS */
+#endif /* CLI_ENABLE_DEMO_INT_ARRAY */

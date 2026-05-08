@@ -1,0 +1,119 @@
+menu "Demo Commands"
+
+config CLI_ENABLE_DEMO_AUTO_CMD
+    bool "Enable auto cmd demo"
+    default n
+    help
+      Register the auto_cmd demo command.
+
+config CLI_ENABLE_DEMO_BOOL
+    bool "Enable bool test demo"
+    default n
+    help
+      Register the bool test demo command.
+
+config CLI_ENABLE_DEMO_BUF_INSUFFICIENT
+    bool "Enable buf insufficient test demo"
+    default n
+    help
+      Register the buf insufficient test demo command.
+
+config CLI_ENABLE_DEMO_CALLBACK
+    bool "Enable callback test demo"
+    default n
+    help
+      Register the callback test demo command.
+
+config CLI_ENABLE_DEMO_CLI_VAR
+    bool "Enable cli var test demo"
+    default n
+    depends on CLI_ENABLE_VAR
+    help
+      Register the cli var test demo command.
+
+config CLI_ENABLE_DEMO_CONFLICTS
+    bool "Enable conflicts test demo"
+    default n
+    help
+      Register the conflicts test demo command.
+
+config CLI_ENABLE_DEMO_DOUBLE
+    bool "Enable double test demo"
+    default n
+    help
+      Register the double test demo command.
+
+config CLI_ENABLE_DEMO_ENV
+    bool "Enable env test demo"
+    default n
+    depends on CLI_ENABLE_ENV
+    help
+      Register the env test demo command.
+
+config CLI_ENABLE_DEMO_INIT_D
+    bool "Enable init_d test demo"
+    default n
+    help
+      Register the init_d test demo command.
+
+config CLI_ENABLE_DEMO_INT
+    bool "Enable int test demo"
+    default n
+    help
+      Register the int test demo command.
+
+config CLI_ENABLE_DEMO_INT_ARRAY
+    bool "Enable int array test demo"
+    default n
+    help
+      Register the int array test demo command.
+
+config CLI_ENABLE_DEMO_KEY_INTERACTION
+    bool "Enable key interaction test demo"
+    default n
+    help
+      Register the key interaction test demo command.
+
+config CLI_ENABLE_DEMO_LED
+    bool "Enable led test demo"
+    default n
+    help
+      Register the led test demo command.
+
+config CLI_ENABLE_DEMO_LOG
+    bool "Enable log test demo"
+    default n
+    help
+      Register the log test demo command.
+
+config CLI_ENABLE_DEMO_MOTOR
+    bool "Enable motor test demo"
+    default n
+    help
+      Register the motor test demo command.
+
+config CLI_ENABLE_DEMO_REQUIRED
+    bool "Enable required test demo"
+    default n
+    help
+      Register the required test demo command.
+
+config CLI_ENABLE_DEMO_SCOPE
+    bool "Enable scope test demo"
+    default n
+    help
+      Register the scope test demo command.
+
+config CLI_ENABLE_DEMO_STRING
+    bool "Enable string test demo"
+    default n
+    help
+      Register the string test demo command.
+
+config CLI_ENABLE_DEMO_WITH_BUF
+    bool "Enable with buf test demo"
+    default n
+    help
+      Register the with buf test demo command.
+
+endmenu
