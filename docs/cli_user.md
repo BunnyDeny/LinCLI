@@ -1,12 +1,15 @@
 # 🛡️ 用户管理系统
 
-> 📝 **使用前请确认宏开关**
+> 📝 **使用前请确认配置**
 >
-> 用户管理系统默认开启，但使用前请在 `include/cli_config.h` 中确认：
-> ```c
-> #define CLI_ENABLE_USER 1
+> 用户管理系统默认开启，但使用前请通过 Kconfig 确认：
+> ```bash
+> make menuconfig
+> # 进入 LinCLI Core → CLI Features → Enable user system
 > ```
 > 关闭后可节省约 **~1.2 KB** Flash。
+>
+> > 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](kconfig_user_guide.md)。
 
 LinCLI 内建一套轻量级用户管理系统 🎯，用于在**产品化阶段**对不同角色进行命令级权限控制 🔐。它并非为多用户并发会话设计，而是为**同一套固件在不同人员手中呈现不同的 CLI 视图** 👀 提供安全收口 ✨。
 

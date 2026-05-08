@@ -26,16 +26,23 @@ LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。�
 
 ### 💡 启用内置测试命令
 
-`tests/` 目录下包含框架自带的测试命令（如 `tb`、`ti`、`ts`、`td` 等）。这些命令是否出现在终端中，由 Kconfig 中的 `CLI_ENABLE_TESTS` 控制（默认开启）：
+`tests/` 目录下包含框架自带的测试命令（如 `tb`、`ti`、`ts`、`td`、`led`、`motor` 等）。每个命令都由独立的 Kconfig 宏控制，按需开启：
 
 ```bash
 make menuconfig
-# 进入 Init & Test → Enable test/demo commands
+# 进入 Tests & Demos → Demo Commands，勾选想体验的测试命令
 ```
 
-> 📝 `CLI_ENABLE_TESTS` 控制测试命令源文件内部的条件编译（`#if CLI_ENABLE_TESTS`）。关闭后，测试命令的代码仍会被编译，但不会被注册到 CLI 中，终端里输入 `tb` 等命令会提示找不到。
+例如开启 `tb`（bool 测试）、`ti`（int 测试）、`led`（LED 演示）：
+- ✅ `Enable bool test demo`
+- ✅ `Enable int test demo`
+- ✅ `Enable led test demo`
+
+> 📝 关闭后，测试命令的源码仍会被编译，但不会被注册到 CLI 中，终端里输入对应命令会提示找不到。
 >
 > 📝 修改后执行 `make` 重新编译即可，CMake 会自动检测配置变化并重新生成头文件。
+>
+> 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](docs/kconfig_user_guide.md)。
 
 ---
 
@@ -271,7 +278,7 @@ lin@linCli>
 
 ## 💡 内置帮助信息
 
-> 📝 **开关**：`CLI_ENABLE_HELP`（`make menuconfig` → `CLI Features`）。关闭可省 **~0.5 KB** Flash，命令仍能运行但不再响应 `--help` / `-h`。
+> 📝 **开关**：`make menuconfig` → `LinCLI Core → CLI Features → Enable help system`。关闭可省 **~0.5 KB** Flash，命令仍能运行但不再响应 `--help` / `-h`。
 
 LinCLI 为**每一个命令**都自动内置了 `-h` 和 `--help` 选项，用户**无需在 `OPTION` 里手动注册**。当用户输入命令名并带上 `-h` 或 `--help` 时，框架会自动收集注册命令时提供的 `brief_str`、用法列表以及每个选项的 `help`、`required`、`depends`、`conflicts` 等元数据，拼接成帮助文本并打印。
 
@@ -294,7 +301,9 @@ lin@linCli>
 
 ## ⚙️ 环境变量系统
 
-> 📝 **使用前请确认宏开关**：`CLI_ENABLE_ENV`（`make menuconfig` → `CLI Features`，默认开启）。关闭可省 **~1.5 KB** Flash。
+> 📝 **使用前请确认配置**：`make menuconfig` → `LinCLI Core → CLI Features → Enable environment variables`（默认开启）。关闭可省 **~1.5 KB** Flash。
+>
+> 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](docs/kconfig_user_guide.md)。
 
 LinCLI 内建一套**字符串环境变量系统**，允许你在代码中预定义一组字符串键值对，用户在终端中通过 `$NAME` 或 `$id` 引用它们。与编译期固定的宏不同，环境变量的值可以在运行时通过 `env` 命令动态修改，且替换发生在命令解析之前，因此能无缝享受命令链、`--help` 等后续流程。
 
@@ -408,7 +417,7 @@ lin@linCli> tb -v
 
 ### 🛡️ Tab 补全
 
-> 📝 **高级补全开关**：`CLI_ENABLE_ADVANCED_COMPLETION`（`make menuconfig` → `CLI Features`，默认开启）。关闭后仅保留命令名前缀匹配 + 列表打印，可省 **~4.7 KB** Flash。
+> 📝 **高级补全开关**：`make menuconfig` → `LinCLI Core → CLI Features → Enable advanced tab completion`（默认开启）。关闭后仅保留命令名前缀匹配 + 列表打印，可省 **~4.7 KB** Flash。
 
 按 `Tab` 键可触发两层补全：**命令名补全** 和 **命令选项补全**。框架会自动遍历链接段中的命令/选项定义，全部在 Flash 中完成，**不占用额外 RAM**。
 
@@ -479,7 +488,7 @@ lin@linCli> tb --verbose
 
 ### 🔹 开机自动执行命令
 
-> 📝 **开关**：`CLI_ENABLE_AUTO_RUN`（`make menuconfig` → `CLI Features`，默认开启）。关闭可省 **~0.3 KB** Flash。
+> 📝 **开关**：`make menuconfig` → `LinCLI Core → CLI Features → Enable auto-run commands`（默认开启）。关闭可省 **~0.3 KB** Flash。
 
 LinCLI 支持在调度器初始化完毕、并执行完所有 `init_d` 导出的初始化函数之后，**自动顺序执行一系列预设命令**。这非常适合在设备上电后自动完成一些配置或自检动作。
 
@@ -509,7 +518,7 @@ const int cli_auto_cmds_count = sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0])
 
 ### 📌 命令链 `&&`
 
-> 📝 **开关**：`CLI_ENABLE_CMD_CHAIN`（`make menuconfig` → `CLI Features`，默认开启）。关闭可省 **~0.3 KB** Flash。
+> 📝 **开关**：`make menuconfig` → `LinCLI Core → CLI Features → Enable command chaining (&&)`（默认开启）。关闭可省 **~0.3 KB** Flash。
 
 在命令提示符下，你可以用 `&&` 把多个命令串联成一行，实现类似 Shell 的短路与行为：
 
@@ -600,13 +609,13 @@ lin@linCli> level
 
 - ✅ **[用户可定制接口](docs/customization.md)** — 介绍如何通过弱定义（`weak`）覆盖框架的默认行为，包括日志系统 `cli_printk`、日志过滤与颜色、命令提示符样式等。
 
-- 🔹 **[变量系统](docs/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象。需开启 `CLI_ENABLE_VAR`（`make menuconfig` → `CLI Features`，默认开启）。
+- 🔹 **[变量系统](docs/cli_var.md)** — 通过 `CLI_VAR` / `CLI_VAR_RO` 宏把代码中的全局变量导出为 CLI 可读写对象。需开启 `Enable variable system`（`make menuconfig` → `LinCLI Core → CLI Features`）。
 
-- 📌 **[环境变量系统](docs/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对。需开启 `CLI_ENABLE_ENV`（`make menuconfig` → `CLI Features`，默认开启）。
+- 📌 **[环境变量系统](docs/cli_env.md)** — 通过 `CLI_ENV` 宏注册字符串键值对。需开启 `Enable environment variables`（`make menuconfig` → `LinCLI Core → CLI Features`）。
 
 - 🆕 **[Tab 补全候选列表](docs/candidates.md)** — 通过 `CLI_CANDIDATE` 宏为 `STRING` 类型选项预先定义一组候选值，用户在终端按 `Tab` 即可自动补全文件名、配置项等已知常量。
 
-- 🛡️ **[用户管理系统](docs/cli_user.md)** — 通过 `CLI_USER` 宏注册用户并分配命令级权限。需开启 `CLI_ENABLE_USER`（`make menuconfig` → `CLI Features`，默认开启）。
+- 🛡️ **[用户管理系统](docs/cli_user.md)** — 通过 `CLI_USER` 宏注册用户并分配命令级权限。需开启 `Enable user system`（`make menuconfig` → `LinCLI Core → CLI Features`）。
 
 - 💎 **[尾行模式打印支持](docs/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
 

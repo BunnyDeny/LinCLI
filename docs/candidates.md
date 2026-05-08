@@ -1,12 +1,15 @@
 # 🎯 Tab 补全候选列表
 
-> 📝 **使用前请确认宏开关**
+> 📝 **使用前请确认配置**
 >
-> 候选值补全属于**高级 Tab 补全**功能，使用前请在 `include/cli_config.h` 中确认：
-> ```c
-> #define CLI_ENABLE_ADVANCED_COMPLETION 1
+> 候选值补全属于**高级 Tab 补全**功能，使用前请通过 Kconfig 确认：
+> ```bash
+> make menuconfig
+> # 进入 LinCLI Core → CLI Features → Enable advanced tab completion
 > ```
 > 关闭高级补全后可节省约 **~4.7 KB** Flash，基础命令名补全仍然保留。
+>
+> > 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](kconfig_user_guide.md)。
 
 当你为一个命令注册了 `STRING` 类型的选项后，用户输入时可能需要反复敲打相同的字符串——比如文件路径、设备名、配置项等。LinCLI 提供 `CLI_CANDIDATE` 宏，让你可以为任意命令选项预先定义一组候选值，用户在终端中按 `Tab` 时即可自动补全或列出候选项。
 

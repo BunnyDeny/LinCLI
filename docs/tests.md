@@ -2,26 +2,29 @@
 
 > 📝 **如何开启测试命令**
 >
-> `tests/` 目录下的所有测试命令默认**不参与编译**。需要同时满足以下两个条件：
+> `tests/commands/` 目录下的每个测试命令都由独立的 Kconfig 宏控制，按需开启即可：
 >
-> 1. **CMake 开关**：在根目录 `CMakeLists.txt` 中确保测试命令开关为 `ON`：
->    ```cmake
->    option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
->    ```
+> ```bash
+> make menuconfig
+> # 进入 Tests & Demos → Demo Commands，勾选想体验的测试命令
+> ```
 >
-> 2. **C 宏开关**：在 `include/cli_config.h` 中开启：
->    ```c
->    #define CLI_ENABLE_TESTS 1
->    ```
+> 例如开启 `tb`（bool 测试）、`ti`（int 测试）、`led`（LED 演示）：
+> - ✅ `Enable bool test demo`
+> - ✅ `Enable int test demo`
+> - ✅ `Enable led test demo`
 >
-> > 📝 **为什么需要两处都开？** `LINCLI_BUILD_TEST_COMMANDS` 控制 CMake 是否把 `tests/commands/` 下的源文件加入编译目标；`CLI_ENABLE_TESTS` 控制这些源文件内部的条件编译（`#if CLI_ENABLE_TESTS`）。只有两处都打开，测试命令才会真正链接进可执行文件。修改后必须执行 `make clean && make` 重新编译。
+> 修改后执行 `make` 重新编译即可，CMake 会自动检测配置变化并重新生成头文件。
 >
 > 此外，部分测试命令依赖对应的子功能模块，请确保相关宏也处于开启状态：
-> | 测试命令 | 依赖模块宏 |
-> |----------|-----------|
-> | `var`（变量系统） | `CLI_ENABLE_VAR 1` |
-> | `env`（环境变量） | `CLI_ENABLE_ENV 1` |
-> | 其余测试命令 | 仅需 `CLI_ENABLE_TESTS 1` |
+> | 🎯 测试命令 | 🔗 依赖模块配置 |
+> |----------|-------------|
+> | `var`（变量系统） | `CLI_ENABLE_VAR`（LinCLI Core → CLI Features） |
+> | `env`（环境变量） | `CLI_ENABLE_ENV`（LinCLI Core → CLI Features） |
+> | `cli_var`（变量导出） | `CLI_ENABLE_VAR`（LinCLI Core → CLI Features） |
+> | 其余测试命令 | 仅需开启对应的 `CLI_ENABLE_DEMO_*` |
+>
+> > 💡 **不熟悉 Kconfig？** 请参考 [**Kconfig 配置完全指南**](kconfig_user_guide.md)，里面详细介绍了原理、操作步骤和常见问题。
 
 
 ### 💡 1. `tb` — BOOL 类型选项测试
