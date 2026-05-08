@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
 LinCLI menuconfig frontend.
-Requires: pip install kconfiglib
+Requires: apt install python3-kconfiglib  (or: pip3 install kconfiglib)
 """
 import os
 import sys
 
 # 让脚本能在未安装 kconfiglib 时给出友好提示
 try:
-    from kconfiglib import Kconfig, menuconfig
+    from kconfiglib import Kconfig
+    from menuconfig import menuconfig
 except ImportError as e:
-    print("Error: kconfiglib is not installed.")
-    print("Please run:  pip3 install kconfiglib")
+    print("Error: kconfiglib or menuconfig is not installed.")
+    print("Please run one of the following:")
+    print("  sudo apt install python3-kconfiglib")
+    print("  pip3 install kconfiglib")
     sys.exit(1)
 
 

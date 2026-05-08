@@ -10,7 +10,7 @@ ag: clean build
 
 # Kconfig / menuconfig targets
 menuconfig:
-	@python3 tools/menuconfig.py
+	@python3 tools/lincli_menuconfig.py
 
 oldconfig:
 	@echo "oldconfig not yet implemented (run menuconfig to generate .config)"

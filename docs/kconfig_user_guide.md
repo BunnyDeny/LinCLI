@@ -61,7 +61,7 @@ LinCLI 引入 Kconfig 后，你不再需要手动编辑 `include/cli_config.h` �
 | `src/init/Kconfig` | 测试与调度器配置 | ✅ |
 | `default.config` | 默认配置快照，新用户自动复制为 `.config` | ✅ |
 | `.config` | 你当前生效的配置（由 Kconfig 生成） | ❌ |
-| `tools/menuconfig.py` | 交互式 TUI 前端 | ✅ |
+| `tools/lincli_menuconfig.py` | 交互式 TUI 前端 | ✅ |
 | `tools/config_to_header.py` | `.config` → `cli_kconfig.h` 转换器 | ✅ |
 | `build/include/cli_kconfig.h` | 自动生成的 C 头文件 | ❌ |
 
