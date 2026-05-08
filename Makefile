@@ -2,7 +2,11 @@
 all: build
 build:
 	@cmake -S . -B build && make -C build && ctest --test-dir build --output-on-failure
-run: build
+run:
+	@if [ ! -d "build" ]; then \
+		echo "Please run 'make' to build the project first."; \
+		exit 1; \
+	fi
 	@./build/bin/a.out
 clean:
 	@rm -rf build
