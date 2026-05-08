@@ -13,7 +13,7 @@ menuconfig:
 	@python3 tools/lincli_menuconfig.py
 
 oldconfig:
-	@echo "oldconfig not yet implemented (run menuconfig to generate .config)"
+	@python3 tools/lincli_oldconfig.py
 
 defconfig:
 	@cp default.config .config
