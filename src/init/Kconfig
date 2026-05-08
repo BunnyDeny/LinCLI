@@ -1,10 +1,3 @@
 menu "Init & Debug"
 
-config CLI_ENABLE_SCHEDULER_TICK_PRINT
-    bool "Enable scheduler tick print (debug)"
-    default n
-    help
-      Prints tick count every 50 scheduler loops.
-      Useful for rough verification that the scheduler is still running.
-
 endmenu

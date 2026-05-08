@@ -1,5 +1,11 @@
 menu "Tests & Demos"
 
+config CLI_ENABLE_SCHEDULER_TICK_PRINT
+    bool "使能尾行打印"
+    default n
+    help
+      使能尾行打印。
+
 source "tests/unit/Kconfig"
 source "tests/commands/Kconfig"
 
