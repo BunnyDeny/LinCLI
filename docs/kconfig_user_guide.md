@@ -138,91 +138,22 @@ CMake 会自动检测 `.config` 的变化，重新生成 `cli_kconfig.h`，并�
 
 ---
 
-## 📊 5. 配置项速查表
-
-### 🎯 LinCLI Core 配置
-
-| 🏷️ 配置项（menuconfig 中的名字） | 🔤 对应 C 宏 | 📐 类型 | 🔘 默认值 | 📝 说明 |
-|------------------------------|-----------|:----:|:------:|------|
-| Enable user system | `CLI_ENABLE_USER` | bool | ✅ | 用户管理系统（`su` / 权限检查） |
-| Enable environment variables | `CLI_ENABLE_ENV` | bool | ✅ | 环境变量系统（`env` / `$NAME`） |
-| Enable variable system | `CLI_ENABLE_VAR` | bool | ✅ | 变量导出系统（`var`） |
-| Enable advanced tab completion | `CLI_ENABLE_ADVANCED_COMPLETION` | bool | ✅ | 高级 Tab 补全（选项补全、候选值、高亮循环） |
-| Enable help system | `CLI_ENABLE_HELP` | bool | ✅ | `--help` 自动生成与用法提示 |
-| Enable command chaining (&&) | `CLI_ENABLE_CMD_CHAIN` | bool | ✅ | 命令链式执行 |
-| Enable auto-run commands | `CLI_ENABLE_AUTO_RUN` | bool | ✅ | 开机自动执行命令 |
-| Command history entries | `HISTORY_MAX` | int | 4 | 命令历史记录条数，嵌入式建议保持较小 |
-| Max columns for tab completion | `DISPLAY_MAX_COWS` | int | 50 | Tab 补全显示的最大列数 |
-| Command argument shared buffer size | `CLI_CMD_BUF_SIZE` | int | 128 | 命令参数全局共享缓冲区 |
-| Memory pool block count | `CLI_MPOOL_COUNT` | int | 6 | 内存池块数量 |
-
-### 🧪 Tests & Demos 配置
-
-| 🏷️ 配置项 | 🔤 对应 C 宏 | 📐 类型 | 🔘 默认值 | 📝 说明 |
-|-----------|-----------|:----:|:------:|------|
-| Enable inline tail print test | `CLI_ENABLE_SCHEDULER_TICK_PRINT` | bool | ❌ | 调度器尾行打印测试 |
-| Enable Unity unit tests | `CLI_ENABLE_UNIT_TESTS` | bool | ✅ | 编译 Unity 单元测试可执行文件 |
-| Enable auto cmd demo | `CLI_ENABLE_DEMO_AUTO_CMD` | bool | ❌ | `auto_cmd` 演示命令 |
-| Enable bool test demo | `CLI_ENABLE_DEMO_BOOL` | bool | ❌ | `tb` 布尔测试命令 |
-| Enable buf insufficient test demo | `CLI_ENABLE_DEMO_BUF_INSUFFICIENT` | bool | ❌ | 缓冲区不足测试命令 |
-| Enable callback test demo | `CLI_ENABLE_DEMO_CALLBACK` | bool | ❌ | 回调测试命令 |
-| Enable cli var test demo | `CLI_ENABLE_DEMO_CLI_VAR` | bool | ❌ | 变量系统测试命令 |
-| Enable conflicts test demo | `CLI_ENABLE_DEMO_CONFLICTS` | bool | ❌ | 互斥选项测试命令 |
-| Enable double test demo | `CLI_ENABLE_DEMO_DOUBLE` | bool | ❌ | 浮点数测试命令 |
-| Enable env test demo | `CLI_ENABLE_DEMO_ENV` | bool | ❌ | 环境变量测试命令 |
-| Enable init_d test demo | `CLI_ENABLE_DEMO_INIT_D` | bool | ❌ | 初始化函数测试命令 |
-| Enable int test demo | `CLI_ENABLE_DEMO_INT` | bool | ❌ | 整数测试命令 |
-| Enable int array test demo | `CLI_ENABLE_DEMO_INT_ARRAY` | bool | ❌ | 整数数组测试命令 |
-| Enable key interaction test demo | `CLI_ENABLE_DEMO_KEY_INTERACTION` | bool | ❌ | 键盘交互测试命令 |
-| Enable led test demo | `CLI_ENABLE_DEMO_LED` | bool | ❌ | LED 演示命令 |
-| Enable log test demo | `CLI_ENABLE_DEMO_LOG` | bool | ❌ | 日志测试命令 |
-| Enable motor test demo | `CLI_ENABLE_DEMO_MOTOR` | bool | ❌ | 电机演示命令 |
-| Enable required test demo | `CLI_ENABLE_DEMO_REQUIRED` | bool | ❌ | 必需选项测试命令 |
-| Enable scope test demo | `CLI_ENABLE_DEMO_SCOPE` | bool | ❌ | 示波器测试命令 |
-| Enable string test demo | `CLI_ENABLE_DEMO_STRING` | bool | ❌ | 字符串测试命令 |
-| Enable with buf test demo | `CLI_ENABLE_DEMO_WITH_BUF` | bool | ❌ | 独立缓冲区测试命令 |
-
-> 💡 **关于演示命令**：`tests/commands/` 下的每个 `.c` 文件都有自己的独立宏开关。开启后该命令会被注册到 CLI 中；关闭后源码仍会被编译，但命令不会出现在终端里。这让你可以按需选择想体验的演示功能。
-
-### 📏 常用裁剪组合与体积参考
-
-以下数据基于 ARM Cortex-M4（`arm-none-eabi-gcc -Os`，无 LTO）：
-
-| ⚙️ 配置 | 💾 Flash |
-|------|:-----:|
-| **全开（默认）** | **~22.4 KB** |
-| 关高级补全 | ~17.7 KB |
-| 关高级补全 + 环境变量 + 变量导出 | ~13.9 KB |
-| 关上述三项 + 帮助 + 命令链 + 自动运行 | ~12.8 KB |
-| **全部关闭（仅核心骨架）** | **~11.5 KB** |
-
----
-
-## 🛠️ 6. 配置管理三件套：`defconfig` / `oldconfig` / `savedefconfig`
+## 🛠️ 5. 配置管理三件套：`defconfig` / `oldconfig` / `savedefconfig`
 
 除了 `make menuconfig`，还有三个命令在日常开发中非常实用。下面用生活化的例子讲清楚。
 
 ### 📦 `make defconfig` — 加载默认配置
 
-**不带参数**：从仓库预置的 `configs/lincli_defconfig` 加载完整默认配置。
+从仓库预置的 `configs/lincli_defconfig` 加载一份完整的默认配置。
 
 ```bash
 make defconfig
 make
 ```
 
-**带参数**：从任意差异配置一键恢复。这会把差异配置展开为一份**完整的** `.config`（缺失项自动填默认值）。
-
-```bash
-# 假设你之前保存了一份差异配置 my_defconfig
-make defconfig DEFCONFIG=my_defconfig
-make
-```
-
 **什么时候用？**
 - 🔧 你的 `.config` 被改乱了，想一键回到仓库默认状态
 - ✅ 想确认"默认配置下编译是否通过"
-- 🔄 换了台机器，想一键恢复之前保存的个性化配置
 
 > 💡 注意：`make defconfig` 不会删除 `build/` 目录，建议之后执行 `make`（CMake 会自动刷新）。如果编译出错再考虑 `make clean && make`。
 
@@ -282,25 +213,32 @@ CONFIG_HISTORY_MAX=10
 
 **说白了**：`savedefconfig` 就是生成一份"最小差异配置"，像 `git diff` 一样只记录你改了什么。
 
-**如何使用这份差异配置？**
+**什么时候用？**
+- 💾 保存自己的个性化配置，方便备份或分享
+- 🏭 给不同硬件平台做 `configs/pc_defconfig`、`configs/stm32_defconfig`
+- 🔍 看看到底改了哪些配置，心里有个数
 
-生成的 `defconfig` 文件可以通过 `make defconfig` 的 `DEFCONFIG` 参数加载：
+---
+
+### 📂 `make defconfig DEFCONFIG=` — 从差异配置恢复
+
+既然 `savedefconfig` 能生成一份"最小差异配置"，那自然也需要一种方式把它**加载回来**。
+
+`make defconfig` 支持通过 `DEFCONFIG` 参数指定任意差异配置文件，它会将其**展开为一份完整的 `.config`**（缺失项自动填默认值）：
 
 ```bash
-# 从当前目录的 defconfig 文件恢复配置
+# 加载当前目录的 defconfig
 make defconfig DEFCONFIG=defconfig
 
 # 也可以指定任意路径
 make defconfig DEFCONFIG=configs/my_board_defconfig
+make
 ```
 
-`make defconfig` 会把这份最小差异配置**展开为一份完整的 `.config`**（缺失项自动填上默认值），然后你就可以直接 `make` 编译了。
-
 **什么时候用？**
-- 💾 保存自己的个性化配置，方便备份或分享
-- 🏭 给不同硬件平台做 `configs/pc_defconfig`、`configs/stm32_defconfig`
-- 🔄 换机器时一键恢复：`make savedefconfig` 生成 `defconfig`，复制到新机器，`make defconfig DEFCONFIG=defconfig` 一键加载
-- 🔍 看看到底改了哪些配置，心里有个数
+- 🔄 换了台机器，从同事那里拿到一份 `defconfig`，一键恢复个性化配置
+- 📂 在不同硬件平台之间切换配置（如 PC ↔ STM32）
+- ✅ 用 `make savedefconfig` 生成差异配置 → 备份 → `make defconfig DEFCONFIG=...` 恢复
 
 ---
 
@@ -324,7 +262,7 @@ configs/lincli_defconfig          .config（你的个性化配置）
 
 ---
 
-## 📝 7. 直接编辑 .config（不推荐）
+## 📝 6. 直接编辑 .config（不推荐）
 
 `.config` 是纯文本，格式非常简单：
 
@@ -341,7 +279,7 @@ CONFIG_HISTORY_MAX=4
 
 ---
 
-## 🔄 8. 恢复默认配置
+## 🔄 7. 恢复默认配置
 
 如果你把配置改乱了，想恢复到仓库默认状态：
 
@@ -361,7 +299,7 @@ make
 
 ---
 
-## 🔧 9. 与 CMake 的关系
+## 🔧 8. 与 CMake 的关系
 
 CMake 只管"编译哪些源文件、链接哪些库"，所有条件编译和数值配置都交给 Kconfig 管理。
 
@@ -395,7 +333,7 @@ CMake 只管"编译哪些源文件、链接哪些库"，所有条件编译和数
 
 ---
 
-## ❓ 10. 常见问题
+## ❓ 9. 常见问题
 
 ### Q1: 运行 `make menuconfig` 报错 "kconfiglib is not installed"
 
