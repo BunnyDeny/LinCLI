@@ -1,4 +1,4 @@
-.PHONY: all clean build run ag menuconfig oldconfig defconfig savedefconfig mrproper
+.PHONY: all clean build run ag menuconfig oldconfig defconfig savedefconfig mrproper sync-kconfig
 all: build
 build:
 	@cmake -S . -B build && make -C build && ctest --test-dir build --output-on-failure
@@ -32,3 +32,7 @@ savedefconfig:
 
 mrproper: clean
 	@rm -f .config .config.old defconfig
+
+sync-kconfig:
+	@python3 tools/config_to_header.py configs/lincli_defconfig include/cli_kconfig.h
+	@echo "Synced include/cli_kconfig.h from configs/lincli_defconfig"
