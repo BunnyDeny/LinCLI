@@ -133,11 +133,14 @@ cd /path/to/LinCLI
 make run
 ```
 
-> 📝 **注意**：`make run` 默认会编译并运行 PC 模拟程序。如果你想在终端中体验 `tb`、`ti`、`scope` 等**内置测试命令**，请确保根目录 `CMakeLists.txt` 中的测试开关已打开：
-> ```cmake
-> option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
-> ```
-> 同时 `include/cli_config.h` 中需开启 `#define CLI_ENABLE_TESTS 1`。修改后执行 `make clean && make run` 重新编译，测试命令才会链接进可执行文件。
+> 📝 **注意**：`make run` 默认会编译并运行 PC 模拟程序。如果你想在终端中体验 `tb`、`ti`、`scope` 等**内置测试命令**，请确保：
+> 1. 根目录 `CMakeLists.txt` 中的测试开关已打开：
+>    ```cmake
+>    option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
+>    ```
+> 2. Kconfig 中的 `CLI_ENABLE_TESTS` 已开启（默认开启，可用 `make menuconfig` 检查）。
+>
+> 修改后执行 `make clean && make run` 重新编译，测试命令才会链接进可执行文件。
 
 程序启动后，终端进入 **raw 模式**（禁用行缓冲和回显），每按一个键都会立即被框架处理。你可以直接输入测试命令进行交互。
 

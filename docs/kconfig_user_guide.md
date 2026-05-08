@@ -1,0 +1,280 @@
+# 🎛️ LinCLI Kconfig 配置指南
+
+> 本文面向**第一次接触 Kconfig** 的 LinCLI 用户，介绍如何使用 Kconfig / `menuconfig` 来裁剪和配置 LinCLI 框架。
+
+---
+
+## 1. Kconfig 是什么？
+
+**Kconfig** 是 Linux 内核使用的配置系统。它的核心思想是：
+
+> 用一套**声明式语法**描述"有哪些配置项、它们的类型、默认值、依赖关系"，再通过一个**交互式 TUI（文本用户界面）**让用户勾选或填写，最终生成一份**纯文本配置文件**（`.config`）。
+
+LinCLI 引入 Kconfig 后，你不再需要手动编辑 `include/cli_config.h` 来开关功能或修改数值。所有配置都收敛到 Kconfig，编译时自动生成 C 头文件，源码零改动。
+
+---
+
+## 2. 实现原理（简要）
+
+为了让第一次接触的你理解"背后发生了什么"，这里画一张简单的流程图：
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  你（用户）                                                      │
+│    ├── 第一次编译：什么都不用做                                   │
+│    └── 想改配置：运行 make menuconfig                            │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  项目仓库里预置了 default.config（默认配置快照）                  │
+│  CMake 检测到没有 .config → 自动复制 default.config → .config     │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Python 脚本 tools/config_to_header.py                          │
+│  读取 .config，转换成 C 宏，写入 build/include/cli_kconfig.h      │
+│  例如：CONFIG_HISTORY_MAX=4  →  #define HISTORY_MAX 4             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  include/cli_config.h（只剩版本号等静态内容）                     │
+│  内部执行 #include "cli_kconfig.h"                                │
+│  于是所有源码看到的宏都来自自动生成的 cli_kconfig.h               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  GCC 编译源码，宏生效，不用的模块被条件编译裁掉                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 关键文件说明
+
+| 文件 | 作用 | 是否入仓 |
+|------|------|:--------:|
+| `Kconfig` | 配置树入口，定义菜单结构 | ✅ |
+| `src/cli/Kconfig` | CLI 功能开关（用户系统、Tab 补全、帮助等） | ✅ |
+| `src/lib/Kconfig` | 内存与缓冲区配置 | ✅ |
+| `src/init/Kconfig` | 测试与调度器配置 | ✅ |
+| `default.config` | 默认配置快照，新用户自动复制为 `.config` | ✅ |
+| `.config` | 你当前生效的配置（由 Kconfig 生成） | ❌ |
+| `tools/menuconfig.py` | 交互式 TUI 前端 | ✅ |
+| `tools/config_to_header.py` | `.config` → `cli_kconfig.h` 转换器 | ✅ |
+| `build/include/cli_kconfig.h` | 自动生成的 C 头文件 | ❌ |
+
+> **为什么有两个配置文件？** `default.config` 是仓库的"出厂设置"，保证新用户 clone 下来就能直接编译。`.config` 是你个人工作区的配置，可以被 `make menuconfig` 修改，且已被 `.gitignore` 排除，不会污染仓库。
+
+---
+
+## 3. 第一次编译（零操作）
+
+如果你刚 clone 仓库，**什么配置都不用做**，直接编译即可：
+
+```bash
+cd /path/to/LinCLI
+make
+```
+
+CMake 会自动发现你没有 `.config`，于是把 `default.config` 复制一份作为 `.config`，再自动生成 `build/include/cli_kconfig.h`。整个过程你无感知。
+
+---
+
+## 4. 交互式配置：make menuconfig
+
+如果你想裁剪功能或修改参数（比如把历史记录从 4 条改成 10 条），运行：
+
+```bash
+make menuconfig
+```
+
+你会看到一个类似下图的 ncurses TUI 界面：
+
+```text
+┌─────────────────────────────────────────────┐
+│ LinCLI Configuration                          │
+│ ───────────────────────────────────────────  │
+│    LinCLI Core  --->                          │
+│                                               │
+│                                               │
+│                                               │
+│                                               │
+│                                               │
+└─────────────────────────────────────────────┘
+```
+
+### 基本操作
+
+| 按键 | 作用 |
+|------|------|
+| `↑` / `↓` | 上下移动光标 |
+| `Enter` | 进入子菜单 / 切换布尔值 |
+| `Space` | 切换布尔值 `[ ]` ↔ `[*]` |
+| `Esc` `Esc` 或 `Q` | 返回上一级 / 退出 |
+| `?` | 查看当前选项的帮助说明 |
+| `/` | 搜索配置项 |
+
+### 修改示例：调整历史记录条数
+
+1. 运行 `make menuconfig`
+2. 光标选中 `LinCLI Core --->`，按 `Enter` 进入
+3. 光标选中 `CLI Features --->`，按 `Enter` 进入
+4. 光标选中 `(4) Command history entries`
+5. 按 `Enter`，输入新数值（如 `10`），再按 `Enter` 确认
+6. 连续按 `Q` 退出，提示保存时选 `Yes`
+7. 根目录会生成/更新 `.config` 文件
+
+### 使配置生效
+
+`.config` 修改后，必须重新编译：
+
+```bash
+make clean && make
+```
+
+> 注意：CMake 会缓存配置状态。如果你只改了 `.config` 但没有 `make clean`，CMake 可能认为"输入文件没变"而跳过重新生成 `cli_kconfig.h`。`make clean` 是最稳妥的做法。
+
+> 💡 **常用 Makefile 目标速查**
+>
+> | 目标 | 作用 |
+> |------|------|
+> | `make` | 编译项目 |
+> | `make clean` | 删除编译产物（`build/`），**保留** `.config` |
+> | `make mrproper` | 删除编译产物 **和** `.config`、`.config.old`，回到刚 clone 的状态 |
+> | `make defconfig` | 从 `default.config` 恢复一份全新的默认配置 |
+> | `make savedefconfig` | 把当前配置导出为最小差异的 `defconfig` 文件 |
+> | `make menuconfig` | 打开交互式配置界面 |
+>
+> 这个命名习惯与 **Linux 内核**一致：`clean` 只清编译产物，`mrproper` 才清配置。
+
+---
+
+## 5. 配置项速查表
+
+| 配置项（menuconfig 中的名字） | 对应 C 宏 | 类型 | 默认值 | 说明 |
+|------------------------------|-----------|:----:|:------:|------|
+| Enable user system | `CLI_ENABLE_USER` | bool | ✅ | 用户管理系统（`su` / 权限检查） |
+| Enable environment variables | `CLI_ENABLE_ENV` | bool | ✅ | 环境变量系统（`env` / `$NAME`） |
+| Enable variable system | `CLI_ENABLE_VAR` | bool | ✅ | 变量导出系统（`var`） |
+| Enable advanced tab completion | `CLI_ENABLE_ADVANCED_COMPLETION` | bool | ✅ | 高级 Tab 补全（选项补全、候选值、高亮循环） |
+| Enable help system | `CLI_ENABLE_HELP` | bool | ✅ | `--help` 自动生成与用法提示 |
+| Enable command chaining (&&) | `CLI_ENABLE_CMD_CHAIN` | bool | ✅ | 命令链式执行 |
+| Enable auto-run commands | `CLI_ENABLE_AUTO_RUN` | bool | ✅ | 开机自动执行命令 |
+| Command history entries | `HISTORY_MAX` | int | 4 | 命令历史记录条数，嵌入式建议保持较小 |
+| Max columns for tab completion | `DISPLAY_MAX_COWS` | int | 50 | Tab 补全显示的最大列数 |
+| Command argument shared buffer size | `CLI_CMD_BUF_SIZE` | int | 128 | 命令参数全局共享缓冲区 |
+| Memory pool block count | `CLI_MPOOL_COUNT` | int | 6 | 内存池块数量 |
+| Enable scheduler inline test mode | `INLINE_TEST_EN` | bool | ❌ | 调度器内联测试（每 50 循环打印计数） |
+| Enable test/demo commands | `CLI_ENABLE_TESTS` | bool | ✅ | 编译内置测试命令（`tb`、`ti` 等） |
+
+### 常用裁剪组合与体积参考
+
+以下数据基于 ARM Cortex-M4（`arm-none-eabi-gcc -Os`，无 LTO）：
+
+| 配置 | Flash |
+|------|:-----:|
+| **全开（默认）** | **~22.4 KB** |
+| 关高级补全 | ~17.7 KB |
+| 关高级补全 + 环境变量 + 变量导出 | ~13.9 KB |
+| 关上述三项 + 帮助 + 命令链 + 自动运行 | ~12.8 KB |
+| **全部关闭（仅核心骨架）** | **~11.5 KB** |
+
+---
+
+## 6. 直接编辑 .config（不推荐）
+
+`.config` 是纯文本，格式非常简单：
+
+```text
+CONFIG_CLI_ENABLE_USER=y
+CONFIG_HISTORY_MAX=4
+# CONFIG_CLI_ENABLE_INLINE_TEST is not set
+```
+
+你**可以**直接用文本编辑器修改它，但强烈建议用 `make menuconfig`，因为：
+- `menuconfig` 会检查依赖关系和取值范围（如 `HISTORY_MAX` 必须在 1~64 之间）
+- 手动改错可能导致编译错误或奇怪的运行时行为
+- 某些配置项有联动关系，`menuconfig` 会自动处理
+
+---
+
+## 7. 恢复默认配置
+
+如果你把配置改乱了，想恢复到仓库默认状态：
+
+```bash
+make mrproper
+make
+```
+
+`make mrproper` 会删除 `build/`、`.config`、`.config.old`，回到刚 clone 仓库时的干净状态。然后 `make` 会自动从 `default.config` 复制一份全新的默认配置。
+
+如果你只是想重新生成一份默认配置（不删编译目录）：
+
+```bash
+make defconfig
+make clean && make
+```
+
+---
+
+## 8. 与 CMake option 的关系
+
+目前仍保留两个 CMake 层面的构建开关：
+
+| CMake option | 作用 |
+|--------------|------|
+| `LINCLI_BUILD_TEST_COMMANDS` | 控制是否编译 `tests/commands/` 下的测试命令源文件 |
+| `LINCLI_BUILD_UNITY_TESTS` | 控制是否编译 Unity 单元测试可执行文件 |
+
+这两个是**"构建系统层面的开关"**（编译哪些 `.c` 文件），而 Kconfig 管理的是**"C 代码层面的宏"**（条件编译、数值大小）。
+
+举个例子：
+- 你把 Kconfig 中的 `CLI_ENABLE_TESTS` 关掉 → 测试命令的**注册逻辑**被条件编译跳过，但测试命令的代码可能仍然被编译进了二进制（如果 `LINCLI_BUILD_TEST_COMMANDS=ON`）。
+- 你把 `LINCLI_BUILD_TEST_COMMANDS` 关掉 → 测试命令的**源文件**根本不会进入编译列表，但 Kconfig 层面的 `CLI_ENABLE_TESTS` 如果开着，其他用到这个宏的地方仍然生效。
+
+**最佳实践**：保持 `LINCLI_BUILD_TEST_COMMANDS=ON`（默认），通过 `make menuconfig` 开关 `CLI_ENABLE_TESTS` 来决定是否注册测试命令。这样无需修改任何 CMake 文件。
+
+---
+
+## 9. 常见问题
+
+### Q1: 运行 `make menuconfig` 报错 "kconfiglib is not installed"
+
+```bash
+sudo apt install python3-kconfiglib
+```
+
+### Q2: 修改了 `.config` 但重新编译后宏没有变化
+
+CMake 缓存了配置状态。执行 `make clean && make` 强制重新生成 `cli_kconfig.h`。
+
+### Q3: 我想在 CI/脚本里批量修改某个配置项，不想开 TUI
+
+可以直接用 `sed` 修改 `.config`，然后重新编译：
+
+```bash
+sed -i 's/CONFIG_HISTORY_MAX=4/CONFIG_HISTORY_MAX=10/' .config
+make clean && make
+```
+
+### Q4: `default.config` 和 `.config` 有什么区别？
+
+- `default.config`：仓库里的"出厂默认值"，**不应手动修改**（如需修改默认值，应去改 `src/*/Kconfig` 文件里的 `default` 字段）。
+- `.config`：你当前工作区的配置，**会被 `.gitignore` 忽略**，可以随便改。
+
+### Q5: 我想给项目添加一个新的配置项
+
+在 `src/cli/Kconfig`（或 `src/lib/Kconfig`、`src/init/Kconfig`，取决于配置项属于哪个模块）中添加新的 `config` 条目，然后运行 `make menuconfig` 即可在菜单中看到它。修改后需要更新 `default.config`：
+
+```bash
+rm .config && make clean && make   # 让 CMake 重新生成默认 .config
+# 然后把新的 .config 内容复制回 default.config
+cp .config default.config
+```
+
+---
+
+如有问题，欢迎提交 Issue 或 PR。
