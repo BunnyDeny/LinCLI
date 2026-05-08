@@ -1,4 +1,7 @@
-.PHONY: all clean build run ag menuconfig oldconfig defconfig savedefconfig mrproper sync-kconfig
+# 动态为 configs/ 目录下的每个 *_defconfig 文件生成显式目标，支持 make <tab> 补全
+DEFCONFIG_FILES := $(notdir $(wildcard configs/*_defconfig))
+
+.PHONY: all clean build run ag menuconfig oldconfig defconfig savedefconfig mrproper sync-kconfig $(DEFCONFIG_FILES)
 all: build
 build:
 	@cmake -S . -B build && make -C build && ctest --test-dir build --output-on-failure
@@ -26,14 +29,14 @@ defconfig:
 		python3 tools/lincli_load_defconfig.py configs/lincli_defconfig; \
 	fi
 
-# 支持 make xxx_defconfig 自动查找 configs/ 目录下的对应文件
+# 显式定义 configs/ 下每个 *_defconfig 文件对应的目标（支持 make <tab> 补全）
+$(DEFCONFIG_FILES):
+	@python3 tools/lincli_load_defconfig.py configs/$@
+
+# 对于 configs/ 中不存在的 xxx_defconfig，给出友好提示
 %_defconfig:
-	@if [ -f "configs/$@" ]; then \
-		python3 tools/lincli_load_defconfig.py configs/$@; \
-	else \
-		echo "Error: configs/$@ not found"; \
-		exit 1; \
-	fi
+	@echo "Error: configs/$@ not found"
+	@exit 1
 
 savedefconfig:
 	@python3 -c "from kconfiglib import Kconfig; k=Kconfig('Kconfig'); k.load_config('.config'); k.write_min_config('defconfig')"
