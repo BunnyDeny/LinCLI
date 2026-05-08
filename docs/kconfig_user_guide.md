@@ -220,20 +220,22 @@ CONFIG_HISTORY_MAX=10
 
 ---
 
-### 📂 `make defconfig DEFCONFIG=` — 从差异配置恢复
+### 📂 `make defconfig DEFCONFIG=` — 加载指定配置
 
 既然 `savedefconfig` 能生成一份"最小差异配置"，那自然也需要一种方式把它**加载回来**。
 
-`make defconfig` 支持通过 `DEFCONFIG` 参数指定任意差异配置文件，它会将其**展开为一份完整的 `.config`**（缺失项自动填默认值）：
+`make defconfig` 支持通过 `DEFCONFIG` 参数指定任意配置文件，它会将其**展开为一份完整的 `.config`**（缺失项自动填默认值）：
 
 ```bash
-# 加载当前目录的 defconfig
+# 加载当前目录的 defconfig（差异配置）
 make defconfig DEFCONFIG=defconfig
 
 # 也可以指定任意路径
 make defconfig DEFCONFIG=configs/my_board_defconfig
 make
 ```
+
+> 💡 **关于 DEFCONFIG 文件的格式**：`DEFCONFIG` 参数对文件格式没有严格限制。你可以传一份**差异配置**（只包含与默认值不同的项，如 `savedefconfig` 生成的格式），也可以传一份**完整配置**（直接就是 `.config` 改名）。两种方式 `make defconfig` 都能正确处理——本质上是"先加载默认配置，再用指定文件逐条覆盖"。
 
 **什么时候用？**
 - 🔄 换了台机器，从同事那里拿到一份 `defconfig`，一键恢复个性化配置
