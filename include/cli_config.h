@@ -11,72 +11,7 @@
 #ifndef _CLI_CONFIG_H_
 #define _CLI_CONFIG_H_
 
-#ifdef CLI_KCONFIG_ENABLED
-/* 由 Kconfig / menuconfig 生成的配置头文件 */
 #include "cli_kconfig.h"
-#else
-/* ----------------------------------------------------------
- * 以下宏为默认值，仅在未使用 Kconfig 时生效。
- * 若使用 menuconfig，这些值会被 cli_kconfig.h 覆盖。
- * ---------------------------------------------------------- */
-
-/*
- * 是否编译 tests/commands/ 下的演示命令。
- * 在 CMake 构建中，当 LINCLI_BUILD_TESTS=ON 时，该宏会自动被定义为 1，
- * 无需手动修改此文件。保留此宏是为了方便非 CMake 环境（如 Keil MDK、
- * 裸机 Makefile）统一开关所有演示命令。
- */
-#ifndef CLI_ENABLE_TESTS
-#define CLI_ENABLE_TESTS 1
-#endif
-
-/*
- * 启用调度器内联测试模式：每 50 次调度循环打印一行计数，
- * 用于粗略观察调度器是否仍在运行。
- * CMake 中可通过 -DLINCLI_ENABLE_INLINE_TEST=ON 开启。
- */
-#ifndef INLINE_TEST_EN
-#define INLINE_TEST_EN 0
-#endif
-
-/* 条件编译：用户/环境变量/变量导出系统 */
-#define CLI_ENABLE_USER 1
-#define CLI_ENABLE_ENV 1
-#define CLI_ENABLE_VAR 1
-
-/* 条件编译：高级 Tab 补全（选项补全/候选值/高亮循环）
- * 关闭后仅保留命令名前缀匹配 + 列表打印 */
-#define CLI_ENABLE_ADVANCED_COMPLETION 1
-
-/* 条件编译：帮助系统（--help 自动生成与用法提示） */
-#define CLI_ENABLE_HELP 1
-
-/* 条件编译：命令链（支持 && 分隔的多命令链式执行） */
-#define CLI_ENABLE_CMD_CHAIN 1
-
-/* 条件编译：自动运行（CLI_AUTO_CMD 注册的开机自动执行命令） */
-#define CLI_ENABLE_AUTO_RUN 1
-
-/*命令历史记录条目数量（嵌入式环境不建议太大）*/
-#define HISTORY_MAX 4
-
-/*tab补全显示的候选列表的最大列数
- 如果你的终端软件窗口宽度小于这个
- 数值，那么tab补全的信息可能会异常
- 缺失一部分，此时请调大这个宏到合适
- 值
-*/
-#define DISPLAY_MAX_COWS 50
-
-/* 命令参数全局共享缓冲区大小，如果
-  报错显示命令参数缺少字节，增加这个宏 */
-#define CLI_CMD_BUF_SIZE 128
-
-/* 内存池配置 */
-#define CLI_MPOOL_COUNT 6
-#define CLI_MPOOL_SIZE CLI_CMD_BUF_SIZE
-
-#endif /* CLI_KCONFIG_ENABLED */
 
 /* ==========================================================
  * 以下宏与 Kconfig 无关，始终保留。

@@ -11,7 +11,6 @@ if(LINCLI_BUILD_TEST_COMMANDS)
         list(APPEND TEST_CMDS_SOURCES ${TMP})
     endforeach()
     add_library(tests_commands OBJECT ${TEST_CMDS_SOURCES})
-    target_compile_definitions(tests_commands PRIVATE CLI_ENABLE_TESTS=1)
     target_include_directories(tests_commands PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/src/cli
