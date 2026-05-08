@@ -26,6 +26,15 @@ defconfig:
 		python3 tools/lincli_load_defconfig.py configs/lincli_defconfig; \
 	fi
 
+# 支持 make xxx_defconfig 自动查找 configs/ 目录下的对应文件
+%_defconfig:
+	@if [ -f "configs/$@" ]; then \
+		python3 tools/lincli_load_defconfig.py configs/$@; \
+	else \
+		echo "Error: configs/$@ not found"; \
+		exit 1; \
+	fi
+
 savedefconfig:
 	@python3 -c "from kconfiglib import Kconfig; k=Kconfig('Kconfig'); k.load_config('.config'); k.write_min_config('defconfig')"
 	@echo "Saved minimal defconfig"
