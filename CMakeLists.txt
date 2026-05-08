@@ -44,19 +44,16 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cli.ld ${CMAKE_BINARY_DIR}/cli.ld COP
 # ============================================================
 # Submodules
 # ============================================================
-set(SUBMODULES src tests)
-
-foreach(submod ${SUBMODULES})
-    add_subdirectory(${submod})
-    list(APPEND OBJECT_FILES $<TARGET_OBJECTS:${submod}>)
-endforeach()
+add_subdirectory(src)
+add_subdirectory(tests)
 
 # ============================================================
 # Main executable
 # ============================================================
 add_executable(${OUTPUT_NAME}
     examples/pc_linux/main.c
-    ${OBJECT_FILES}
+    $<TARGET_OBJECTS:src>
+    $<TARGET_OBJECTS:commands>
 )
 target_include_directories(${OUTPUT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
