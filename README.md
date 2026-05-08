@@ -26,18 +26,16 @@ LinCLI 是一个面向嵌入式/MCU 场景的 C 语言命令行交互框架。�
 
 ### 💡 启用内置测试命令
 
-`tests/` 目录下包含框架自带的测试命令（如 `tb`、`ti`、`ts`、`td` 等）。这些命令默认**不参与编译**，需要同时满足以下两个条件：
+`tests/` 目录下包含框架自带的测试命令（如 `tb`、`ti`、`ts`、`td` 等）。这些命令是否出现在终端中，由 Kconfig 中的 `CLI_ENABLE_TESTS` 控制（默认开启）：
 
-1. **CMake 开关**：在根目录 `CMakeLists.txt` 中确保测试命令开关为 `ON`：
-   ```cmake
-   option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
-   ```
+```bash
+make menuconfig
+# 进入 Init & Test → Enable test/demo commands
+```
 
-2. **Kconfig 开关**：运行 `make menuconfig`，在 `Init & Test` 菜单中确认 `CLI_ENABLE_TESTS` 已勾选（默认开启）。
-
-> 📝 **为什么需要两处都开？** `LINCLI_BUILD_TEST_COMMANDS` 控制 CMake 是否把 `tests/commands/` 下的源文件加入编译目标；`CLI_ENABLE_TESTS` 控制这些源文件内部的条件编译（`#if CLI_ENABLE_TESTS`）。只有两处都打开，测试命令才会真正链接进可执行文件。
+> 📝 `CLI_ENABLE_TESTS` 控制测试命令源文件内部的条件编译（`#if CLI_ENABLE_TESTS`）。关闭后，测试命令的代码仍会被编译，但不会被注册到 CLI 中，终端里输入 `tb` 等命令会提示找不到。
 >
-> 📝 修改后必须执行 `make clean && make` 重新编译，否则旧目标文件不会自动链接测试命令。
+> 📝 修改后执行 `make` 重新编译即可，CMake 会自动检测配置变化并重新生成头文件。
 
 ---
 

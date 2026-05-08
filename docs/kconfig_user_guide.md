@@ -128,13 +128,13 @@ make menuconfig
 
 ### 使配置生效
 
-`.config` 修改后，必须重新编译：
+`.config` 修改后，直接重新编译即可：
 
 ```bash
-make clean && make
+make
 ```
 
-> 注意：CMake 会缓存配置状态。如果你只改了 `.config` 但没有 `make clean`，CMake 可能认为"输入文件没变"而跳过重新生成 `cli_kconfig.h`。`make clean` 是最稳妥的做法。
+CMake 会自动检测 `.config` 的变化，重新生成 `cli_kconfig.h`，并只重新编译受影响的源文件。无需手动 `make clean`。
 
 > 💡 **常用 Makefile 目标速查**
 >
@@ -220,22 +220,19 @@ make clean && make
 
 ---
 
-## 8. 与 CMake option 的关系
+## 8. 与 CMake 的关系
 
-目前仍保留两个 CMake 层面的构建开关：
+CMake 只管"编译哪些源文件、链接哪些库"，所有条件编译和数值配置都交给 Kconfig 管理。
 
-| CMake option | 作用 |
-|--------------|------|
-| `LINCLI_BUILD_TEST_COMMANDS` | 控制是否编译 `tests/commands/` 下的测试命令源文件 |
-| `LINCLI_BUILD_UNITY_TESTS` | 控制是否编译 Unity 单元测试可执行文件 |
+测试相关的代码（`tests/commands/` 和 `tests/unit/`）始终参与编译，但是否生效由 Kconfig 控制：
 
-这两个是**"构建系统层面的开关"**（编译哪些 `.c` 文件），而 Kconfig 管理的是**"C 代码层面的宏"**（条件编译、数值大小）。
+| 层面 | 控制方式 | 作用 |
+|------|----------|------|
+| CMake | 无条件编译 | 把 `tests/commands/*.c` 和 `tests/unit/*.c` 加入编译目标 |
+| Kconfig | `CLI_ENABLE_TESTS` | 控制测试命令是否注册到 CLI 中 |
+| Kconfig | `INLINE_TEST_EN` | 控制调度器是否每 50 循环打印计数 |
 
-举个例子：
-- 你把 Kconfig 中的 `CLI_ENABLE_TESTS` 关掉 → 测试命令的**注册逻辑**被条件编译跳过，但测试命令的代码可能仍然被编译进了二进制（如果 `LINCLI_BUILD_TEST_COMMANDS=ON`）。
-- 你把 `LINCLI_BUILD_TEST_COMMANDS` 关掉 → 测试命令的**源文件**根本不会进入编译列表，但 Kconfig 层面的 `CLI_ENABLE_TESTS` 如果开着，其他用到这个宏的地方仍然生效。
-
-**最佳实践**：保持 `LINCLI_BUILD_TEST_COMMANDS=ON`（默认），通过 `make menuconfig` 开关 `CLI_ENABLE_TESTS` 来决定是否注册测试命令。这样无需修改任何 CMake 文件。
+**最佳实践**：不要修改任何 CMake 文件，所有配置都通过 `make menuconfig` 完成。
 
 ---
 
@@ -249,7 +246,7 @@ sudo apt install python3-kconfiglib
 
 ### Q2: 修改了 `.config` 但重新编译后宏没有变化
 
-CMake 缓存了配置状态。执行 `make clean && make` 强制重新生成 `cli_kconfig.h`。
+正常情况下 CMake 会自动检测 `.config` 变化并重新生成 `cli_kconfig.h`。如果确实没有变化，执行 `make clean && make` 强制刷新。
 
 ### Q3: 我想在 CI/脚本里批量修改某个配置项，不想开 TUI
 

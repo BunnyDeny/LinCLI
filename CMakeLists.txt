@@ -5,12 +5,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 
 # ============================================================
-# 构建选项（统一放在开头，方便手动修改）
-# ============================================================
-option(LINCLI_BUILD_UNITY_TESTS "Build Unity unit tests" ON)
-option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
-
-# ============================================================
 # Kconfig integration
 # ============================================================
 find_program(PYTHON3_EXECUTABLE python3)
@@ -38,6 +32,9 @@ if(NOT KCONFIG_GEN_RESULT EQUAL 0)
 endif()
 include_directories(${KCONFIG_HEADER_DIR})
 
+# 让 CMake 在构建时监控 .config 的变化，如有改动则自动重新运行配置阶段
+set_property(DIRECTORY PROPERTY CMAKE_CONFIGURE_DEPENDS ${KCONFIG_DOT_CONFIG})
+
 # ============================================================
 # LinCLI 框架库（OBJECT + INTERFACE）
 # ============================================================
@@ -60,17 +57,9 @@ set_target_properties(${OUTPUT_NAME} PROPERTIES
 )
 
 # ============================================================
-# 测试（可选）
+# 测试
 # ============================================================
-if(LINCLI_BUILD_UNITY_TESTS OR LINCLI_BUILD_TEST_COMMANDS)
-    add_subdirectory(tests)
-endif()
-
-if(LINCLI_BUILD_UNITY_TESTS)
-    enable_testing()
-    add_test(NAME unit_tests COMMAND unit_tests)
-endif()
-
-if(LINCLI_BUILD_TEST_COMMANDS)
-    target_link_libraries(${OUTPUT_NAME} PRIVATE tests_commands)
-endif()
+add_subdirectory(tests)
+enable_testing()
+add_test(NAME unit_tests COMMAND unit_tests)
+target_link_libraries(${OUTPUT_NAME} PRIVATE tests_commands)
