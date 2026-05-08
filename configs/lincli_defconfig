@@ -25,10 +25,6 @@ CONFIG_CLI_MPOOL_COUNT=6
 CONFIG_CLI_MPOOL_SIZE=128
 # end of Library & Memory
 
-#
-# Init & Debug
-#
-# end of Init & Debug
 # end of LinCLI Core
 
 #
