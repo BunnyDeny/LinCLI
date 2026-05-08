@@ -21,17 +21,12 @@ if(NOT EXISTS ${KCONFIG_DOT_CONFIG})
     configure_file(${CMAKE_SOURCE_DIR}/configs/lincli_defconfig ${KCONFIG_DOT_CONFIG} COPYONLY)
 endif()
 
-set(KCONFIG_CMAKE "${KCONFIG_HEADER_DIR}/cli_kconfig.cmake")
-
 message(STATUS "Generating cli_kconfig.h from .config")
 execute_process(
     COMMAND ${PYTHON3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/config_to_header.py
-            ${KCONFIG_DOT_CONFIG} ${KCONFIG_HEADER} ${KCONFIG_CMAKE}
+            ${KCONFIG_DOT_CONFIG} ${KCONFIG_HEADER}
     RESULT_VARIABLE KCONFIG_GEN_RESULT
 )
-if(EXISTS ${KCONFIG_CMAKE})
-    include(${KCONFIG_CMAKE})
-endif()
 if(NOT KCONFIG_GEN_RESULT EQUAL 0)
     message(FATAL_ERROR "Failed to generate cli_kconfig.h from .config")
 endif()
