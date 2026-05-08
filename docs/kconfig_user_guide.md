@@ -282,6 +282,20 @@ CONFIG_HISTORY_MAX=10
 
 **说白了**：`savedefconfig` 就是生成一份"最小差异配置"，像 `git diff` 一样只记录你改了什么。
 
+**如何使用这份差异配置？**
+
+生成的 `defconfig` 文件可以通过 `make defconfig` 的 `DEFCONFIG` 参数加载：
+
+```bash
+# 从当前目录的 defconfig 文件恢复配置
+make defconfig DEFCONFIG=defconfig
+
+# 也可以指定任意路径
+make defconfig DEFCONFIG=configs/my_board_defconfig
+```
+
+`make defconfig` 会把这份最小差异配置**展开为一份完整的 `.config`**（缺失项自动填上默认值），然后你就可以直接 `make` 编译了。
+
 **什么时候用？**
 - 💾 保存自己的个性化配置，方便备份或分享
 - 🏭 给不同硬件平台做 `configs/pc_defconfig`、`configs/stm32_defconfig`
