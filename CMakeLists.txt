@@ -21,14 +21,27 @@ if(NOT EXISTS ${KCONFIG_DOT_CONFIG})
     configure_file(${CMAKE_SOURCE_DIR}/configs/lincli_defconfig ${KCONFIG_DOT_CONFIG} COPYONLY)
 endif()
 
-message(STATUS "Generating cli_kconfig.h from .config")
-execute_process(
-    COMMAND ${PYTHON3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/config_to_header.py
-            ${KCONFIG_DOT_CONFIG} ${KCONFIG_HEADER}
-    RESULT_VARIABLE KCONFIG_GEN_RESULT
-)
-if(NOT KCONFIG_GEN_RESULT EQUAL 0)
-    message(FATAL_ERROR "Failed to generate cli_kconfig.h from .config")
+# Only regenerate cli_kconfig.h when .config is newer than the header.
+# This avoids unnecessary CMake reconfiguration on every build.
+set(NEED_REGENERATE TRUE)
+if(EXISTS ${KCONFIG_HEADER} AND EXISTS ${KCONFIG_DOT_CONFIG})
+    file(TIMESTAMP ${KCONFIG_DOT_CONFIG} CONFIG_TIME "%s")
+    file(TIMESTAMP ${KCONFIG_HEADER} HEADER_TIME "%s")
+    if(HEADER_TIME GREATER_EQUAL CONFIG_TIME)
+        set(NEED_REGENERATE FALSE)
+    endif()
+endif()
+
+if(NEED_REGENERATE)
+    message(STATUS "Generating cli_kconfig.h from .config")
+    execute_process(
+        COMMAND ${PYTHON3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/config_to_header.py
+                ${KCONFIG_DOT_CONFIG} ${KCONFIG_HEADER}
+        RESULT_VARIABLE KCONFIG_GEN_RESULT
+    )
+    if(NOT KCONFIG_GEN_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to generate cli_kconfig.h from .config")
+    endif()
 endif()
 include_directories(${KCONFIG_HEADER_DIR})
 set_property(DIRECTORY PROPERTY CMAKE_CONFIGURE_DEPENDS ${KCONFIG_DOT_CONFIG})
