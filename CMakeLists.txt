@@ -17,8 +17,8 @@ if(NOT PYTHON3_EXECUTABLE)
 endif()
 
 if(NOT EXISTS ${KCONFIG_DOT_CONFIG})
-    message(STATUS "No .config found, copying default.config")
-    configure_file(${CMAKE_SOURCE_DIR}/default.config ${KCONFIG_DOT_CONFIG} COPYONLY)
+    message(STATUS "No .config found, copying configs/lincli_defconfig")
+    configure_file(${CMAKE_SOURCE_DIR}/configs/lincli_defconfig ${KCONFIG_DOT_CONFIG} COPYONLY)
 endif()
 
 message(STATUS "Generating cli_kconfig.h from .config")

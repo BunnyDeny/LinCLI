@@ -55,7 +55,7 @@ make menuconfig
 make mrproper && make
 ```
 
-> 📝 **零操作即可编译**：新用户 clone 仓库后直接 `make` 即可。CMake 会自动把仓库预置的 `default.config` 复制为 `.config`，无需任何手动配置。
+> 📝 **零操作即可编译**：新用户 clone 仓库后直接 `make` 即可。CMake 会自动把仓库预置的 `configs/lincli_defconfig` 复制为 `.config`，无需任何手动配置。
 
 关闭不用的模块后，链接器会自动剔除对应代码（`-ffunction-sections -fdata-sections --gc-sections`），不占用任何 Flash/RAM。
 

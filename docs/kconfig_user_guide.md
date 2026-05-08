@@ -27,8 +27,8 @@ LinCLI 引入 Kconfig 后，你不再需要手动编辑 `include/cli_config.h` �
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  项目仓库里预置了 default.config（默认配置快照）                  │
-│  CMake 检测到没有 .config → 自动复制 default.config → .config     │
+│  项目仓库里预置了 configs/lincli_defconfig（默认配置快照）                  │
+│  CMake 检测到没有 .config → 自动复制 configs/lincli_defconfig → .config     │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -59,13 +59,13 @@ LinCLI 引入 Kconfig 后，你不再需要手动编辑 `include/cli_config.h` �
 | `src/cli/Kconfig` | CLI 功能开关（用户系统、Tab 补全、帮助等） | ✅ |
 | `src/lib/Kconfig` | 内存与缓冲区配置 | ✅ |
 | `src/init/Kconfig` | 测试与调度器配置 | ✅ |
-| `default.config` | 默认配置快照，新用户自动复制为 `.config` | ✅ |
+| `configs/lincli_defconfig` | 默认配置快照，新用户自动复制为 `.config` | ✅ |
 | `.config` | 你当前生效的配置（由 Kconfig 生成） | ❌ |
 | `tools/lincli_menuconfig.py` | 交互式 TUI 前端 | ✅ |
 | `tools/config_to_header.py` | `.config` → `cli_kconfig.h` 转换器 | ✅ |
 | `build/include/cli_kconfig.h` | 自动生成的 C 头文件 | ❌ |
 
-> **为什么有两个配置文件？** `default.config` 是仓库的"出厂设置"，保证新用户 clone 下来就能直接编译。`.config` 是你个人工作区的配置，可以被 `make menuconfig` 修改，且已被 `.gitignore` 排除，不会污染仓库。
+> **为什么有两个配置文件？** `configs/lincli_defconfig` 是仓库的"出厂设置"，保证新用户 clone 下来就能直接编译。`.config` 是你个人工作区的配置，可以被 `make menuconfig` 修改，且已被 `.gitignore` 排除，不会污染仓库。
 
 ---
 
@@ -78,7 +78,7 @@ cd /path/to/LinCLI
 make
 ```
 
-CMake 会自动发现你没有 `.config`，于是把 `default.config` 复制一份作为 `.config`，再自动生成 `build/include/cli_kconfig.h`。整个过程你无感知。
+CMake 会自动发现你没有 `.config`，于是把 `configs/lincli_defconfig` 复制一份作为 `.config`，再自动生成 `build/include/cli_kconfig.h`。整个过程你无感知。
 
 ---
 
@@ -143,7 +143,7 @@ CMake 会自动检测 `.config` 的变化，重新生成 `cli_kconfig.h`，并�
 > | `make` | 编译项目 |
 > | `make clean` | 删除编译产物（`build/`），**保留** `.config` |
 > | `make mrproper` | 删除编译产物 **和** `.config`、`.config.old`，回到刚 clone 的状态 |
-> | `make defconfig` | 从 `default.config` 恢复一份全新的默认配置 |
+> | `make defconfig` | 从 `configs/lincli_defconfig` 恢复一份全新的默认配置 |
 > | `make savedefconfig` | 把当前配置导出为最小差异的 `defconfig` 文件 |
 > | `make menuconfig` | 打开交互式配置界面 |
 >
@@ -189,7 +189,7 @@ CMake 会自动检测 `.config` 的变化，重新生成 `cli_kconfig.h`，并�
 
 ### `make defconfig` — 恢复出厂设置
 
-把仓库预置的 `default.config` 复制为 `.config`，相当于"恢复出厂设置"。
+把仓库预置的 `configs/lincli_defconfig` 复制为 `.config`，相当于"恢复出厂设置"。
 
 ```bash
 make defconfig
@@ -254,7 +254,7 @@ CONFIG_HISTORY_MAX=10
 
 **发现没有？只有 2 行！**
 
-它把 50 行的 `.config` 压缩成了 **只包含与默认值不同的项**。因为其他所有配置都和 `default.config` 一样，没必要重复写。
+它把 50 行的 `.config` 压缩成了 **只包含与默认值不同的项**。因为其他所有配置都和 `configs/lincli_defconfig` 一样，没必要重复写。
 
 **说白了**：`savedefconfig` 就是生成一份"最小差异配置"，像 `git diff` 一样只记录你改了什么。
 
@@ -268,7 +268,7 @@ CONFIG_HISTORY_MAX=10
 ### 一张图看懂
 
 ```text
-default.config          .config（你的个性化配置）
+configs/lincli_defconfig          .config（你的个性化配置）
      │                        │
      │    make oldconfig      │  ← 新代码新增了 Kconfig 项
      │        ──────►         │
@@ -311,7 +311,7 @@ make mrproper
 make
 ```
 
-`make mrproper` 会删除 `build/`、`.config`、`.config.old`，回到刚 clone 仓库时的干净状态。然后 `make` 会自动从 `default.config` 复制一份全新的默认配置。
+`make mrproper` 会删除 `build/`、`.config`、`.config.old`，回到刚 clone 仓库时的干净状态。然后 `make` 会自动从 `configs/lincli_defconfig` 复制一份全新的默认配置。
 
 如果你只是想重新生成一份默认配置（不删编译目录）：
 
@@ -359,19 +359,19 @@ sed -i 's/CONFIG_HISTORY_MAX=4/CONFIG_HISTORY_MAX=10/' .config
 make
 ```
 
-### Q4: `default.config` 和 `.config` 有什么区别？
+### Q4: `configs/lincli_defconfig` 和 `.config` 有什么区别？
 
-- `default.config`：仓库里的"出厂默认值"，**不应手动修改**（如需修改默认值，应去改 `src/*/Kconfig` 文件里的 `default` 字段）。
+- `configs/lincli_defconfig`：仓库里的"出厂默认值"，**不应手动修改**（如需修改默认值，应去改 `src/*/Kconfig` 文件里的 `default` 字段）。
 - `.config`：你当前工作区的配置，**会被 `.gitignore` 忽略**，可以随便改。
 
 ### Q5: 我想给项目添加一个新的配置项
 
-在 `src/cli/Kconfig`（或 `src/lib/Kconfig`、`src/init/Kconfig`，取决于配置项属于哪个模块）中添加新的 `config` 条目，然后运行 `make menuconfig` 即可在菜单中看到它。修改后需要更新 `default.config`：
+在 `src/cli/Kconfig`（或 `src/lib/Kconfig`、`src/init/Kconfig`，取决于配置项属于哪个模块）中添加新的 `config` 条目，然后运行 `make menuconfig` 即可在菜单中看到它。修改后需要更新 `configs/lincli_defconfig`：
 
 ```bash
 rm .config && make   # 让 CMake 重新生成默认 .config
-# 然后把新的 .config 内容复制回 default.config
-cp .config default.config
+# 然后把新的 .config 内容复制回 configs/lincli_defconfig
+cp .config configs/lincli_defconfig
 ```
 
 ---
