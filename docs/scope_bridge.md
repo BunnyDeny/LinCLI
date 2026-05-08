@@ -38,20 +38,16 @@ sudo apt update && sudo apt install python3-serial python3-matplotlib -y
 
 ### 0️⃣ 启用测试命令编译
 
-`scope` 命令位于 `tests/commands/` 目录下，默认**不参与编译**。你需要先打开根目录 `CMakeLists.txt` 开头的测试开关：
-
-```cmake
-option(LINCLI_BUILD_TEST_COMMANDS "Build interactive test commands (led, log, motor, etc.)" ON)
-```
-
-确保该选项为 `ON` 后重新编译：
+`scope` 命令位于 `tests/commands/` 目录下，默认**不参与编译**。你需要通过 Kconfig 打开对应的开关：
 
 ```bash
-cd LinCLI
+make menuconfig
+# → Tests & Demos → Enable scope test demo  [ 按 Space 选中 ]
+# → 按 Esc Esc 退出并保存
 make
 ```
 
-> 📝 如果你之前已经编译过但开关是 `OFF`，修改后必须执行 `make clean && make`，否则测试命令不会链接进可执行文件。
+> 📝 Kconfig 的详细用法请参考 [Kconfig 配置指南](kconfig_user_guide.md)。如果你之前已经编译过，修改配置后重新执行 `make` 即可，CMake 会自动检测 `.config` 变化并重新生成头文件。
 
 ### 1️⃣ 启动桥接脚本
 
