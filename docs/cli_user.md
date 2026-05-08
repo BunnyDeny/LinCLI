@@ -94,7 +94,7 @@ typedef struct cli_user {
 #include "cli_user.h" /* 🛡️ 用户管理头文件 */
 
 /* 👑 root 用户：持有所有命令 */
-CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS());
+CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS_NONE);
 
 /* 👤 普通用户：仅持有 help 和 _echo */
 CLI_USER(lin,   "lin",   "lin123",   CLI_USER_ROLE_NORMAL,
@@ -106,7 +106,7 @@ CLI_USER(lin,   "lin",   "lin123",   CLI_USER_ROLE_NORMAL,
 - `username` / `password` 👤🔑：登录凭证
 - `role` 🎭：`CLI_USER_ROLE_ROOT` 或 `CLI_USER_ROLE_NORMAL`
 - `cmds` 📋：通过 `USER_CMDS(...)` 宏定义的命令名列表
-  - 👑 Root 用户传 `USER_CMDS()`（空占位，框架自动视为持有所有命令 ⭐）
+  - 👑 Root 用户传 `USER_CMDS_NONE`（空占位，框架自动视为持有所有命令 ⭐）
   - 👤 Normal 用户必须显式列出可使用的命令名 🔐
 
 > 📝 **命令名必须与 `CLI_COMMAND` 中注册的 `cmd_str` 完全一致** ✅。例如 `_echo` 命令在注册时写的是 `CLI_COMMAND(_echo, "_echo", ...)`，因此 `USER_CMDS` 中也要写 `"_echo"` 🎯。

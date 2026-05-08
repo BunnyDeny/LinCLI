@@ -375,6 +375,18 @@ CMake 只管"编译哪些源文件、链接哪些库"，所有条件编译和数
 
 **最佳实践**：不要修改任何 CMake 文件，所有配置都通过 `make menuconfig` 完成。
 
+> ⚠️ **重要：Kconfig 的本质是生成配置头文件**
+>
+> Kconfig 的最终产物只有一件——`build/include/cli_kconfig.h`。对于 **PC 端 CMake 构建**，这个头文件会被自动包含，你无需关心。
+>
+> 但对于 **MCU 裸编译工程**（Keil MDK / GCC Makefile），你需要**手动**将 `build/include/cli_kconfig.h` 的内容复制到工程使用的 `include/cli_kconfig.h` 中，否则 MCU 工程仍然使用的是仓库预置的默认配置快照，而不是你通过 `make menuconfig` 调整后的配置。
+>
+> 也可以使用仓库提供的快捷命令：
+> ```bash
+> make sync-kconfig   # 将 configs/lincli_defconfig 同步到 include/cli_kconfig.h
+> ```
+> 如果你已通过 `make menuconfig` 修改了配置，请先将 `.config` 内容覆盖到 `configs/lincli_defconfig`（`make savedefconfig`），再执行 `make sync-kconfig`。
+
 ---
 
 ## ❓ 10. 常见问题

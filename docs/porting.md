@@ -293,7 +293,29 @@ Keil MDK 使用 `.sct`（分散加载文件）作为链接脚本。核心思路�
 
 各段之间使用 `+0` 表示紧跟前一个区域排布，无需额外填充。放置顺序**必须在** `.ANY (+RO)` 之前，否则普通目标文件中的段会被 `.ANY` 优先吸收，导致自定义段分散到不同位置甚至丢失。
 
-### 💡 6. 选择串口终端工具
+### 🎛️ 6. Kconfig 配置同步（MCU 工程必看）
+
+LinCLI 使用 Kconfig 管理所有编译期配置。对于 **PC 端 CMake 构建**，`make menuconfig` 修改后会自动生成 `build/include/cli_kconfig.h`，编译时自动包含，无需额外操作。
+
+但对于 **MCU 裸编译工程**（Keil MDK / GCC Makefile），情况不同：
+
+- MCU 工程通常直接引用仓库根目录的 `include/cli_kconfig.h`（一份预置的默认配置快照）
+- 你在 PC 端通过 `make menuconfig` 修改配置后，生成的是 `build/include/cli_kconfig.h`
+- **这两个文件不会自动同步**
+
+因此，如果你在 PC 端用 Kconfig 调整了配置（比如关闭某些 Demo 命令以节省 Flash），必须**手动**将最新的配置头文件同步到 MCU 工程中：
+
+```bash
+# 方式 1：直接复制 CMake 生成的头文件（推荐，如果你已用 menuconfig 调好配置）
+cp build/include/cli_kconfig.h include/cli_kconfig.h
+
+# 方式 2：使用仓库提供的快捷命令（将 configs/lincli_defconfig 同步到 include/cli_kconfig.h）
+make sync-kconfig
+```
+
+> ⚠️ **核心原则**：Kconfig 的最终作用仅仅是生成 `cli_kconfig.h` 这个配置头文件。MCU 工程没有 CMake 自动集成，你需要自己确保工程使用的是正确的头文件版本。
+
+### 💡 7. 选择串口终端工具
 
 移植完成后，你需要通过串口终端工具连接单片机，与 LinCLI 进行交互。以下是不同平台下的常用工具推荐：
 

@@ -23,7 +23,7 @@ void candidate_list_redraw(int rows);
  *  候选列表状态管理（供 cli_printk 重绘使用）
  * ============================================================ */
 
-struct candidate_ctx candidate_ctx = { 0 };
+struct candidate_ctx candidate_ctx = { CAND_ACTIVE_NONE };
 
 void candidate_ctx_save(cand_active_t active, const char *prefix, int prefix_len,
 			       const cli_command_t *cmd)
@@ -493,7 +493,8 @@ static int apply_option_to_cmdline(cli_option_t *opt, int tok_start)
 	return 0;
 }
 
-static void candidate_ctx_restore_after_list(int active, int cycling,
+static void candidate_ctx_restore_after_list(cand_active_t active,
+					     cand_cycling_t cycling,
 					     int saved_repl_start,
 					     int saved_highlight)
 {
@@ -794,7 +795,7 @@ static void candidate_redraw_generic(
 		list_fn(candidate_ctx.cmd, candidate_ctx.prefix,
 			candidate_ctx.prefix_len, -1);
 	candidate_ctx.highlight_index = saved_highlight;
-	candidate_ctx.cycling = saved_cycling;
+	candidate_ctx.cycling = (cand_cycling_t)saved_cycling;
 	candidate_ctx.active = active;
 }
 

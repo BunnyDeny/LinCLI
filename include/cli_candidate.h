@@ -46,7 +46,7 @@ extern const cli_candidate_t *const _cli_candidates_end[];
  * 外层双层圆括号避免预处理器把大括号内的逗号当成宏参数分隔符。
  * ============================================================ */
 #define CANDIDATES(...) \
-	((char *[]){ __VA_ARGS__ })
+	((char *[]){ __VA_ARGS__, NULL })
 
 /* ============================================================
  * 注册宏：定义一个 cli_candidate_t 并将其指针放入 .cli_candidates 段
@@ -66,7 +66,7 @@ extern const cli_candidate_t *const _cli_candidates_end[];
 	static const cli_candidate_t _cli_candidate_def_##name = {         \
 		.cmd = _cmd,                                                 \
 		.long_option = _long_option,                                 \
-		.argc = (int)((sizeof(_argv) / sizeof(char *))),             \
+		.argc = (int)((sizeof(_argv) / sizeof(char *))) - 1,             \
 		.argv = _argv,                                               \
 	};                                                               \
 	static const cli_candidate_t *const _cli_candidate_ptr_##name      \
