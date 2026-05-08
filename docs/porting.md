@@ -309,7 +309,7 @@ LinCLI 使用 Kconfig 管理所有编译期配置。对于 **PC 端 CMake 构建
 # 方式 1：直接复制 CMake 生成的头文件（推荐，如果你已用 menuconfig 调好配置）
 cp build/include/cli_kconfig.h include/cli_kconfig.h
 
-# 方式 2：使用仓库提供的快捷命令（将 configs/lincli_defconfig 同步到 include/cli_kconfig.h）
+# 方式 2：使用仓库提供的快捷命令（一键同步到所有示例工程）
 make sync-kconfig
 ```
 

@@ -381,11 +381,17 @@ CMake 只管"编译哪些源文件、链接哪些库"，所有条件编译和数
 >
 > 但对于 **MCU 裸编译工程**（Keil MDK / GCC Makefile），你需要**手动**将 `build/include/cli_kconfig.h` 的内容复制到工程使用的 `include/cli_kconfig.h` 中，否则 MCU 工程仍然使用的是仓库预置的默认配置快照，而不是你通过 `make menuconfig` 调整后的配置。
 >
-> 也可以使用仓库提供的快捷命令：
+> ⚡ **快捷命令**：`make sync-kconfig`
+>
+> 该命令会将 `configs/lincli_defconfig` 同步到所有示例工程目录下的 `cli_kconfig.h`：
 > ```bash
-> make sync-kconfig   # 将 configs/lincli_defconfig 同步到 include/cli_kconfig.h
+> make sync-kconfig
+> # → examples/stm32_g431/cli_kconfig.h
+> # → examples/stm32f103_keil/cli_kconfig.h
+> # → examples/pc_linux/cli_kconfig.h
+> # → examples/external_demo/cli_kconfig.h
 > ```
-> 如果你已通过 `make menuconfig` 修改了配置，请先将 `.config` 内容覆盖到 `configs/lincli_defconfig`（`make savedefconfig`），再执行 `make sync-kconfig`。
+> 如果你已通过 `make menuconfig` 修改了配置，请先用 `make savedefconfig` 将 `.config` 覆盖回 `configs/lincli_defconfig`，再执行 `make sync-kconfig`。
 
 ---
 
