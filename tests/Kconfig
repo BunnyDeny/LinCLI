@@ -1,10 +1,11 @@
 menu "Tests & Demos"
 
 config CLI_ENABLE_SCHEDULER_TICK_PRINT
-    bool "使能尾行打印"
+    bool "Enable inline tail print"
     default n
     help
-      使能尾行打印。
+      Enable inline tail print for scheduler tick output.
+      Useful for verifying that the scheduler is still running.
 
 source "tests/unit/Kconfig"
 source "tests/commands/Kconfig"
