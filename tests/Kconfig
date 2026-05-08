@@ -1,7 +1,7 @@
 menu "Tests & Demos"
 
 config CLI_ENABLE_SCHEDULER_TICK_PRINT
-    bool "Enable inline tail print"
+    bool "Enable inline tail print test"
     default n
     help
       Enable inline tail print for scheduler tick output.

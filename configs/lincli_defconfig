@@ -36,11 +36,7 @@ CONFIG_CLI_MPOOL_SIZE=128
 #
 # CONFIG_CLI_ENABLE_SCHEDULER_TICK_PRINT is not set
 
-#
-# Unit Tests
-#
 CONFIG_CLI_ENABLE_UNIT_TESTS=y
-# end of Unit Tests
 
 #
 # Demo Commands
