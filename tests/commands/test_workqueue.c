@@ -54,13 +54,13 @@ extern volatile unsigned long jiffies;
 static void wq_immediate_handler(struct work_struct *work)
 {
 	(void)work;
-	cli_printk("[WQ] immediate work executed at tick %lu\r\n", jiffies);
+	cli_printk("[WQ] immediate work executed at tick %u\r\n", jiffies);
 }
 
 static void wq_delayed_handler(struct work_struct *work)
 {
 	(void)work;
-	cli_printk("[WQ] delayed work executed at tick %lu (after 3 ticks)\r\n", jiffies);
+	cli_printk("[WQ] delayed work executed at tick %u (after 3 ticks)\r\n", jiffies);
 }
 
 static int wqtest_handler(void *_args)
@@ -76,7 +76,7 @@ static int wqtest_handler(void *_args)
 	cli_printk("Scheduling workqueue test jobs...\r\n");
 	schedule_work(&wq_immediate);
 	schedule_delayed_work(&wq_delayed, 3);
-	cli_printk("Jobs scheduled at tick %lu, watch tick loop output\r\n", jiffies);
+	cli_printk("Jobs scheduled at tick %u, watch tick loop output\r\n", jiffies);
 	return 0;
 }
 
