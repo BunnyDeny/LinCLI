@@ -273,7 +273,100 @@ cli_printk("tick = %u\r\n", jiffies);
 
 ---
 
-## 📋 7. 完整使用流程
+## 🎯 7. 什么时候该用 workqueue（以及什么时候不该用）
+
+workqueue 在 MCU 上的核心价值非常聚焦：**把"中断里设标志位 + 主循环里查标志调函数"这种散落在两处的逻辑，收拢成一处**。
+
+### ✅ 典型适用场景
+
+#### 1️⃣ 中断里替代"标志位 + 轮询"模式
+
+以前的中断处理模式：
+
+```c
+/* 中断里 */
+void TIM_IRQHandler(void)
+{
+    flag_adc_done = 1;   /* 设个标志，赶紧跑 */
+}
+
+/* 主循环里 */
+while (1) {
+    if (flag_adc_done) {
+        flag_adc_done = 0;
+        process_adc_data();  /* 实际干活 */
+    }
+}
+```
+
+用 workqueue 后，中断里直接一行搞定：
+
+```c
+void TIM_IRQHandler(void)
+{
+    schedule_work(&adc_work);  /* 投递任务，立即退出中断 */
+}
+```
+
+中断越轻量越好，workqueue 把这个原则落实得很漂亮 🎯
+
+#### 2️⃣ 延迟 / 防抖（`delayed_work`）
+
+这是"标志位模式"解决不了的场景。比如按键消抖：
+
+```c
+void EXTI_IRQHandler(void)
+{
+    /* 中断触发后，20 ticks 再确认 */
+    schedule_delayed_work(&key_debounce_work, 20);
+}
+
+static void key_debounce_handler(struct work_struct *work)
+{
+    if (gpio_read(KEY_PIN) == 0) {
+        /* 确认按下，执行业务逻辑 */
+    }
+}
+```
+
+没有 `delayed_work`，你得自己开定时器、记回调、在中断和定时器之间传状态——代码会散成三处 💥
+
+#### 3️⃣ DMA 完成后的"大数据搬运"
+
+DMA 中断触发时，缓冲区数据可能还没完全稳定（某些 MCU 有 cache 一致性问题），或者后续处理（校验、解析、入队）太重。在 DMA ISR 里 `schedule_work` 把活儿推出去，ISR 立即返回，DMA 可以准备下一轮传输：
+
+```c
+void DMA_IRQHandler(void)
+{
+    schedule_work(&dma_done_work);  /* 数据处理交给调度器 */
+}
+```
+
+#### 4️⃣ 多中断源的"统一后处理"
+
+假设 ADC、UART、TIM3 三个中断完成后都需要更新同一处 UI 状态。没有 workqueue，三个 ISR 里都要写类似的标志位检查和回调逻辑。有了 workqueue，三个 ISR 各自 `schedule_work(&update_ui_work)`，实际更新逻辑只写一次 ✨
+
+### ❌ 不适用场景：任务上下文里直接调函数
+
+如果你已经在 `scheduler_task` 或其他任务函数里了，**直接调函数永远是更好的选择**：
+
+```c
+/* ✅ 正确 — 直接调用 */
+led_toggle();
+
+/* ❌ 错误 — 无故绕一圈 */
+schedule_work(&led_work);  /* 增加链表操作开销和临界区竞争 */
+```
+
+workqueue 不是"更高级的函数调用"，它是**上下文切换器**——在不需要切换的地方用它，就是给自己找麻烦 😅
+
+### 💡 一句话总结
+
+> **workqueue 在 MCU 上就是"中断里的速记法"**。它的价值不是让任务上下文里的代码更优雅，而是让中断里的代码更干净、更可维护。`delayed_work` 在此基础上再加一个"不用自己管定时器"的便利。其他场景，直接调函数永远是更好的选择。
+
+---
+
+## 📋 8. 完整使用流程
 
 ```c
 #include "workqueue.h"
