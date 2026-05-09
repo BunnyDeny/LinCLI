@@ -34,11 +34,16 @@
 #include "cli_env.h"
 #include "cli_user.h"
 
+#ifdef CONFIG_WORKQUEUE
+#include "workqueue.h"
+#endif
+
 struct tStateEngine scheduler_eng;
 extern struct tState *const _scheduler_start[];
 extern struct tState *const _scheduler_end[];
 
 static int scheduler_ticks = 0;
+volatile unsigned long jiffies = 0;
 
 __attribute__((weak)) void cli_prompt_print(void)
 {
@@ -551,6 +556,9 @@ int scheduler_init(void)
 			 cli_strerror(status), status);
 		return status;
 	}
+#ifdef CONFIG_WORKQUEUE
+	workqueue_init();
+#endif
 	return 0;
 }
 
@@ -571,7 +579,12 @@ int scheduler_task(void)
 	if (status < 0) {
 		return status;
 	}
-	scheduler_ticks++;
+	++jiffies;
+	scheduler_ticks = (int)jiffies;
+#ifdef CONFIG_WORKQUEUE
+	workqueue_tick_handler(system_wq, jiffies);
+	workqueue_run_one(system_wq);
+#endif
 	if (cli_out_sync()) {
 		return -2;
 	}

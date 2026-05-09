@@ -12,6 +12,7 @@
 #ifdef CONFIG_WORKQUEUE
 
 #include "workqueue.h"
+#include "cli_critical.h"
 
 /* 全局默认队列 */
 struct workqueue_struct *system_wq = NULL;
@@ -37,18 +38,17 @@ static inline int test_bit(int nr, unsigned long addr)
 	return (addr >> nr) & 1;
 }
 
-/* ───── 平台互斥锁钩子（弱定义，用户可覆盖） ───── */
-__attribute__((weak))
+/* ───── 平台互斥锁钩子：使用 LinCLI 的 cli_enter_critical / cli_exit_critical ───── */
 unsigned long wq_platform_lock_irqsave(void)
 {
-	/* 默认空实现：适用于单线程或关中断的单核 MCU */
+	cli_enter_critical();
 	return 0;
 }
 
-__attribute__((weak))
 void wq_platform_unlock_irqrestore(unsigned long flags)
 {
 	(void)flags;
+	cli_exit_critical();
 }
 
 static inline unsigned long wq_lock_irqsave(void)
