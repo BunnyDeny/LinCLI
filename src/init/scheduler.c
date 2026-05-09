@@ -34,7 +34,7 @@
 #include "cli_env.h"
 #include "cli_user.h"
 
-#ifdef CONFIG_WORKQUEUE
+#ifdef WORKQUEUE
 #include "workqueue.h"
 #endif
 
@@ -556,7 +556,7 @@ int scheduler_init(void)
 			 cli_strerror(status), status);
 		return status;
 	}
-#ifdef CONFIG_WORKQUEUE
+#ifdef WORKQUEUE
 	workqueue_init();
 #endif
 	return 0;
@@ -581,7 +581,7 @@ int scheduler_task(void)
 	}
 	++jiffies;
 	scheduler_ticks = (int)jiffies;
-#ifdef CONFIG_WORKQUEUE
+#ifdef WORKQUEUE
 	workqueue_tick_handler(system_wq, jiffies);
 	workqueue_run_one(system_wq);
 #endif

@@ -3,6 +3,8 @@ set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/cli
     ${CMAKE_SOURCE_DIR}/src/lib
+    ${CMAKE_SOURCE_DIR}/src/third_party/list
+    ${CMAKE_SOURCE_DIR}/src/third_party/workqueue
 )
 set(SUBDIRS .)
 get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)

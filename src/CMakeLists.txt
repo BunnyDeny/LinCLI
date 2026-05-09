@@ -5,6 +5,7 @@ set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/lib
     ${CMAKE_SOURCE_DIR}/src/init
     ${CMAKE_SOURCE_DIR}/src/third_party/list
+    ${CMAKE_SOURCE_DIR}/src/third_party/workqueue
 )
 set(SUBDIRS cli lib init)
 add_subdirectory(third_party)

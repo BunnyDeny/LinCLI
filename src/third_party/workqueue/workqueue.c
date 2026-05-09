@@ -9,7 +9,7 @@
  */
 #include "cli_kconfig.h"
 
-#ifdef CONFIG_WORKQUEUE
+#ifdef WORKQUEUE
 
 #include "workqueue.h"
 #include "cli_critical.h"
@@ -295,4 +295,4 @@ void workqueue_init(void)
 	system_wq = &sys_wq;
 }
 
-#endif /* CONFIG_WORKQUEUE */
+#endif /* WORKQUEUE */
