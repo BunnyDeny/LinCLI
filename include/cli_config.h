@@ -31,7 +31,7 @@
  * ========================================================== */
 #define CLI_VERSION_MAJOR 1
 #define CLI_VERSION_MINOR 14
-#define CLI_VERSION_PATCH 7
+#define CLI_VERSION_PATCH 8
 
 #if CLI_MPOOL_COUNT > 32
 #error "CLI_MPOOL_COUNT must not exceed 32"
