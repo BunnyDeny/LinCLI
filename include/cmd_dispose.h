@@ -298,8 +298,8 @@ typedef struct {
 #define CLI_COMMAND_WITH_BUF(name, cmd_str, brief_str, _usage_arr,           \
 				 parse_cb, arg_struct_ptr, buf,            \
 				 buf_size, ...)                            \
-	/* 定义选项数组（放在静态区） */                                       \
-	static cli_option_t _cli_options_##name[] = { __VA_ARGS__ };     \
+	/* 定义选项数组（放在全局区，不加 static，同名命令注册将触发链接期多重定义错误） */ \
+	cli_option_t _cli_options_##name[] = { __VA_ARGS__ };            \
                                                                                \
 	/* 通过链接脚本段收集注册，使用用户指定的缓冲区 */                     \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                            \
