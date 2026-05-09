@@ -46,7 +46,8 @@
 #include "workqueue.h"
 
 static struct work_struct wq_immediate;
-static struct delayed_work wq_delayed;
+static struct delayed_work wq_delayed_300;
+static struct delayed_work wq_delayed_600;
 static int wq_inited = 0;
 
 extern volatile unsigned long jiffies;
@@ -57,10 +58,16 @@ static void wq_immediate_handler(struct work_struct *work)
 	cli_printk("[WQ] immediate work executed at tick %u\r\n", jiffies);
 }
 
-static void wq_delayed_handler(struct work_struct *work)
+static void wq_delayed_300_handler(struct work_struct *work)
 {
 	(void)work;
-	cli_printk("[WQ] delayed work executed at tick %u (after 3 ticks)\r\n", jiffies);
+	cli_printk("[WQ] delayed work (300 ticks) executed at tick %u\r\n", jiffies);
+}
+
+static void wq_delayed_600_handler(struct work_struct *work)
+{
+	(void)work;
+	cli_printk("[WQ] delayed work (600 ticks) executed at tick %u\r\n", jiffies);
 }
 
 static int wqtest_handler(void *_args)
@@ -69,13 +76,15 @@ static int wqtest_handler(void *_args)
 
 	if (!wq_inited) {
 		INIT_WORK(&wq_immediate, wq_immediate_handler);
-		INIT_DELAYED_WORK(&wq_delayed, wq_delayed_handler);
+		INIT_DELAYED_WORK(&wq_delayed_300, wq_delayed_300_handler);
+		INIT_DELAYED_WORK(&wq_delayed_600, wq_delayed_600_handler);
 		wq_inited = 1;
 	}
 
 	cli_printk("Scheduling workqueue test jobs...\r\n");
 	schedule_work(&wq_immediate);
-	schedule_delayed_work(&wq_delayed, 3);
+	schedule_delayed_work(&wq_delayed_300, 300);
+	schedule_delayed_work(&wq_delayed_600, 600);
 	cli_printk("Jobs scheduled at tick %u, watch tick loop output\r\n", jiffies);
 	return 0;
 }
