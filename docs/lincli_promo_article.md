@@ -369,4 +369,4 @@ cmake .. && make -j
 
 **LinCLI** —— 面向嵌入式/MCU 的 C 语言命令行交互框架。让命令注册像定义变量一样简单。
 
-*License: GPL v3*
+*License: MIT*
