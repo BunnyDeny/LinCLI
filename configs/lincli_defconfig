@@ -62,6 +62,6 @@ CONFIG_CLI_ENABLE_UNIT_TESTS=y
 #
 # Third-Party Components
 #
-CONFIG_LIST=y
-CONFIG_WORKQUEUE=y
+# CONFIG_LIST is not set
+# CONFIG_WORKQUEUE is not set
 # end of Third-Party Components
