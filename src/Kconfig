@@ -2,5 +2,6 @@ menu "LinCLI Core"
 
 source "src/cli/Kconfig"
 source "src/lib/Kconfig"
+source "src/third_party/Kconfig"
 
 endmenu

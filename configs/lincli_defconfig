@@ -58,3 +58,10 @@ CONFIG_CLI_ENABLE_UNIT_TESTS=y
 # CONFIG_CLI_ENABLE_DEMO_WITH_BUF is not set
 # end of Demo Commands
 # end of Tests & Demos
+
+#
+# Third-Party Components
+#
+CONFIG_LIST=y
+CONFIG_WORKQUEUE=y
+# end of Third-Party Components
