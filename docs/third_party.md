@@ -267,22 +267,6 @@ cli_printk("tick = %lu\r\n", jiffies);
 cli_printk("tick = %u\r\n", jiffies);
 ```
 
-### 🔗 调度器集成
-
-workqueue 已与 LinCLI 调度器完成集成，用户无需手动调用 tick handler：
-
-```c
-/* src/init/scheduler.c 中已自动完成 */
-scheduler_task()
-{
-    jiffies = scheduler_ticks;
-    workqueue_tick_handler(system_wq, jiffies);  /* 扫描延迟链表 */
-    workqueue_run_one(system_wq);                /* 执行一个立即任务 */
-}
-```
-
-你只需要在业务代码中调用 `schedule_work()` 或 `schedule_delayed_work()` 投递任务即可～ 🎉
-
 ### ⏱️ 避免耗时操作
 
 再次提醒 ⚠️：**只有执行 work 回调函数期间会阻塞 CLI 响应**，`delayed_work` 的延迟等待阶段并不会阻塞。因此 work 回调本身不宜占用过长时间。😅
