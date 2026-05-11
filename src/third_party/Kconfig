@@ -1,7 +1,7 @@
 menu "Third-Party Components"
 
 config LIST
-	bool "Enable Linux kernel linked list (list.h)"
+	bool "Enable linked list (list.h)"
 	default n
 	help
 	  Provides list_head, hlist_head, container_of macros.
@@ -12,8 +12,8 @@ config WORKQUEUE
 	default n
 	select LIST
 	help
-	  Simplified Linux workqueue for MCU.
+	  Simplified workqueue for MCU.
 	  Supports delayed execution, FIFO scheduling.
-	  Requires LIST to be enabled.
+	  Requires LIST to be enabled(auto).
 
 endmenu
