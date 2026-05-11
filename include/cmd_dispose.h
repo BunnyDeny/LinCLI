@@ -105,6 +105,101 @@ typedef struct {
 } cmd_parse_ctx_t;
 
 /* ============================================================
+ * Raw argument command support
+ * ============================================================ */
+
+typedef struct {
+	int argc;
+	char **argv;
+} raw_cmd_args_t;
+
+static inline bool is_raw_command(const cli_command_t *cmd)
+{
+	return cmd && cmd->option_count == 1 && cmd->options &&
+	       cmd->options[0].long_opt &&
+	       strcmp(cmd->options[0].long_opt, "raw") == 0;
+}
+
+#if CLI_ENABLE_RAW_COMMAND
+#define CLI_RAW_COMMAND(name, cmd_str, brief_str, handler, ...)        \
+	static char *_cli_raw_cands_##name[] = { __VA_ARGS__, NULL };    \
+	cli_option_t _cli_options_##name[] = {                         \
+		{                                                          \
+			.short_opt = 0,                                        \
+			.long_opt = "raw",                                     \
+			.type = CLI_TYPE_STRING,                               \
+			.help = "raw command (no options)",                    \
+			.offset = 0,                                           \
+			.offset_count = 0,                                     \
+			.max_args = 0,                                         \
+			.required = false,                                     \
+			.depends = NULL,                                       \
+			.conflicts = NULL,                                     \
+			.candidate_argc =                                      \
+				(int)((sizeof(_cli_raw_cands_##name) /               \
+				       sizeof(char *))) -                            \
+				1,                                                 \
+			.candidate_argv = _cli_raw_cands_##name,                 \
+		},                                                         \
+	};                                                             \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
+		name, cmd_str, brief_str, (void *)0, 0,                    \
+		_cli_options_##name, 1,                                    \
+		NULL, (int (*)(void *))handler, NULL,                      \
+		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
+
+#define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _entry, _task, \
+				  _exit, ...)                                  \
+	static char *_cli_raw_cands_##name[] = { __VA_ARGS__, NULL };    \
+	cli_option_t _cli_options_##name[] = {                         \
+		{                                                          \
+			.short_opt = 0,                                        \
+			.long_opt = "raw",                                     \
+			.type = CLI_TYPE_STRING,                               \
+			.help = "raw command (no options)",                    \
+			.offset = 0,                                           \
+			.offset_count = 0,                                     \
+			.max_args = 0,                                         \
+			.required = false,                                     \
+			.depends = NULL,                                       \
+			.conflicts = NULL,                                     \
+			.candidate_argc =                                      \
+				(int)((sizeof(_cli_raw_cands_##name) /               \
+				       sizeof(char *))) -                            \
+				1,                                                 \
+			.candidate_argv = _cli_raw_cands_##name,                 \
+		},                                                         \
+	};                                                             \
+	static void _cli_raw_wrap_entry_##name(void *_a)                 \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		_entry(a->argv, a->argc);                                  \
+	}                                                              \
+	static int _cli_raw_wrap_task_##name(void *_a)                   \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		return _task(a->argv, a->argc);                            \
+	}                                                              \
+	static void _cli_raw_wrap_exit_##name(void *_a)                  \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		_exit(a->argv, a->argc);                                   \
+	}                                                              \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
+		name, cmd_str, brief_str, (void *)0, 0,                    \
+		_cli_options_##name, 1,                                    \
+		(void (*)(void *))_cli_raw_wrap_entry_##name,              \
+		(int (*)(void *))_cli_raw_wrap_task_##name,                \
+		(void (*)(void *))_cli_raw_wrap_exit_##name,               \
+		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
+
+#else
+#define CLI_RAW_COMMAND(name, cmd_str, brief_str, handler, ...) /* disabled */
+#define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _entry, _task,    \
+			      _exit, ...) /* disabled */
+#endif
+
+/* ============================================================
  * OPTION 宏定义（统一 10 参数）
  * ============================================================
  *

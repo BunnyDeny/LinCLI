@@ -844,6 +844,21 @@ int cmd_parse_prepare(char *cmd, cmd_parse_ctx_t *ctx,
 						       cmd_ret, ctx);
 	if (!cmd_def)
 		return dispose_exit;
+	if (is_raw_command(cmd_def)) {
+		if (cmd_def->cmd_entry == NULL) {
+			int (*raw_handler)(char **, int) =
+				(int (*)(char **, int))cmd_def->cmd_task;
+			*cmd_ret = raw_handler(ctx->argv, argc);
+			cmd_parse_cleanup(cmd_def, ctx);
+			return dispose_exit;
+		}
+		raw_cmd_args_t *raw_args =
+			(raw_cmd_args_t *)cmd_def->arg_buf;
+		raw_args->argc = argc;
+		raw_args->argv = ctx->argv;
+		*out_cmd_def = cmd_def;
+		return CLI_OK;
+	}
 	memset(cmd_def->arg_buf, 0, cmd_def->arg_buf_size);
 	int ret = execute_parsing(cmd_def, argc, ctx->argv, cmd_ret, ctx);
 	if (ret < 0)

@@ -123,4 +123,18 @@ config CLI_ENABLE_DEMO_WORKQUEUE
     help
       Register the wqtest demo command.
 
+config CLI_ENABLE_DEMO_RAW_CMD
+    bool "Enable raw command test demo"
+    default n
+    depends on CLI_ENABLE_RAW_COMMAND
+    help
+      Register the cp raw argument demo command.
+
+config CLI_ENABLE_DEMO_RAW_CMD_ASYNC
+    bool "Enable async raw command test demo"
+    default n
+    depends on CLI_ENABLE_RAW_COMMAND
+    help
+      Register the mv async raw argument demo command.
+
 endmenu
