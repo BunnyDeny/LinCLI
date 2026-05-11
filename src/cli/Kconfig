@@ -37,6 +37,13 @@ config CLI_ENABLE_AUTO_RUN
     bool "Enable auto-run commands (CLI_AUTO_CMD)"
     default y
 
+config CLI_ENABLE_RAW_COMMAND
+    bool "Enable raw argument commands"
+    default n
+    help
+      Allow commands with argc/argv style handlers instead of option parsing.
+      Useful for cp/mv-like commands.
+
 config HISTORY_MAX
     int "Command history entries"
     default 4
