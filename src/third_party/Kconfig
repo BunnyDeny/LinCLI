@@ -1,0 +1,19 @@
+menu "Third-Party Components"
+
+config LIST
+	bool "Enable Linux kernel linked list (list.h)"
+	default n
+	help
+	  Provides list_head, hlist_head, container_of macros.
+	  Zero dependency, header-only library.
+
+config WORKQUEUE
+	bool "Enable MCU workqueue (based on list.h)"
+	default n
+	select LIST
+	help
+	  Simplified Linux workqueue for MCU.
+	  Supports delayed execution, FIFO scheduling.
+	  Requires LIST to be enabled.
+
+endmenu

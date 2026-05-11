@@ -4,8 +4,11 @@ set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/cli
     ${CMAKE_SOURCE_DIR}/src/lib
     ${CMAKE_SOURCE_DIR}/src/init
+    ${CMAKE_SOURCE_DIR}/src/third_party/list
+    ${CMAKE_SOURCE_DIR}/src/third_party/workqueue
 )
 set(SUBDIRS cli lib init)
+add_subdirectory(third_party)
 get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${PRO_NAME})

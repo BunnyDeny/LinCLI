@@ -67,6 +67,7 @@ add_executable(${OUTPUT_NAME}
     examples/pc_linux/main.c
     $<TARGET_OBJECTS:src>
     $<TARGET_OBJECTS:commands>
+    $<TARGET_OBJECTS:workqueue>
 )
 target_include_directories(${OUTPUT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include

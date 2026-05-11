@@ -116,4 +116,11 @@ config CLI_ENABLE_DEMO_WITH_BUF
     help
       Register the with buf test demo command.
 
+config CLI_ENABLE_DEMO_WORKQUEUE
+    bool "Enable workqueue test demo"
+    default n
+    depends on WORKQUEUE
+    help
+      Register the wqtest demo command.
+
 endmenu

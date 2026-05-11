@@ -72,23 +72,6 @@ git merge --no-ff dev
 
 若用户**没有明确说"不要提交"、"只编译不提交"、"暂时不推送"**等，则在编译和测试成功后，默认自动执行 `git add`、`git commit`、`git push`。
 
-### 推送前强制检查清单
-
-提交之前**必须**显式读取根目录 `CMakeLists.txt` 开头的两个 `option()` 定义，确认默认值：
-
-```cmake
-option(LINCLI_BUILD_TESTS "Build LinCLI tests" OFF)
-option(LINCLI_ENABLE_INLINE_TEST "Enable scheduler inline test mode" OFF)
-```
-
-**硬性要求**：
-- 禁止凭记忆跳过此步骤，每次提交前必须实际读取文件确认
-- 若任一被临时改为 `ON`，**必须先改回 `OFF`**，再执行提交
-- 改回后再编译一次，确保没有因开关关闭而引入的编译错误
-- 只有确认两个选项都为 `OFF` 且编译通过后，才允许提交推送
-
-> 说明：`CLI_ENABLE_TESTS` 和 `INLINE_TEST_EN` 这两个 C 宏已由 CMake 统一管理（`cli_config.h` 中用 `#ifndef` 包裹）。CMake 构建时通过 `target_compile_definitions()` 自动注入，非 CMake 环境仍可手动定义。提交前只需检查 CMake 的 `option` 默认值即可。
-
 ## 3. 提交日志语言
 
 所有 Git 提交日志必须使用中文。禁止使用英文提交信息。

@@ -19,7 +19,7 @@ file(GLOB_RECURSE UNITY_SOURCES "${CMAKE_SOURCE_DIR}/tests/unity/*.c")
 list(APPEND SOURCES ${UNITY_SOURCES})
 
 add_executable(${PRO_NAME} ${SOURCES})
-target_link_libraries(${PRO_NAME} PRIVATE src commands)
+target_link_libraries(${PRO_NAME} PRIVATE src commands workqueue)
 target_include_directories(${PRO_NAME} PUBLIC
     ${INCLUDE_DIRS}
 )

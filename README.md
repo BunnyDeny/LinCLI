@@ -619,6 +619,8 @@ lin@linCli> level
 
 - 💎 **[尾行模式打印支持](docs/inline_print.md)** — 当后台代码通过 `cli_printk` / `pr_*` 输出日志时，如果用户正处于命令输入状态，框架会自动清行、输出日志、再完整重绘命令提示符和已输入内容（包括 Tab 补全候选列表），光标位置也会自动恢复。无需任何配置，开箱即用。
 
+- 🔌 **[第三方组件](docs/third_party.md)** — 内置的工作队列（workqueue）组件使用指南，支持异步任务投递与延迟调度。包含 `make menuconfig` 开启配置、`wqtest` 测试命令演示、四个核心 API（`INIT_WORK` / `INIT_DELAYED_WORK` / `schedule_work` / `schedule_delayed_work`）详解及完整源码示例。
+
 
 LinCLI 的设计目标是：**让命令注册像定义变量一样简单**，同时保持极低的运行时开销。得益于 GCC `section` 属性 + 自定义链接脚本的组合，开发者只需要关心业务命令和选项的定义，剩下的收集、解析、校验工作全部交给框架自动完成。无论是 Linux 仿真开发还是 MCU 裸机移植，都能快速落地。
 
