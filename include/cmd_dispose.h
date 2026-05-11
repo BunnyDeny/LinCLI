@@ -143,10 +143,15 @@ static inline bool is_raw_command(const cli_command_t *cmd)
 			.candidate_argv = _cli_raw_cands_##name,                 \
 		},                                                         \
 	};                                                             \
+	static int _cli_raw_wrap_task_##name(void *_a)                   \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		return handler(a->argv, a->argc);                          \
+	}                                                              \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
 		name, cmd_str, brief_str, _usage_arr, 0,                   \
 		_cli_options_##name, 1,                                    \
-		NULL, (int (*)(void *))handler, NULL,                      \
+		NULL, (int (*)(void *))_cli_raw_wrap_task_##name, NULL,    \
 		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
 #define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _usage_arr,  \
