@@ -139,6 +139,16 @@ if [ ! -d "$EXAMPLE_DIR" ]; then
 	exit 1
 fi
 
+# Detect available specs file (newlib nano vs picolibc)
+SPECS_FILE="nano.specs"
+if ! ${CC} -specs=${SPECS_FILE} -E - </dev/null >/dev/null 2>&1; then
+	if ${CC} -specs=picolibc.specs -E - </dev/null >/dev/null 2>&1; then
+		SPECS_FILE="picolibc.specs"
+	else
+		echo "WARNING: neither nano.specs nor picolibc.specs found; build may fail"
+	fi
+fi
+
 # --- backup & override cli_config.h ---
 if [ -n "$NO_USER" ] || [ -n "$NO_ENV" ] || [ -n "$NO_VAR" ] || [ -n "$NO_ADV_CMP" ] || [ -n "$NO_HELP" ] || [ -n "$NO_CHAIN" ] || [ -n "$NO_AUTO_RUN" ]; then
 	cp "$CONFIG_H" "${CONFIG_H}.orig"
@@ -176,16 +186,22 @@ echo "========================================"
 
 make clean >/dev/null 2>&1 || true
 
-# Override OPT / LTO if requested
-if [ -n "$OPT" ] || [ -n "$LTO" ]; then
-	# Save original Makefile
+# Save original Makefile if not already saved
+if [ ! -f Makefile.orig ]; then
 	cp Makefile Makefile.orig
-	if [ -n "$OPT" ]; then
-		sed -i "s/^OPT = .*/OPT = ${OPT}/" Makefile
-	fi
-	if [ -n "$LTO" ]; then
-		sed -i 's/ -flto//g' Makefile
-	fi
+fi
+
+# Adapt specs file to available toolchain
+if [ "$SPECS_FILE" != "nano.specs" ]; then
+	sed -i "s/-specs=nano\.specs/-specs=${SPECS_FILE}/g" Makefile
+fi
+
+# Override OPT / LTO if requested
+if [ -n "$OPT" ]; then
+	sed -i "s/^OPT = .*/OPT = ${OPT}/" Makefile
+fi
+if [ -n "$LTO" ]; then
+	sed -i 's/ -flto//g' Makefile
 fi
 
 make -j$(nproc) >/dev/null 2>&1 || make
