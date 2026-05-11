@@ -668,7 +668,10 @@ static void free_help_marks(char *req_mark, char *dep_mark)
 
 static void print_cmd_brief(const cli_command_t *cmd)
 {
-	all_printk("%s\r\n", cmd->name);
+	all_printk("%s", cmd->name);
+	if (cmd->brief)
+		all_printk(" - %s", cmd->brief);
+	all_printk("\r\n");
 	if (cmd->usage && cmd->usage_count > 0) {
 		all_printk("use: %s\r\n", cmd->usage[0]);
 		for (int i = 1; i < cmd->usage_count; i++)

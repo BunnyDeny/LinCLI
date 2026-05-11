@@ -34,7 +34,9 @@ static int cp_handler(char **argv, int argc)
 	return 0;
 }
 
-CLI_RAW_COMMAND(cp_cmd, "cp", "Raw argument command test", cp_handler,
+CLI_RAW_COMMAND(cp_cmd, "cp", "Raw argument command test",
+		USAGE("cp <src> <dst>"),
+		cp_handler,
 		"file1.txt", "file2.txt", "file3.txt");
 
 #endif /* CLI_ENABLE_DEMO_RAW_CMD */

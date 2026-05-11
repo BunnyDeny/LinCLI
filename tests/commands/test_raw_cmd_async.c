@@ -50,7 +50,8 @@ static void mv_exit(char **argv, int argc)
 }
 
 CLI_RAW_COMMAND_ASYNC(mv_cmd, "mv", "Async raw argument command test",
-			      mv_entry, mv_task, mv_exit,
-			      "doc1.txt", "doc2.txt");
+				USAGE("mv <old> <new>"),
+				mv_entry, mv_task, mv_exit,
+				"doc1.txt", "doc2.txt");
 
 #endif /* CLI_ENABLE_DEMO_RAW_CMD_ASYNC */

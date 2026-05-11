@@ -121,7 +121,8 @@ static inline bool is_raw_command(const cli_command_t *cmd)
 }
 
 #if CLI_ENABLE_RAW_COMMAND
-#define CLI_RAW_COMMAND(name, cmd_str, brief_str, handler, ...)        \
+#define CLI_RAW_COMMAND(name, cmd_str, brief_str, _usage_arr, handler, \
+			   ...)                                                \
 	static char *_cli_raw_cands_##name[] = { __VA_ARGS__, NULL };    \
 	cli_option_t _cli_options_##name[] = {                         \
 		{                                                          \
@@ -143,13 +144,13 @@ static inline bool is_raw_command(const cli_command_t *cmd)
 		},                                                         \
 	};                                                             \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
-		name, cmd_str, brief_str, (void *)0, 0,                    \
+		name, cmd_str, brief_str, _usage_arr, 0,                   \
 		_cli_options_##name, 1,                                    \
 		NULL, (int (*)(void *))handler, NULL,                      \
 		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
-#define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _entry, _task, \
-				  _exit, ...)                                  \
+#define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _usage_arr,  \
+				  _entry, _task, _exit, ...)                       \
 	static char *_cli_raw_cands_##name[] = { __VA_ARGS__, NULL };    \
 	cli_option_t _cli_options_##name[] = {                         \
 		{                                                          \
@@ -186,7 +187,7 @@ static inline bool is_raw_command(const cli_command_t *cmd)
 		_exit(a->argv, a->argc);                                   \
 	}                                                              \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
-		name, cmd_str, brief_str, (void *)0, 0,                    \
+		name, cmd_str, brief_str, _usage_arr, 0,                   \
 		_cli_options_##name, 1,                                    \
 		(void (*)(void *))_cli_raw_wrap_entry_##name,              \
 		(int (*)(void *))_cli_raw_wrap_task_##name,                \
@@ -194,9 +195,8 @@ static inline bool is_raw_command(const cli_command_t *cmd)
 		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
 
 #else
-#define CLI_RAW_COMMAND(name, cmd_str, brief_str, handler, ...) /* disabled */
-#define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _entry, _task,    \
-			      _exit, ...) /* disabled */
+#define CLI_RAW_COMMAND(...) /* disabled */
+#define CLI_RAW_COMMAND_ASYNC(...) /* disabled */
 #endif
 
 /* ============================================================
