@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EXAMPLE_DIR="${PROJECT_ROOT}/examples/stm32_g431"
 BUILD_DIR="${EXAMPLE_DIR}/build"
-CONFIG_H="${PROJECT_ROOT}/include/cli_config.h"
+CONFIG_H="${EXAMPLE_DIR}/cli_kconfig.h"
 
 # --- defaults ---
 OPT=""
