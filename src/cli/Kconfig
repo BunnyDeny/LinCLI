@@ -52,4 +52,22 @@ config DISPLAY_MAX_COWS
       If your terminal window is narrower than this value,
       tab completion output may be truncated.
 
+config CLI_CMD_BUF_SIZE
+    int "Command argument shared buffer size"
+    default 128
+    range 64 1024
+    help
+      Increase this if you see "command argument missing bytes" errors.
+
+config CLI_MPOOL_COUNT
+    int "Memory pool block count"
+    default 6
+    range 1 32
+
+config CLI_MPOOL_SIZE
+    int
+    default CLI_CMD_BUF_SIZE
+    help
+      Currently fixed equal to CLI_CMD_BUF_SIZE.
+
 endmenu
