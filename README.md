@@ -599,6 +599,8 @@ lin@linCli> level
 
 - 🔹 **[异步非阻塞命令](docs/async_commands.md)** — 介绍 `CLI_COMMAND_ASYNC` 宏与 `entry/task/exit` 三阶段接口。把耗时操作（电机控制、传感器等待、Flash 擦写等）拆成多次调度周期分片执行，避免阻塞 CLI 主循环。包含返回值语义、状态流转图和完整示例。
 
+- 🎮 **[Raw 命令（argc/argv 模式）](docs/raw_commands.md)** — 介绍 `CLI_RAW_COMMAND` 与 `CLI_RAW_COMMAND_ASYNC` 宏。跳过选项解析，直接以 `argc/argv` 形式接收用户输入，适合 `cp`、`mv`、`cat` 等传统 Shell 风格命令。支持同步/异步两种模式、Tab 参数值补全和自动生成帮助信息。
+
 - 🎯 **[实时数据示波器](docs/scope_bridge.md)** — 通过 `scope` 命令 + `lincli_csv_bridge.py` 脚本，把 MCU / 仿真程序变成实时数据源。支持 PC 端实时 matplotlib 曲线绘制、CSV 自动记录、多次启动自动重置。零配置上上位机，一行命令即可观测波形。
 
 - 📌 **[开机初始化函数](docs/init.md)** — 通过 `_EXPORT_INIT_SYMBOL` 宏自动收集开机初始化例程，无需在 `main()` 中手动调用。支持按优先级排序执行，非常适合 Logo 打印、许可证声明、全局状态置初值等轻量级工作。
