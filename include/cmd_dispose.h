@@ -72,7 +72,6 @@ typedef struct cli_command {
 	size_t arg_struct_size; // 结构体大小
 	cli_option_t *options; // 选项数组
 	size_t option_count; // 选项数量
-	int (*validator)(void *); // 自定义验证函数（旧接口兼容）
 	void (*cmd_entry)(void *); // 命令入口，只执行一次
 	int (*cmd_task)(void *); // 命令主体，每次调度器轮询执行一次
 	void (*cmd_exit)(void *); // 命令出口，只执行一次
@@ -104,6 +103,101 @@ typedef struct {
 	char *argv[CLI_MAX_ARGV];
 	cli_command_t cmd_runtime;
 } cmd_parse_ctx_t;
+
+/* ============================================================
+ * Raw argument command support
+ * ============================================================ */
+
+typedef struct {
+	int argc;
+	char **argv;
+} raw_cmd_args_t;
+
+static inline bool is_raw_command(const cli_command_t *cmd)
+{
+	return cmd && cmd->option_count == 1 && cmd->options &&
+	       cmd->options[0].long_opt &&
+	       strcmp(cmd->options[0].long_opt, "raw") == 0;
+}
+
+#if CLI_ENABLE_RAW_COMMAND
+#define CLI_RAW_COMMAND(name, cmd_str, brief_str, _usage_arr, handler, \
+			   ...)                                                \
+	static char *_cli_raw_cands_##name[] = { __VA_ARGS__, NULL };    \
+	cli_option_t _cli_options_##name[] = {                         \
+		{                                                          \
+			.short_opt = 0,                                        \
+			.long_opt = "raw",                                     \
+			.type = CLI_TYPE_STRING,                               \
+			.help = "raw command (no options)",                    \
+			.offset = 0,                                           \
+			.offset_count = 0,                                     \
+			.max_args = 0,                                         \
+			.required = false,                                     \
+			.depends = NULL,                                       \
+			.conflicts = NULL,                                     \
+			.candidate_argc =                                      \
+				(int)((sizeof(_cli_raw_cands_##name) /               \
+				       sizeof(char *))) -                            \
+				1,                                                 \
+			.candidate_argv = _cli_raw_cands_##name,                 \
+		},                                                         \
+	};                                                             \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
+		name, cmd_str, brief_str, _usage_arr, 0,                   \
+		_cli_options_##name, 1,                                    \
+		NULL, (int (*)(void *))handler, NULL,                      \
+		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
+
+#define CLI_RAW_COMMAND_ASYNC(name, cmd_str, brief_str, _usage_arr,  \
+				  _entry, _task, _exit, ...)                       \
+	static char *_cli_raw_cands_##name[] = { __VA_ARGS__, NULL };    \
+	cli_option_t _cli_options_##name[] = {                         \
+		{                                                          \
+			.short_opt = 0,                                        \
+			.long_opt = "raw",                                     \
+			.type = CLI_TYPE_STRING,                               \
+			.help = "raw command (no options)",                    \
+			.offset = 0,                                           \
+			.offset_count = 0,                                     \
+			.max_args = 0,                                         \
+			.required = false,                                     \
+			.depends = NULL,                                       \
+			.conflicts = NULL,                                     \
+			.candidate_argc =                                      \
+				(int)((sizeof(_cli_raw_cands_##name) /               \
+				       sizeof(char *))) -                            \
+				1,                                                 \
+			.candidate_argv = _cli_raw_cands_##name,                 \
+		},                                                         \
+	};                                                             \
+	static void _cli_raw_wrap_entry_##name(void *_a)                 \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		_entry(a->argv, a->argc);                                  \
+	}                                                              \
+	static int _cli_raw_wrap_task_##name(void *_a)                   \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		return _task(a->argv, a->argc);                            \
+	}                                                              \
+	static void _cli_raw_wrap_exit_##name(void *_a)                  \
+	{                                                              \
+		raw_cmd_args_t *a = (raw_cmd_args_t *)_a;                  \
+		_exit(a->argv, a->argc);                                   \
+	}                                                              \
+	_EXPORT_CLI_COMMAND_SYMBOL(                                    \
+		name, cmd_str, brief_str, _usage_arr, 0,                   \
+		_cli_options_##name, 1,                                    \
+		(void (*)(void *))_cli_raw_wrap_entry_##name,              \
+		(int (*)(void *))_cli_raw_wrap_task_##name,                \
+		(void (*)(void *))_cli_raw_wrap_exit_##name,               \
+		NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
+
+#else
+#define CLI_RAW_COMMAND(...) /* disabled */
+#define CLI_RAW_COMMAND_ASYNC(...) /* disabled */
+#endif
 
 /* ============================================================
  * OPTION 宏定义（统一 10 参数）
@@ -244,7 +338,7 @@ typedef struct {
  */
 
 #define _EXPORT_CLI_COMMAND_SYMBOL(_obj, _cmd_str, _brief_str, _usage,      \
-				   _size, _opts, _opts_cnt, _vld, _entry,    \
+				   _size, _opts, _opts_cnt, _entry,    \
 				   _task, _exit, _buf, _buf_size, _section)  \
 	static const cli_command_t _cli_cmd_def_##_obj = {                     \
 		.name = _cmd_str,                                              \
@@ -255,7 +349,6 @@ typedef struct {
 		.arg_struct_size = _size,                                      \
 		.options = _opts,                                              \
 		.option_count = _opts_cnt,                                     \
-		.validator = _vld,                                             \
 		.cmd_entry = _entry,                                           \
 		.cmd_task = _task,                                             \
 		.cmd_exit = _exit,                                             \
@@ -286,15 +379,13 @@ typedef struct {
 	cli_option_t _cli_options_##name[] = { __VA_ARGS__ };          \
                                                                              \
 	/* 通过链接脚本段收集注册，arg_buf 在运行时分派时从内存池申请 */     \
-	/* 旧接口兼容：parse_cb 同时填入 validator 和 cmd_task，          \
-	 * entry 和 exit 留空，scheduler 通过 entry/exit 是否为 NULL      \
+	/* entry 和 exit 留空，scheduler 通过 entry/exit 是否为 NULL      \
 	 * 判断这是旧式命令（执行一次即退出） */                           \
 	_EXPORT_CLI_COMMAND_SYMBOL(                                          \
 		name, cmd_str, brief_str, _usage_arr,                        \
 		_CLI_SIZEOF_POINTEE(arg_struct_ptr),                         \
 		_cli_options_##name,                                         \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),        \
-		(int (*)(void *))parse_cb,                                   \
 		NULL,                                                        \
 		(int (*)(void *))parse_cb,                                   \
 		NULL,                                                        \
@@ -312,7 +403,6 @@ typedef struct {
 		_CLI_SIZEOF_POINTEE(arg_struct_ptr),                         \
 		_cli_options_##name,                                         \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),        \
-		(int (*)(void *))parse_cb,                                   \
 		NULL,                                                        \
 		(int (*)(void *))parse_cb,                                   \
 		NULL,                                                        \
@@ -322,7 +412,7 @@ typedef struct {
 #define CLI_COMMAND_NO_STRUCT(name, cmd_str, brief_str, parse_cb)      \
 	_EXPORT_CLI_COMMAND_SYMBOL(name, cmd_str, brief_str, (void *)0, 0, \
 				   NULL, 0,                              \
-				   (int (*)(void *))parse_cb, NULL,        \
+				   NULL,                                   \
 				   (int (*)(void *))parse_cb,              \
 				   NULL,                                   \
 				   NULL, CLI_CMD_BUF_SIZE, ".cli_commands")
@@ -342,7 +432,6 @@ typedef struct {
 		_CLI_SIZEOF_POINTEE(arg_struct_ptr),                             \
 		_cli_options_##name,                                             \
 		(sizeof(_cli_options_##name) / sizeof(cli_option_t)),            \
-		NULL,                                                            \
 		(void (*)(void *))_entry,                                        \
 		(int (*)(void *))_task,                                          \
 		(void (*)(void *))_exit,                                         \

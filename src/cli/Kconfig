@@ -37,6 +37,13 @@ config CLI_ENABLE_AUTO_RUN
     bool "Enable auto-run commands (CLI_AUTO_CMD)"
     default y
 
+config CLI_ENABLE_RAW_COMMAND
+    bool "Enable raw argument commands"
+    default n
+    help
+      Allow commands with argc/argv style handlers instead of option parsing.
+      Useful for cp/mv-like commands.
+
 config HISTORY_MAX
     int "Command history entries"
     default 4
@@ -51,5 +58,23 @@ config DISPLAY_MAX_COWS
     help
       If your terminal window is narrower than this value,
       tab completion output may be truncated.
+
+config CLI_CMD_BUF_SIZE
+    int "Command argument shared buffer size"
+    default 128
+    range 64 1024
+    help
+      Increase this if you see "command argument missing bytes" errors.
+
+config CLI_MPOOL_COUNT
+    int "Memory pool block count"
+    default 6
+    range 1 32
+
+config CLI_MPOOL_SIZE
+    int
+    default CLI_CMD_BUF_SIZE
+    help
+      Currently fixed equal to CLI_CMD_BUF_SIZE.
 
 endmenu

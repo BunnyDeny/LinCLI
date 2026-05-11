@@ -1098,6 +1098,30 @@ void complete_string_value(const cli_command_t *cmd,
 		candidate_ctx.repl_start = tok_start;
 }
 
+#if CLI_ENABLE_RAW_COMMAND
+static bool is_raw_cmd(const cli_command_t *cmd)
+{
+	return is_raw_command(cmd);
+}
+
+static void complete_raw_cmd_value(const cli_command_t *cmd,
+				    const char *prefix, int prefix_len)
+{
+	cli_option_t *opt = &cmd->options[0];
+	if (opt->candidate_argc <= 0) {
+		cli_out_push((_u8 *)"\a", 1);
+		cli_out_sync();
+		return;
+	}
+	candidate_ctx.cmd = cmd;
+	candidate_ctx.opt = opt;
+	do_complete_string_value(opt, prefix, prefix_len);
+	if (candidate_ctx.active == CAND_ACTIVE_VALUES)
+		candidate_ctx.repl_start =
+			get_last_token_start(cmd_line.buf, cmd_line.size);
+}
+#endif
+
 int try_complete_option(const char *prefix, int prefix_len,
 		       int cmd_start, int first_word_end)
 {
@@ -1113,7 +1137,13 @@ int try_complete_option(const char *prefix, int prefix_len,
 	if (!cmd) {
 		cli_out_push((_u8 *)"\a", 1);
 		cli_out_sync();
-	} else if (is_value_completion(cmd, prefix, prefix_len)) {
+	}
+#if CLI_ENABLE_RAW_COMMAND
+	else if (is_raw_cmd(cmd)) {
+		complete_raw_cmd_value(cmd, prefix, prefix_len);
+	}
+#endif
+	else if (is_value_completion(cmd, prefix, prefix_len)) {
 		complete_string_value(cmd, prefix, prefix_len);
 	} else {
 		complete_option(cmd, prefix, prefix_len);
