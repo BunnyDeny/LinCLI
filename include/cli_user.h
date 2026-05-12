@@ -119,6 +119,28 @@ extern const cli_user_t *const _cli_user_default;
 extern const cli_user_t *current_user;
 
 /* ============================================================
+ *  设置默认用户宏：在 init_d 运行时阶段将 current_user
+ *  赋值为指定用户，覆盖弱定义 _cli_user_default 的局限。
+ *  需在 CLI_USER() 注册之后使用，且优先级高于 cli_user_init(13)。
+ * ============================================================
+ */
+
+#if CLI_ENABLE_USER
+#include "init_d.h"
+#define CLI_DEFAULT_USER(name)                                         \
+	extern const cli_user_t _cli_user_def_##name;                      \
+	static void _cli_user_set_default_##name(void *_arg)               \
+	{                                                                  \
+		(void)_arg;                                                \
+		current_user = &_cli_user_def_##name;                      \
+	}                                                                  \
+	_EXPORT_INIT_SYMBOL(_cli_user_set_default_##name, 14, NULL,        \
+			    _cli_user_set_default_##name)
+#else
+#define CLI_DEFAULT_USER(name) /* disabled */
+#endif
+
+/* ============================================================
  *  权限检查：判断当前用户是否有权访问指定命令
  * ============================================================ */
 
