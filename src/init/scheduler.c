@@ -275,11 +275,6 @@ static int auto_run_try_dispatch(void)
 	return state_switch(&scheduler_eng, STATE_ID_scheduler_cmd_run);
 }
 
-/* 自动运行结束后切换用户的弱定义钩子 */
-__attribute__((weak)) void cli_user_after_auto_run(void)
-{
-}
-
 int scheduler_auto_run_task(void *private)
 {
 	(void)private;

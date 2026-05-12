@@ -119,23 +119,31 @@ extern const cli_user_t *const _cli_user_default;
 extern const cli_user_t *current_user;
 
 /* ============================================================
- *  自动运行结束后切换用户的钩子（弱定义，可被 CLI_DEFAULT_USER 覆盖）
+ *  自动运行结束后切换用户
  * ============================================================ */
 
 #if CLI_ENABLE_USER
+#include "init_d.h"
+
+extern const cli_user_t *_cli_default_user;
 extern void cli_user_after_auto_run(void);
 
 /* ============================================================
- *  设置默认用户宏：在 scheduler 自动运行命令完成后将 current_user
- *  赋值为指定用户。此时所有初始化命令已以 root 权限执行完毕。
+ *  设置默认用户宏：注册一个 init_d 函数，在运行时把指定用户
+ *  暂存到 _cli_default_user；auto_run 结束后 cli_user_after_auto_run()
+ *  再将 current_user 切过去。此时所有初始化命令已以 root 执行完毕。
  * ============================================================ */
 
 #define CLI_DEFAULT_USER(name)                                         \
 	extern const cli_user_t _cli_user_def_##name;                      \
-	void cli_user_after_auto_run(void)                                 \
+	static void _cli_user_set_default_##name(void *_arg)               \
 	{                                                                  \
-		current_user = &_cli_user_def_##name;                      \
-	}
+		(void)_arg;                                                \
+		extern const cli_user_t *_cli_default_user;                \
+		_cli_default_user = &_cli_user_def_##name;                 \
+	}                                                                  \
+	_EXPORT_INIT_SYMBOL(_cli_user_set_default_##name, 14, NULL,        \
+			    _cli_user_set_default_##name)
 #else
 #define CLI_DEFAULT_USER(name) /* disabled */
 #endif
