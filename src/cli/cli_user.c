@@ -317,10 +317,8 @@ int cli_user_cmd_permitted(const cli_command_t *cmd)
 	return 1;
 }
 
-void cli_user_init(void *arg)
+void cli_user_after_auto_run(void)
 {
-	(void)arg;
-	current_user = &_cli_user_def_admin;
 }
 
 #endif /* CLI_ENABLE_USER */

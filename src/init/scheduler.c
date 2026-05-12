@@ -279,9 +279,7 @@ int scheduler_auto_run_task(void *private)
 {
 	(void)private;
 	if (auto_run_should_exit()) {
-#if CLI_ENABLE_USER
 		cli_user_after_auto_run();
-#endif
 		return state_switch(&scheduler_eng,
 				    STATE_ID_scheduler_get_char);
 	}

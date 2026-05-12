@@ -147,5 +147,6 @@ extern void cli_user_after_auto_run(void);
  * ============================================================ */
 
 int cli_user_cmd_permitted(const cli_command_t *cmd);
+void cli_user_after_auto_run(void);
 
 #endif /* _CLI_USER_H_ */
