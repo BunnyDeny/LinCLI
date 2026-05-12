@@ -55,9 +55,9 @@ extern const cli_user_t *const _cli_users_end[];
  *  遍历宏
  * ============================================================ */
 
-#define FOR_EACH_CLI_USER(_user)                                       \
-	for (const cli_user_t *const *_pp = _cli_users_start;              \
-	     _pp < (const cli_user_t *const *)_cli_users_end; _pp++)       \
+#define FOR_EACH_CLI_USER(_user)                                     \
+	for (const cli_user_t *const *_pp = _cli_users_start;        \
+	     _pp < (const cli_user_t *const *)_cli_users_end; _pp++) \
 		if (((_user) = *_pp) != NULL)
 
 /* ============================================================
@@ -65,7 +65,7 @@ extern const cli_user_t *const _cli_users_end[];
  * ============================================================ */
 
 #define USER_CMDS(...) ((char *[]){ __VA_ARGS__, NULL })
-#define USER_CMDS_NONE ((char *[]){NULL})
+#define USER_CMDS_NONE ((char *[]){ NULL })
 
 /* ============================================================
  *  注册宏：定义一个 cli_user_t 并将其指针放入 .cli_users 段
@@ -91,26 +91,20 @@ extern const cli_user_t *const _cli_users_end[];
  */
 
 #if CLI_ENABLE_USER
-#define CLI_USER(name, _username, _password, _role, _cmds)             \
-	const cli_user_t _cli_user_def_##name = {                          \
-		.username = _username,                                         \
-		.password = _password,                                         \
-		.role = _role,                                                 \
-		.cmd_count = (int)((sizeof(_cmds) / sizeof(char *))) - 1,          \
-		.cmds = _cmds,                                                 \
-	};                                                               \
-	static const cli_user_t *const _cli_user_ptr_##name                \
-		__attribute__((used, section(".cli_users.1"))) =             \
+#define CLI_USER(name, _username, _password, _role, _cmds)                \
+	const cli_user_t _cli_user_def_##name = {                         \
+		.username = _username,                                    \
+		.password = _password,                                    \
+		.role = _role,                                            \
+		.cmd_count = (int)((sizeof(_cmds) / sizeof(char *))) - 1, \
+		.cmds = _cmds,                                            \
+	};                                                                \
+	static const cli_user_t *const _cli_user_ptr_##name               \
+		__attribute__((used, section(".cli_users.1"))) =          \
 			&_cli_user_def_##name
 #else
 #define CLI_USER(name, _username, _password, _role, _cmds) /* disabled */
 #endif
-
-/* ============================================================
- *  默认登录用户（弱定义，用户可重定义以指定默认用户）
- * ============================================================ */
-
-extern const cli_user_t *const _cli_user_default;
 
 /* ============================================================
  *  当前登录用户全局指针
@@ -134,15 +128,15 @@ extern void cli_user_after_auto_run(void);
  *  再将 current_user 切过去。此时所有初始化命令已以 root 执行完毕。
  * ============================================================ */
 
-#define CLI_DEFAULT_USER(name)                                         \
-	extern const cli_user_t _cli_user_def_##name;                      \
-	static void _cli_user_set_default_##name(void *_arg)               \
-	{                                                                  \
-		(void)_arg;                                                \
-		extern const cli_user_t *_cli_default_user;                \
-		_cli_default_user = &_cli_user_def_##name;                 \
-	}                                                                  \
-	_EXPORT_INIT_SYMBOL(_cli_user_set_default_##name, 14, NULL,        \
+#define CLI_DEFAULT_USER(name)                                      \
+	extern const cli_user_t _cli_user_def_##name;               \
+	static void _cli_user_set_default_##name(void *_arg)        \
+	{                                                           \
+		(void)_arg;                                         \
+		extern const cli_user_t *_cli_default_user;         \
+		_cli_default_user = &_cli_user_def_##name;          \
+	}                                                           \
+	_EXPORT_INIT_SYMBOL(_cli_user_set_default_##name, 14, NULL, \
 			    _cli_user_set_default_##name)
 #else
 #define CLI_DEFAULT_USER(name) /* disabled */

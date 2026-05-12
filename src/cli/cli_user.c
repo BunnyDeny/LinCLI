@@ -35,15 +35,7 @@
  * ============================================================ */
 
 CLI_USER(admin, "admin", "admin123", CLI_USER_ROLE_ROOT, USER_CMDS_NONE);
-CLI_USER(lin, "lin", "lin123", CLI_USER_ROLE_NORMAL,
-	 USER_CMDS("_echo"));
-
-/* ============================================================
- *  默认登录用户（弱定义，用户可重定义）
- * ============================================================ */
-
-const cli_user_t *const _cli_user_default __attribute__((weak)) =
-	&_cli_user_def_admin;
+CLI_USER(lin, "lin", "lin123", CLI_USER_ROLE_NORMAL, USER_CMDS("_echo"));
 
 /* ============================================================
  *  当前登录用户全局指针（运行时由 cli_user_init 初始化）
@@ -92,8 +84,7 @@ static void su_print_users(void)
 	{
 		if (!user)
 			continue;
-		all_printk("%-10s %-5s ",
-			   user->username, role_str(user->role));
+		all_printk("%-10s %-5s ", user->username, role_str(user->role));
 		if (user->role == CLI_USER_ROLE_ROOT) {
 			all_printk("*\r\n");
 		} else if (user->cmd_count == 0 || !user->cmds) {
@@ -102,7 +93,7 @@ static void su_print_users(void)
 			for (int i = 0; i < user->cmd_count; i++) {
 				all_printk("%s%s", user->cmds[i],
 					   (i < user->cmd_count - 1) ? ", " :
-							       "");
+								       "");
 			}
 			all_printk("\r\n");
 		}
@@ -225,14 +216,12 @@ static void su_exit(void *_args)
 	(void)_args;
 }
 
-CLI_COMMAND_ASYNC(su_cmd, "su", "Switch usr",
-		  USAGE("su -l", "su -c <user>"),
-		  su_entry, su_task, su_exit,
-		  (struct su_args *)0,
-		  OPTION('l', "list", BOOL, "",
-			 struct su_args, list, 0, NULL, "change", false),
-		  OPTION('c', "change", STRING, "",
-			 struct su_args, change, 0, NULL, "list", false),
+CLI_COMMAND_ASYNC(su_cmd, "su", "Switch usr", USAGE("su -l", "su -c <user>"),
+		  su_entry, su_task, su_exit, (struct su_args *)0,
+		  OPTION('l', "list", BOOL, "", struct su_args, list, 0, NULL,
+			 "change", false),
+		  OPTION('c', "change", STRING, "", struct su_args, change, 0,
+			 NULL, "list", false),
 		  END_OPTIONS);
 
 /* ============================================================
@@ -293,7 +282,7 @@ static void cli_user_attach_candidates(const cli_command_t *cmd)
 void cli_user_init(void *arg)
 {
 	(void)arg;
-	current_user = _cli_user_default;
+	current_user = &_cli_user_def_admin;
 	cli_user_collect_candidates();
 
 	const cli_command_t *cmd;
