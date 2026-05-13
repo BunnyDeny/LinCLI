@@ -20,7 +20,6 @@ def run_test(keys, description):
     os.close(slave_fd)
     time.sleep(0.4)
     
-    # Drain initial banner
     while True:
         ready, _, _ = select.select([master_fd], [], [], 0.3)
         if not ready:
@@ -66,8 +65,10 @@ def run_test(keys, description):
     return text
 
 if __name__ == "__main__":
-    # User's specific scenario: type 't', tab, tab, then many backspaces to clear line, then tab tab
-    # 't' + 2 tabs fills "tb ", that's 3 chars. Need 3 backspaces to clear.
-    # But let's send 10 backspaces to be safe.
-    keys = [b't', b'\t', b'\t'] + [b'\x7f'] * 10 + [b'\t', b'\t']
-    run_test(keys, "t<tab><tab><backspace>x10<tab><tab>")
+    # t + tab + tab -> "tb ", then ONE backspace -> "tb", then tab
+    run_test([b't', b'\t', b'\t', b'\x7f', b'\t'],
+             "t<tab><tab><backspace><tab>  (only ONE backspace)")
+    
+    # t + tab + tab -> "tb ", then ONE backspace -> "tb", then tab tab
+    run_test([b't', b'\t', b'\t', b'\x7f', b'\t', b'\t'],
+             "t<tab><tab><backspace><tab><tab>")

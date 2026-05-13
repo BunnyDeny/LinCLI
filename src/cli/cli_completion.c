@@ -1830,6 +1830,7 @@ void get_token_prefix(int *tok_start, int *prefix_len,
 {
 	*tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	*prefix_len = cmd_line.size - *tok_start;
+	cmd_line.buf[cmd_line.size] = '\0';
 	if (*prefix_len == 0)
 		*prefix = "";
 	else
