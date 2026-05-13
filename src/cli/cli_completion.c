@@ -195,6 +195,8 @@ static int compute_backward_lcp(const char *prefix, int first_pos,
 			if (len < lcp_len)
 				lcp_len = len;
 			memcpy(lcp_buf, cmd->name + pos, lcp_len);
+			if (lcp_len < lcp_buf_size)
+				lcp_buf[lcp_len] = '\0';
 		} else {
 			int cpl = str_common_prefix_len(lcp_buf, cmd->name + pos);
 			if (cpl < lcp_len)
@@ -346,17 +348,17 @@ static void compute_unified_layout(const char *prefix, int *max_len,
 
 static void display_one_cmd_grouped(const char *name, int max_len,
 				    int idx, match_type_t type,
+				    int highlight_idx,
 				    int *cur_cow, int *cur_idx)
 {
 	if (*cur_cow == 0)
 		cli_out_push((_u8 *)"\r\n", 2);
-	if (*cur_idx == candidate_ctx.highlight_index)
+	if (idx == highlight_idx)
 		cli_out_push((_u8 *)"\033[7m", 4);
 	if (type == MATCH_TYPE_SUBSTRING)
 		cli_out_push((_u8 *)COLOR_DIM, sizeof(COLOR_DIM) - 1);
 	cli_out_push((_u8 *)name, strlen(name));
-	if (type == MATCH_TYPE_SUBSTRING ||
-	    *cur_idx == candidate_ctx.highlight_index)
+	if (type == MATCH_TYPE_SUBSTRING || idx == highlight_idx)
 		cli_out_push((_u8 *)COLOR_NONE, sizeof(COLOR_NONE) - 1);
 	int spaces = max_len - strlen(name);
 	while (spaces--)
@@ -369,6 +371,7 @@ static void display_one_cmd_grouped(const char *name, int max_len,
 }
 
 static void display_cmd_prefix_group(const char *prefix, int max_len,
+				     int highlight_idx,
 				     int *cur_cow, int *cur_idx)
 {
 	const cli_command_t *cmd;
@@ -378,12 +381,13 @@ static void display_cmd_prefix_group(const char *prefix, int max_len,
 			continue;
 		if (strstr(cmd->name, prefix) == cmd->name)
 			display_one_cmd_grouped(cmd->name, max_len, *cur_idx,
-						MATCH_TYPE_PREFIX, cur_cow,
-						cur_idx);
+						MATCH_TYPE_PREFIX,
+						highlight_idx, cur_cow, cur_idx);
 	}
 }
 
 static void display_cmd_substr_group(const char *prefix, int max_len,
+				     int highlight_idx,
 				     int *cur_cow, int *cur_idx)
 {
 	const cli_command_t *cmd;
@@ -394,8 +398,8 @@ static void display_cmd_substr_group(const char *prefix, int max_len,
 		const char *p = strstr(cmd->name, prefix);
 		if (p && p != cmd->name)
 			display_one_cmd_grouped(cmd->name, max_len, *cur_idx,
-						MATCH_TYPE_SUBSTRING, cur_cow,
-						cur_idx);
+						MATCH_TYPE_SUBSTRING,
+						highlight_idx, cur_cow, cur_idx);
 	}
 }
 
@@ -406,7 +410,7 @@ static void display_unified_cmd_list(const char *prefix, int prefix_len,
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_CMD, prefix, prefix_len, NULL);
-	candidate_ctx.highlight_index = highlight_idx;
+	candidate_ctx.highlight_index = 0;
 	int max_len;
 	compute_unified_layout(prefix, &max_len, &prefix_cnt, &substr_cnt);
 	int cows = DISPLAY_MAX_COWS / max_len;
@@ -417,12 +421,14 @@ static void display_unified_cmd_list(const char *prefix, int prefix_len,
 	candidate_ctx.cols = cows;
 	candidate_ctx.total_count = prefix_cnt + substr_cnt;
 	int cur_cow = 0, cur_idx = 0;
-	display_cmd_prefix_group(prefix, max_len, &cur_cow, &cur_idx);
+	display_cmd_prefix_group(prefix, max_len, highlight_idx,
+				 &cur_cow, &cur_idx);
 	if (prefix_cnt && substr_cnt && cur_cow) {
 		cli_out_push((_u8 *)"\r\n", 2);
 		cur_cow = 1;
 	}
-	display_cmd_substr_group(prefix, max_len, &cur_cow, &cur_idx);
+	display_cmd_substr_group(prefix, max_len, highlight_idx,
+				 &cur_cow, &cur_idx);
 	candidate_list_redraw(candidate_ctx.rows);
 }
 
@@ -600,6 +606,8 @@ static int compute_option_backward_lcp(const cli_command_t *cmd,
 			if (len < lcp_len)
 				lcp_len = len;
 			memcpy(lcp_buf, first->long_opt + pos, lcp_len);
+			if (lcp_len < lcp_buf_size)
+				lcp_buf[lcp_len] = '\0';
 		} else {
 			int cpl = str_common_prefix_len(lcp_buf,
 							cmd->options[i].long_opt +
@@ -1217,6 +1225,8 @@ static int compute_value_backward_lcp(cli_option_t *opt, const char *prefix,
 			if (len < lcp_len)
 				lcp_len = len;
 			memcpy(lcp_buf, first + pos, lcp_len);
+			if (lcp_len < lcp_buf_size)
+				lcp_buf[lcp_len] = '\0';
 		} else {
 			int cpl = str_common_prefix_len(lcp_buf,
 							opt->candidate_argv[i] +
