@@ -908,7 +908,10 @@ static void display_one_option(cli_option_t *opt, int idx,
 	(*cows)++;
 	if (idx == highlight_idx)
 		cli_out_push((_u8 *)"\033[7m", 4);
-	if (!only_long && opt->short_opt) {
+	bool is_dash_prefix = (candidate_ctx.prefix_len >= 2 &&
+			       candidate_ctx.prefix[0] == '-' &&
+			       candidate_ctx.prefix[1] == '-');
+	if (!only_long && !is_dash_prefix && opt->short_opt) {
 		char buf[4] = { '-', opt->short_opt, ' ', '\0' };
 		cli_out_push((_u8 *)buf, 3);
 	}
@@ -921,8 +924,10 @@ static void display_one_option(cli_option_t *opt, int idx,
 	cli_out_sync();
 }
 
-void list_all_options(const cli_command_t *cmd, const char *prefix,
-		      int prefix_len, int highlight_idx)
+static void list_all_options_internal(const cli_command_t *cmd,
+					      const char *prefix,
+					      int prefix_len, int highlight_idx,
+					      bool only_long)
 {
 	int old_rows = candidate_ctx.rows;
 	clear_and_up(old_rows, old_rows);
@@ -931,11 +936,17 @@ void list_all_options(const cli_command_t *cmd, const char *prefix,
 	int cows = 0;
 	for (size_t i = 0; i < cmd->option_count; i++) {
 		display_one_option(&cmd->options[i], (int)i, highlight_idx,
-				   &cows, false);
+				   &cows, only_long);
 	}
 	candidate_ctx.rows = cows;
 	candidate_ctx.cols = 1;
 	candidate_list_redraw(candidate_ctx.rows);
+}
+
+void list_all_options(const cli_command_t *cmd, const char *prefix,
+		      int prefix_len, int highlight_idx)
+{
+	list_all_options_internal(cmd, prefix, prefix_len, highlight_idx, false);
 }
 
 void refresh_all_option_highlight(const cli_command_t *cmd)
@@ -1141,7 +1152,7 @@ void complete_option_dash_prefix(const cli_command_t *cmd,
 			cli_out_sync();
 		}
 	} else {
-		list_all_options(cmd, prefix, prefix_len, -1);
+		list_all_options_internal(cmd, prefix, prefix_len, -1, true);
 		candidate_ctx.repl_start =
 			get_last_token_start(cmd_line.buf, cmd_line.size);
 	}
@@ -1159,7 +1170,7 @@ void complete_option(const cli_command_t *cmd, const char *prefix,
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] == '-') {
-		complete_long_option(cmd, prefix + 2, 0);
+		complete_option_dash_prefix(cmd, prefix, prefix_len);
 		return;
 	}
 	if (prefix_len == 2 && prefix[0] == '-' && prefix[1] != '-') {
