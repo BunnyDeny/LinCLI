@@ -455,6 +455,8 @@ _EXPORT_STATE_SYMBOL(tab_complete, STATE_ID_tab_complete, NULL,
 
 static int tab_cycle_enter_task(void *pch)
 {
+	if (candidate_ctx.highlight_index < 0)
+		candidate_ctx.highlight_index = 0;
 	completer_cycle();
 	return state_switch(&cmd_line_mec, STATE_ID_exit_handler);
 }
