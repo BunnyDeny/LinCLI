@@ -1830,7 +1830,10 @@ void get_token_prefix(int *tok_start, int *prefix_len,
 {
 	*tok_start = get_last_token_start(cmd_line.buf, cmd_line.size);
 	*prefix_len = cmd_line.size - *tok_start;
-	*prefix = &cmd_line.buf[*tok_start];
+	if (*prefix_len == 0)
+		*prefix = "";
+	else
+		*prefix = &cmd_line.buf[*tok_start];
 }
 
 void get_first_word_bounds(int *cmd_start, int *first_word_end)
