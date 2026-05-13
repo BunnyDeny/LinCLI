@@ -408,9 +408,10 @@ static void display_unified_cmd_list(const char *prefix, int prefix_len,
 				     int highlight_idx)
 {
 	int old_rows = candidate_ctx.rows;
+	int saved_highlight = candidate_ctx.highlight_index;
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_CMD, prefix, prefix_len, NULL);
-	candidate_ctx.highlight_index = 0;
+	candidate_ctx.highlight_index = saved_highlight;
 	int max_len;
 	compute_unified_layout(prefix, &max_len, &prefix_cnt, &substr_cnt);
 	int cows = DISPLAY_MAX_COWS / max_len;
