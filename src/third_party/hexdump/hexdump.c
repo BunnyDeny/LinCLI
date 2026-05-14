@@ -45,9 +45,7 @@ static struct {
 };
 
 /* 弱符号：用户可在其他文件中覆盖以实现自定义读取 */
-uint8_t hexdump_default_read(uintptr_t addr) __attribute__((weak));
-
-uint8_t hexdump_default_read(uintptr_t addr)
+__attribute__((weak)) uint8_t hexdump_default_read(uintptr_t addr)
 {
 	return *(volatile uint8_t *)addr;
 }
