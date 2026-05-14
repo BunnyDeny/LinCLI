@@ -24,42 +24,32 @@
 
 #ifdef HEXDUMP
 
-#include "hexdump.h"
 #include "cmd_dispose.h"
 #include "cli_io.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
 /* 默认配置 */
-static struct hexdump_config hd_cfg = {
+static struct {
+	uintptr_t min_addr;
+	uintptr_t max_addr;
+	size_t bytes_per_line;
+	size_t max_len;
+} hd_cfg = {
 	.min_addr = HEXDUMP_MIN_ADDR,
 	.max_addr = HEXDUMP_MAX_ADDR,
 	.bytes_per_line = HEXDUMP_BYTES_PER_LINE,
 	.max_len = HEXDUMP_MAX_LEN,
 };
 
-/* 默认读取函数：直接解引用 */
-static uint8_t hexdump_default_read(uintptr_t addr)
+/* 弱符号：用户可在其他文件中覆盖以实现自定义读取 */
+uint8_t hexdump_default_read(uintptr_t addr) __attribute__((weak));
+
+uint8_t hexdump_default_read(uintptr_t addr)
 {
 	return *(volatile uint8_t *)addr;
-}
-
-static hexdump_read_fn_t hd_read_fn = hexdump_default_read;
-
-void hexdump_set_read_fn(hexdump_read_fn_t fn)
-{
-	hd_read_fn = fn ? fn : hexdump_default_read;
-}
-
-hexdump_read_fn_t hexdump_get_read_fn(void)
-{
-	return hd_read_fn;
-}
-
-struct hexdump_config *hexdump_get_config(void)
-{
-	return &hd_cfg;
 }
 
 /* 判断是否为可打印字符 */
@@ -115,7 +105,7 @@ static void hd_print_hex(uintptr_t addr, size_t line_len, size_t bpl)
 
 	for (j = 0; j < bpl; j++) {
 		if (j < line_len)
-			all_printk("%02X ", hd_read_fn(addr + j));
+			all_printk("%02X ", hexdump_default_read(addr + j));
 		else
 			all_printk("   ");
 	}
@@ -128,7 +118,8 @@ static void hd_print_ascii(uintptr_t addr, size_t line_len, size_t bpl)
 
 	all_printk(" |");
 	for (j = 0; j < line_len; j++)
-		all_printk("%c", hd_to_printable(hd_read_fn(addr + j)));
+		all_printk("%c",
+			   hd_to_printable(hexdump_default_read(addr + j)));
 	for (; j < bpl; j++)
 		all_printk(" ");
 	all_printk("|");
