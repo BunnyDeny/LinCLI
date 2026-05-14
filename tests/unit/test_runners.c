@@ -28,6 +28,7 @@ extern void test_cli_atoi_zero(void);
 extern void test_cli_atoi_no_digits(void);
 extern void test_cli_atoi_spaces(void);
 extern void test_cli_atoi_mixed(void);
+extern void test_cli_atoi_hex(void);
 
 /* ==== test_unit_float.c ==== */
 extern void test_cli_atof_positive(void);
@@ -94,6 +95,7 @@ static void run_atoi_tests(void)
 	RUN_TEST(test_cli_atoi_no_digits);
 	RUN_TEST(test_cli_atoi_spaces);
 	RUN_TEST(test_cli_atoi_mixed);
+	RUN_TEST(test_cli_atoi_hex);
 }
 
 static void run_float_tests(void)
