@@ -26,6 +26,7 @@
 
 #include "cmd_dispose.h"
 #include "cli_io.h"
+#include "cli_vsnprintf.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -70,77 +71,148 @@ static void hd_utox(unsigned int val, char *buf, int digits)
 	buf[digits] = '\0';
 }
 
-/* 打印地址前缀 */
-static void hd_print_addr(uintptr_t addr)
+/* 计算字符串可见宽度（跳过 ANSI 转义序列） */
+static int hd_visible_len(const char *s)
 {
-	char buf[17];
+	int len = 0;
+	int in_esc = 0;
 
-	if (sizeof(uintptr_t) == 8 && (addr >> 32) != 0) {
-		hd_utox((unsigned int)(addr >> 32), buf, 8);
-		all_printk("%s", buf);
-		hd_utox((unsigned int)addr, buf, 8);
-		all_printk("%s: ", buf);
-	} else {
-		hd_utox((unsigned int)addr, buf, 8);
-		all_printk("%s: ", buf);
+	while (*s) {
+		if (*s == '\033') {
+			in_esc = 1;
+		} else if (in_esc && *s == 'm') {
+			in_esc = 0;
+		} else if (!in_esc) {
+			len++;
+		}
+		s++;
 	}
+	return len;
 }
 
-/* 打印单个字节的十六进制 */
-static void hd_print_byte_hex(uint8_t val)
+/* 将字符串按可见宽度居中写入缓冲区 */
+static void hd_puts_centered(char *buf, int *pos, int size, const char *s,
+			     int width)
 {
-	static const char hex[] = "0123456789ABCDEF";
-	char buf[4];
+	int vlen = hd_visible_len(s);
+	int pad = width - vlen;
+	int left_pad, right_pad;
+	int i;
 
-	buf[0] = hex[val >> 4];
-	buf[1] = hex[val & 0xF];
-	buf[2] = ' ';
-	buf[3] = '\0';
-	all_printk("%s", buf);
+	if (pad < 0)
+		pad = 0;
+	left_pad = pad / 2;
+	right_pad = pad - left_pad;
+
+	for (i = 0; i < left_pad && *pos < size - 1; i++)
+		buf[(*pos)++] = ' ';
+	while (*s && *pos < size - 1)
+		buf[(*pos)++] = *s++;
+	for (i = 0; i < right_pad && *pos < size - 1; i++)
+		buf[(*pos)++] = ' ';
 }
 
-/* 打印一行十六进制值 */
-static void hd_print_hex(uintptr_t addr, size_t line_len, size_t bpl)
+/* 填充字符 */
+static void hd_fill(char *buf, int *pos, int size, char c, int count)
 {
-	size_t j;
+	int i;
 
-	for (j = 0; j < bpl; j++) {
-		if (j < line_len)
-			hd_print_byte_hex(hexdump_default_read(addr + j));
-		else
-			all_printk("   ");
-	}
+	for (i = 0; i < count && *pos < size - 1; i++)
+		buf[(*pos)++] = c;
 }
 
-/* 打印一行 ASCII 值 */
-static void hd_print_ascii(uintptr_t addr, size_t line_len, size_t bpl)
+/* 打印表头 */
+static void hd_print_header(size_t bpl, bool ascii)
 {
-	size_t j;
+	char line[128];
+	int addr_w = 12; /* "0xXXXXXXXX: " */
+	int hex_w = (int)(bpl * 3);
+	int ascii_w = ascii ? (int)(bpl + 3) : 0;
+	int pos = 0;
 
-	all_printk(" |");
-	for (j = 0; j < line_len; j++)
-		all_printk("%c",
-			   hd_to_printable(hexdump_default_read(addr + j)));
-	for (; j < bpl; j++)
-		all_printk(" ");
-	all_printk("|");
+	hd_puts_centered(line, &pos, sizeof(line), COLOR_BLUE "addr" COLOR_NONE,
+			 addr_w);
+	hd_puts_centered(line, &pos, sizeof(line), "value", hex_w);
+	if (ascii)
+		hd_puts_centered(line, &pos, sizeof(line),
+				 COLOR_CYAN "ascii" COLOR_NONE, ascii_w);
+	line[pos] = '\0';
+	cli_printk("%s\r\n", line);
+
+	pos = 0;
+	hd_fill(line, &pos, sizeof(line), '-', addr_w);
+	hd_fill(line, &pos, sizeof(line), '-', hex_w);
+	if (ascii)
+		hd_fill(line, &pos, sizeof(line), '-', ascii_w);
+	line[pos] = '\0';
+	cli_printk("%s\r\n", line);
 }
 
 /* 打印一行 hexdump */
-static void hd_print_line(uintptr_t addr, size_t len, size_t offset,
-			  size_t bpl, bool ascii)
+static void hd_print_line(uintptr_t addr, size_t len, size_t offset, size_t bpl,
+			  bool ascii)
 {
+	static const char hex[] = "0123456789ABCDEF";
 	uintptr_t line_addr = addr + offset;
 	size_t line_len = len - offset;
+	char buf[512];
+	int pos = 0;
+	int max_pos = (int)sizeof(buf) - 1;
+	size_t j;
+	char addr_buf[9];
 
 	if (line_len > bpl)
 		line_len = bpl;
 
-	hd_print_addr(line_addr);
-	hd_print_hex(line_addr, line_len, bpl);
-	if (ascii)
-		hd_print_ascii(line_addr, line_len, bpl);
-	all_printk("\r\n");
+	/* 地址（蓝色） */
+	if (sizeof(uintptr_t) == 8 && (line_addr >> 32) != 0) {
+		char addr_hi[9];
+		hd_utox((unsigned int)(line_addr >> 32), addr_hi, 8);
+		hd_utox((unsigned int)line_addr, addr_buf, 8);
+		pos += cli_snprintf(buf + pos, sizeof(buf) - pos,
+				    COLOR_BLUE "0x%s%s: " COLOR_NONE, addr_hi,
+				    addr_buf);
+	} else {
+		hd_utox((unsigned int)line_addr, addr_buf, 8);
+		pos += cli_snprintf(buf + pos, sizeof(buf) - pos,
+				    COLOR_BLUE "0x%s: " COLOR_NONE, addr_buf);
+	}
+
+	/* 十六进制 */
+	for (j = 0; j < bpl && pos < max_pos; j++) {
+		if (j < line_len) {
+			uint8_t val = hexdump_default_read(line_addr + j);
+			buf[pos++] = hex[val >> 4];
+			if (pos < max_pos)
+				buf[pos++] = hex[val & 0xF];
+			if (pos < max_pos)
+				buf[pos++] = ' ';
+		} else {
+			buf[pos++] = ' ';
+			if (pos < max_pos)
+				buf[pos++] = ' ';
+			if (pos < max_pos)
+				buf[pos++] = ' ';
+		}
+	}
+
+	/* ASCII（青色） */
+	if (ascii) {
+		if (pos < max_pos)
+			buf[pos++] = ' ';
+		if (pos < max_pos)
+			buf[pos++] = '|';
+		for (j = 0; j < line_len && pos < max_pos; j++)
+			buf[pos++] = hd_to_printable(
+				hexdump_default_read(line_addr + j));
+		for (; j < bpl && pos < max_pos; j++)
+			buf[pos++] = ' ';
+		if (pos < max_pos)
+			buf[pos++] = '|';
+	}
+
+	buf[pos] = '\0';
+	cli_printk("%s\r\n", buf);
 }
 
 static void hexdump_print(uintptr_t addr, size_t len, bool ascii)
@@ -151,6 +223,8 @@ static void hexdump_print(uintptr_t addr, size_t len, bool ascii)
 	if (bpl == 0)
 		bpl = 16;
 
+	hd_print_header(bpl, ascii);
+
 	for (i = 0; i < len; i += bpl)
 		hd_print_line(addr, len, i, bpl, ascii);
 }
@@ -160,28 +234,32 @@ static void hd_print_config(void)
 {
 	char buf[9];
 
-	all_printk("hexdump config:\r\n");
+	cli_printk("hexdump config:\r\n");
 	hd_utox((unsigned int)hd_cfg.min_addr, buf, 8);
-	all_printk("  min_addr       : 0x%s\r\n", buf);
+	cli_printk("  min_addr       : 0x%s\r\n", buf);
 	hd_utox((unsigned int)hd_cfg.max_addr, buf, 8);
-	all_printk("  max_addr       : 0x%s\r\n", buf);
-	all_printk("  bytes_per_line : %u\r\n",
+	cli_printk("  max_addr       : 0x%s\r\n", buf);
+	cli_printk("  bytes_per_line : %u\r\n",
 		   (unsigned int)hd_cfg.bytes_per_line);
-	all_printk("  max_len        : %u\r\n",
-		   (unsigned int)hd_cfg.max_len);
+	cli_printk("  max_len        : %u\r\n", (unsigned int)hd_cfg.max_len);
 }
 
 /* 打印地址越界错误 */
 static void hd_print_addr_err(uintptr_t addr)
 {
 	char buf[9];
+	char msg[64];
+	int pos = 0;
 
 	hd_utox((unsigned int)addr, buf, 8);
-	all_printk("Error: address 0x%s out of range [", buf);
+	pos += cli_snprintf(msg + pos, sizeof(msg) - pos,
+			    "address 0x%s out of range [", buf);
 	hd_utox((unsigned int)hd_cfg.min_addr, buf, 8);
-	all_printk("0x%s, ", buf);
+	pos += cli_snprintf(msg + pos, sizeof(msg) - pos, "0x%s, ", buf);
 	hd_utox((unsigned int)hd_cfg.max_addr, buf, 8);
-	all_printk("0x%s]\r\n", buf);
+	pos += cli_snprintf(msg + pos, sizeof(msg) - pos, "0x%s]", buf);
+
+	pr_err("%s\r\n", msg);
 }
 
 /* hexdump 参数结构体 */
@@ -193,6 +271,7 @@ struct hexdump_args {
 	int max_addr;
 	int bytes_per_line;
 	bool show;
+	bool config;
 };
 
 static int hexdump_handler(void *_args)
@@ -200,33 +279,20 @@ static int hexdump_handler(void *_args)
 	struct hexdump_args *args = _args;
 	uintptr_t dump_addr;
 	size_t dump_len;
-	bool did_config;
 
-	/* 先处理配置类选项（冷门用法，允许同一条命令先配后显） */
-	if (args->min_addr)
+	if (args->config) {
 		hd_cfg.min_addr = (unsigned int)args->min_addr;
-	if (args->max_addr)
 		hd_cfg.max_addr = (unsigned int)args->max_addr;
-	if (args->bytes_per_line > 0)
-		hd_cfg.bytes_per_line = (size_t)args->bytes_per_line;
-
-	did_config = args->min_addr || args->max_addr ||
-		     args->bytes_per_line > 0;
+		if (args->bytes_per_line > 0)
+			hd_cfg.bytes_per_line = (size_t)args->bytes_per_line;
+		hd_print_config();
+		return 0;
+	}
 
 	if (args->show) {
 		hd_print_config();
 		return 0;
 	}
-
-	/* 没有 --addr 且没有做任何配置，才报 usage */
-	if (args->addr == 0 && !did_config) {
-		all_printk("Usage: hexdump -a <addr> [-l <len>] [-C]\r\n");
-		return -1;
-	}
-
-	/* 只配置了参数，不 dump */
-	if (args->addr == 0)
-		return 0;
 
 	dump_addr = (unsigned int)args->addr;
 
@@ -243,20 +309,19 @@ static int hexdump_handler(void *_args)
 
 	/* 长度上限检查 */
 	if (dump_len > hd_cfg.max_len) {
-		all_printk("Warning: length truncated to %u (max allowed)\r\n",
-			   (unsigned int)hd_cfg.max_len);
+		pr_warn("length truncated to %u (max allowed)\r\n",
+			(unsigned int)hd_cfg.max_len);
 		dump_len = hd_cfg.max_len;
 	}
 
 	/* 结束地址溢出检查 */
 	if (dump_addr + dump_len < dump_addr) {
-		all_printk("Error: address wrap-around\r\n");
+		pr_err("address wrap-around\r\n");
 		return -1;
 	}
 
 	if (dump_len > 0 && dump_addr + dump_len - 1 > hd_cfg.max_addr) {
-		all_printk("Warning: end address exceeds max_addr, "
-			   "truncating\r\n");
+		pr_warn("end address exceeds max_addr, truncating\r\n");
 		dump_len = hd_cfg.max_addr - dump_addr + 1;
 	}
 
@@ -265,23 +330,25 @@ static int hexdump_handler(void *_args)
 }
 
 CLI_COMMAND(hexdump, "hexdump", "Memory dump for embedded debugging",
-	    USAGE("hexdump -a <addr> [-l <len>] [-C]"),
-	    hexdump_handler, (struct hexdump_args *)0,
+	    USAGE("hexdump -a <addr> [-l <len>] [-C]"), hexdump_handler,
+	    (struct hexdump_args *)0,
 	    OPTION('a', "addr", INT, "Start address (hex supported)",
 		   struct hexdump_args, addr, 0, NULL, NULL, false),
-	    OPTION('l', "len", INT, "Length to dump",
-		   struct hexdump_args, len, 0, NULL, NULL, false),
-	    OPTION('C', "ascii", BOOL, "Show ASCII column",
-		   struct hexdump_args, ascii, 0, NULL, NULL, false),
+	    OPTION('l', "len", INT, "Length to dump", struct hexdump_args, len,
+		   0, NULL, NULL, false),
+	    OPTION('C', "ascii", BOOL, "Show ASCII column", struct hexdump_args,
+		   ascii, 0, NULL, NULL, false),
 	    OPTION('m', "min-addr", INT, "Set min valid address",
-		   struct hexdump_args, min_addr, 0, NULL, NULL, false),
+		   struct hexdump_args, min_addr, 0, "config M", NULL, false),
 	    OPTION('M', "max-addr", INT, "Set max valid address",
-		   struct hexdump_args, max_addr, 0, NULL, NULL, false),
-	    OPTION('b', "bytes-per-line", INT,
-		   "Set bytes per line (1-64)",
-		   struct hexdump_args, bytes_per_line, 0, NULL, NULL, false),
+		   struct hexdump_args, max_addr, 0, "config m", NULL, false),
+	    OPTION('b', "bytes-per-line", INT, "Set bytes per line (1-64)",
+		   struct hexdump_args, bytes_per_line, 0, "config", NULL,
+		   false),
 	    OPTION('s', "show", BOOL, "Show current config",
 		   struct hexdump_args, show, 0, NULL, NULL, false),
+	    OPTION(0, "config", BOOL, "enable option m, M, b",
+		   struct hexdump_args, config, 0, NULL, NULL, false),
 	    END_OPTIONS);
 
 #endif /* HEXDUMP */
