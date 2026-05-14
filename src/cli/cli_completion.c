@@ -611,7 +611,7 @@ static void display_option_list(const cli_command_t *cmd,
 	int saved_highlight = candidate_ctx.highlight_index;
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_LONG_OPTS, prefix, prefix_len, cmd);
-	candidate_ctx.highlight_index = saved_highlight;
+	candidate_ctx.highlight_index = highlight_idx;
 	int prefix_cnt = 0, substr_cnt = 0, total = 0;
 	long_opt_match_stats(cmd, prefix, &prefix_cnt, &substr_cnt,
 			     &total);
@@ -1039,7 +1039,7 @@ static void display_value_list(const char *prefix, int prefix_len,
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_VALUES, prefix, prefix_len,
 			   candidate_ctx.cmd);
-	candidate_ctx.highlight_index = saved_highlight;
+	candidate_ctx.highlight_index = highlight_idx;
 	cli_option_t *opt = candidate_ctx.opt;
 	if (!opt || opt->candidate_argc <= 0)
 		return;
@@ -1268,12 +1268,7 @@ static void list_values_wrapper(const cli_command_t *cmd, const char *prefix,
 				int prefix_len, int highlight_idx)
 {
 	(void)cmd;
-	(void)prefix;
-	(void)prefix_len;
-	(void)highlight_idx;
-	display_value_list(candidate_ctx.prefix,
-			   candidate_ctx.prefix_len,
-			   candidate_ctx.highlight_index);
+	display_value_list(prefix, prefix_len, highlight_idx);
 }
 
 static void candidate_redraw_generic(
