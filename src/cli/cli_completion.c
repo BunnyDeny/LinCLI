@@ -608,7 +608,6 @@ static void display_option_list(const cli_command_t *cmd,
 				int highlight_idx)
 {
 	int old_rows = candidate_ctx.rows;
-	int saved_highlight = candidate_ctx.highlight_index;
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_LONG_OPTS, prefix, prefix_len, cmd);
 	candidate_ctx.highlight_index = highlight_idx;
@@ -1035,7 +1034,6 @@ static void display_value_list(const char *prefix, int prefix_len,
 				       int highlight_idx)
 {
 	int old_rows = candidate_ctx.rows;
-	int saved_highlight = candidate_ctx.highlight_index;
 	clear_and_up(old_rows, old_rows);
 	candidate_ctx_save(CAND_ACTIVE_VALUES, prefix, prefix_len,
 			   candidate_ctx.cmd);
