@@ -24,10 +24,9 @@ config HEXDUMP
 	  Supports configurable address range, bytes per line,
 	  and ASCII output.
 
-if HEXDUMP
-
 config HEXDUMP_MIN_ADDR
 	hex "Default minimum valid address"
+	depends on HEXDUMP
 	default 0x08000000
 	help
 	  Lower bound of the valid address range.
@@ -35,6 +34,7 @@ config HEXDUMP_MIN_ADDR
 
 config HEXDUMP_MAX_ADDR
 	hex "Default maximum valid address"
+	depends on HEXDUMP
 	default 0x0800FFFF
 	help
 	  Upper bound of the valid address range.
@@ -42,6 +42,7 @@ config HEXDUMP_MAX_ADDR
 
 config HEXDUMP_BYTES_PER_LINE
 	int "Default bytes per line"
+	depends on HEXDUMP
 	default 16
 	range 1 64
 	help
@@ -49,11 +50,10 @@ config HEXDUMP_BYTES_PER_LINE
 
 config HEXDUMP_MAX_LEN
 	int "Maximum bytes per dump"
+	depends on HEXDUMP
 	default 256
 	range 1 4096
 	help
 	  Maximum number of bytes allowed in a single hexdump command.
-
-endif
 
 endmenu
