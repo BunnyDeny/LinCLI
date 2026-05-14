@@ -6,3 +6,6 @@ target_include_directories(list INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/list)
 
 # workqueue 子目录
 add_subdirectory(workqueue)
+
+# hexdump 子目录
+add_subdirectory(hexdump)

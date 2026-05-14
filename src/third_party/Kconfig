@@ -16,4 +16,45 @@ config WORKQUEUE
 	  Supports delayed execution, FIFO scheduling.
 	  Requires LIST to be enabled(auto).
 
+config HEXDUMP
+	bool "Enable hexdump memory dump command"
+	default n
+	select CLI_ENABLE_RAW_COMMAND
+	help
+	  Provides 'hexdump' command for embedded memory/flash debugging.
+	  Supports configurable address range, bytes per line,
+	  and ASCII output.
+
+if HEXDUMP
+
+config HEXDUMP_MIN_ADDR
+	hex "Default minimum valid address"
+	default 0x08000000
+	help
+	  Lower bound of the valid address range.
+	  Default to STM32F103C8T6 Flash start address.
+
+config HEXDUMP_MAX_ADDR
+	hex "Default maximum valid address"
+	default 0x0800FFFF
+	help
+	  Upper bound of the valid address range.
+	  Default to STM32F103C8T6 Flash end address (64KB).
+
+config HEXDUMP_BYTES_PER_LINE
+	int "Default bytes per line"
+	default 16
+	range 1 64
+	help
+	  Number of bytes printed on each line.
+
+config HEXDUMP_MAX_LEN
+	int "Maximum bytes per dump"
+	default 256
+	range 1 4096
+	help
+	  Maximum number of bytes allowed in a single hexdump command.
+
+endif
+
 endmenu

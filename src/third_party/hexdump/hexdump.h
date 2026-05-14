@@ -1,5 +1,5 @@
 /*
- * LinCLI - Framework-wide configuration macros.
+ * LinCLI - Lightweight hexdump utility for embedded/MCU debugging.
  * Copyright (C) 2026  bunnydeny <guoy55448@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,21 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef _HEXDUMP_H_
+#define _HEXDUMP_H_
 
-#ifndef _CLI_CONFIG_H_
-#define _CLI_CONFIG_H_
+#include <stdint.h>
+#include <stddef.h>
 
-#include "cli_kconfig.h"
+typedef uint8_t (*hexdump_read_fn_t)(uintptr_t addr);
 
-/* ==========================================================
- * 以下宏与 Kconfig 无关，始终保留。
- * ========================================================== */
-#define CLI_VERSION_MAJOR 1
-#define CLI_VERSION_MINOR 17
-#define CLI_VERSION_PATCH 2
+struct hexdump_config {
+	uintptr_t min_addr;
+	uintptr_t max_addr;
+	size_t bytes_per_line;
+	size_t max_len;
+};
 
-#if CLI_MPOOL_COUNT > 32
-#error "CLI_MPOOL_COUNT must not exceed 32"
+void hexdump_set_read_fn(hexdump_read_fn_t fn);
+hexdump_read_fn_t hexdump_get_read_fn(void);
+struct hexdump_config *hexdump_get_config(void);
+
 #endif
-
-#endif /* _CLI_CONFIG_H_ */
