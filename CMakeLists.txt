@@ -68,6 +68,7 @@ add_executable(${OUTPUT_NAME}
     $<TARGET_OBJECTS:src>
     $<TARGET_OBJECTS:commands>
     $<TARGET_OBJECTS:workqueue>
+    $<TARGET_OBJECTS:hexdump>
 )
 target_include_directories(${OUTPUT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include

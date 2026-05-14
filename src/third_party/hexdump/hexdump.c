@@ -57,13 +57,46 @@ static char hd_to_printable(uint8_t c)
 	return (c >= 32 && c < 127) ? (char)c : '.';
 }
 
+/* 将 unsigned int 转为固定 digit 的十六进制字符串 */
+static void hd_utox(unsigned int val, char *buf, int digits)
+{
+	static const char hex[] = "0123456789ABCDEF";
+	int i;
+
+	for (i = digits - 1; i >= 0; i--) {
+		buf[i] = hex[val & 0xF];
+		val >>= 4;
+	}
+	buf[digits] = '\0';
+}
+
 /* 打印地址前缀 */
 static void hd_print_addr(uintptr_t addr)
 {
-	if (sizeof(uintptr_t) == 8)
-		all_printk("%016llX: ", (unsigned long long)addr);
-	else
-		all_printk("%08X: ", (unsigned int)addr);
+	char buf[17];
+
+	if (sizeof(uintptr_t) == 8 && (addr >> 32) != 0) {
+		hd_utox((unsigned int)(addr >> 32), buf, 8);
+		all_printk("%s", buf);
+		hd_utox((unsigned int)addr, buf, 8);
+		all_printk("%s: ", buf);
+	} else {
+		hd_utox((unsigned int)addr, buf, 8);
+		all_printk("%s: ", buf);
+	}
+}
+
+/* 打印单个字节的十六进制 */
+static void hd_print_byte_hex(uint8_t val)
+{
+	static const char hex[] = "0123456789ABCDEF";
+	char buf[4];
+
+	buf[0] = hex[val >> 4];
+	buf[1] = hex[val & 0xF];
+	buf[2] = ' ';
+	buf[3] = '\0';
+	all_printk("%s", buf);
 }
 
 /* 打印一行十六进制值 */
@@ -73,7 +106,7 @@ static void hd_print_hex(uintptr_t addr, size_t line_len, size_t bpl)
 
 	for (j = 0; j < bpl; j++) {
 		if (j < line_len)
-			all_printk("%02X ", hexdump_default_read(addr + j));
+			hd_print_byte_hex(hexdump_default_read(addr + j));
 		else
 			all_printk("   ");
 	}
@@ -125,18 +158,13 @@ static void hexdump_print(uintptr_t addr, size_t len, bool ascii)
 /* 打印当前配置 */
 static void hd_print_config(void)
 {
+	char buf[9];
+
 	all_printk("hexdump config:\r\n");
-	if (sizeof(uintptr_t) == 8) {
-		all_printk("  min_addr       : 0x%016llX\r\n",
-			   (unsigned long long)hd_cfg.min_addr);
-		all_printk("  max_addr       : 0x%016llX\r\n",
-			   (unsigned long long)hd_cfg.max_addr);
-	} else {
-		all_printk("  min_addr       : 0x%08X\r\n",
-			   (unsigned int)hd_cfg.min_addr);
-		all_printk("  max_addr       : 0x%08X\r\n",
-			   (unsigned int)hd_cfg.max_addr);
-	}
+	hd_utox((unsigned int)hd_cfg.min_addr, buf, 8);
+	all_printk("  min_addr       : 0x%s\r\n", buf);
+	hd_utox((unsigned int)hd_cfg.max_addr, buf, 8);
+	all_printk("  max_addr       : 0x%s\r\n", buf);
 	all_printk("  bytes_per_line : %u\r\n",
 		   (unsigned int)hd_cfg.bytes_per_line);
 	all_printk("  max_len        : %u\r\n",
@@ -146,19 +174,14 @@ static void hd_print_config(void)
 /* 打印地址越界错误 */
 static void hd_print_addr_err(uintptr_t addr)
 {
-	if (sizeof(uintptr_t) == 8) {
-		all_printk("Error: address 0x%016llX out of range "
-			   "[0x%016llX, 0x%016llX]\r\n",
-			   (unsigned long long)addr,
-			   (unsigned long long)hd_cfg.min_addr,
-			   (unsigned long long)hd_cfg.max_addr);
-	} else {
-		all_printk("Error: address 0x%08X out of range "
-			   "[0x%08X, 0x%08X]\r\n",
-			   (unsigned int)addr,
-			   (unsigned int)hd_cfg.min_addr,
-			   (unsigned int)hd_cfg.max_addr);
-	}
+	char buf[9];
+
+	hd_utox((unsigned int)addr, buf, 8);
+	all_printk("Error: address 0x%s out of range [", buf);
+	hd_utox((unsigned int)hd_cfg.min_addr, buf, 8);
+	all_printk("0x%s, ", buf);
+	hd_utox((unsigned int)hd_cfg.max_addr, buf, 8);
+	all_printk("0x%s]\r\n", buf);
 }
 
 /* hexdump 参数结构体 */
@@ -177,6 +200,7 @@ static int hexdump_handler(void *_args)
 	struct hexdump_args *args = _args;
 	uintptr_t dump_addr;
 	size_t dump_len;
+	bool did_config;
 
 	/* 先处理配置类选项（冷门用法，允许同一条命令先配后显） */
 	if (args->min_addr)
@@ -186,16 +210,23 @@ static int hexdump_handler(void *_args)
 	if (args->bytes_per_line > 0)
 		hd_cfg.bytes_per_line = (size_t)args->bytes_per_line;
 
+	did_config = args->min_addr || args->max_addr ||
+		     args->bytes_per_line > 0;
+
 	if (args->show) {
 		hd_print_config();
 		return 0;
 	}
 
-	/* 显示功能需要 --addr */
-	if (args->addr == 0) {
+	/* 没有 --addr 且没有做任何配置，才报 usage */
+	if (args->addr == 0 && !did_config) {
 		all_printk("Usage: hexdump -a <addr> [-l <len>] [-C]\r\n");
 		return -1;
 	}
+
+	/* 只配置了参数，不 dump */
+	if (args->addr == 0)
+		return 0;
 
 	dump_addr = (unsigned int)args->addr;
 
