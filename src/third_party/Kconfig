@@ -19,7 +19,6 @@ config WORKQUEUE
 config HEXDUMP
 	bool "Enable hexdump memory dump command"
 	default n
-	select CLI_ENABLE_RAW_COMMAND
 	help
 	  Provides 'hexdump' command for embedded memory/flash debugging.
 	  Supports configurable address range, bytes per line,

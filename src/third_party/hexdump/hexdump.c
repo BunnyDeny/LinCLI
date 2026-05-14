@@ -26,7 +26,6 @@
 
 #include "cmd_dispose.h"
 #include "cli_io.h"
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -56,37 +55,6 @@ uint8_t hexdump_default_read(uintptr_t addr)
 static char hd_to_printable(uint8_t c)
 {
 	return (c >= 32 && c < 127) ? (char)c : '.';
-}
-
-/* 解析地址（支持 0x 前缀和十进制） */
-static int hd_parse_addr(const char *s, uintptr_t *out)
-{
-	char *end;
-	unsigned long val;
-
-	if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
-		val = strtoul(s, &end, 16);
-	else
-		val = strtoul(s, &end, 10);
-
-	if (*end != '\0')
-		return -1;
-
-	*out = (uintptr_t)val;
-	return 0;
-}
-
-/* 解析整数 */
-static int hd_parse_int(const char *s, int *out)
-{
-	char *end;
-	long val = strtol(s, &end, 0);
-
-	if (*end != '\0')
-		return -1;
-
-	*out = (int)val;
-	return 0;
 }
 
 /* 打印地址前缀 */
@@ -193,149 +161,96 @@ static void hd_print_addr_err(uintptr_t addr)
 	}
 }
 
-/* hexdump config 处理 */
-static int hexdump_config_handler(char **argv, int argc)
+/* hexdump 参数结构体 */
+struct hexdump_args {
+	int addr;
+	int len;
+	bool ascii;
+	int min_addr;
+	int max_addr;
+	int bytes_per_line;
+	bool show;
+};
+
+static int hexdump_handler(void *_args)
 {
-	int i;
+	struct hexdump_args *args = _args;
+	uintptr_t dump_addr;
+	size_t dump_len;
 
-	for (i = 1; i < argc; i++) {
-		if ((strcmp(argv[i], "--min-addr") == 0 ||
-		     strcmp(argv[i], "-m") == 0) &&
-		    i + 1 < argc) {
-			uintptr_t val;
+	/* 先处理配置类选项（冷门用法，允许同一条命令先配后显） */
+	if (args->min_addr)
+		hd_cfg.min_addr = (unsigned int)args->min_addr;
+	if (args->max_addr)
+		hd_cfg.max_addr = (unsigned int)args->max_addr;
+	if (args->bytes_per_line > 0)
+		hd_cfg.bytes_per_line = (size_t)args->bytes_per_line;
 
-			if (hd_parse_addr(argv[++i], &val) != 0) {
-				all_printk("Error: invalid min-addr: %s\r\n",
-					   argv[i]);
-				return -1;
-			}
-			hd_cfg.min_addr = val;
-		} else if ((strcmp(argv[i], "--max-addr") == 0 ||
-			    strcmp(argv[i], "-M") == 0) &&
-			   i + 1 < argc) {
-			uintptr_t val;
-
-			if (hd_parse_addr(argv[++i], &val) != 0) {
-				all_printk("Error: invalid max-addr: %s\r\n",
-					   argv[i]);
-				return -1;
-			}
-			hd_cfg.max_addr = val;
-		} else if ((strcmp(argv[i], "--bytes-per-line") == 0 ||
-			    strcmp(argv[i], "-b") == 0) &&
-			   i + 1 < argc) {
-			int val;
-
-			if (hd_parse_int(argv[++i], &val) != 0 ||
-			    val <= 0 || val > 64) {
-				all_printk("Error: invalid bytes-per-line: "
-					   "%s (1-64)\r\n",
-					   argv[i]);
-				return -1;
-			}
-			hd_cfg.bytes_per_line = (size_t)val;
-		} else if (strcmp(argv[i], "--show") == 0 ||
-			   strcmp(argv[i], "-s") == 0) {
-			hd_print_config();
-		} else {
-			all_printk("Error: unknown option: %s\r\n",
-				   argv[i]);
-			return -1;
-		}
+	if (args->show) {
+		hd_print_config();
+		return 0;
 	}
 
-	return 0;
-}
-
-/* hexdump dump 处理 */
-static int hexdump_dump_handler(char **argv, int argc)
-{
-	bool ascii = false;
-	int arg_idx = 1;
-	uintptr_t addr;
-	size_t len;
-
-	/* 解析选项 */
-	while (arg_idx < argc && argv[arg_idx][0] == '-') {
-		if (strcmp(argv[arg_idx], "-C") == 0 ||
-		    strcmp(argv[arg_idx], "--ascii") == 0) {
-			ascii = true;
-			arg_idx++;
-		} else {
-			all_printk("Error: unknown option: %s\r\n",
-				   argv[arg_idx]);
-			return -1;
-		}
-	}
-
-	if (arg_idx >= argc) {
-		all_printk("Usage: hexdump [-C|--ascii] <addr> [len]\r\n");
+	/* 显示功能需要 --addr */
+	if (args->addr == 0) {
+		all_printk("Usage: hexdump -a <addr> [-l <len>] [-C]\r\n");
 		return -1;
 	}
 
-	if (hd_parse_addr(argv[arg_idx], &addr) != 0) {
-		all_printk("Error: invalid address: %s\r\n",
-			   argv[arg_idx]);
-		return -1;
-	}
-	arg_idx++;
+	dump_addr = (unsigned int)args->addr;
 
-	if (arg_idx < argc) {
-		int tmp;
-
-		if (hd_parse_int(argv[arg_idx], &tmp) != 0 || tmp < 0) {
-			all_printk("Error: invalid length: %s\r\n",
-				   argv[arg_idx]);
-			return -1;
-		}
-		len = (size_t)tmp;
-	} else {
-		len = hd_cfg.max_len;
-	}
+	if (args->len > 0)
+		dump_len = (size_t)(unsigned int)args->len;
+	else
+		dump_len = hd_cfg.max_len;
 
 	/* 地址范围检查 */
-	if (addr < hd_cfg.min_addr || addr > hd_cfg.max_addr) {
-		hd_print_addr_err(addr);
+	if (dump_addr < hd_cfg.min_addr || dump_addr > hd_cfg.max_addr) {
+		hd_print_addr_err(dump_addr);
 		return -1;
 	}
 
 	/* 长度上限检查 */
-	if (len > hd_cfg.max_len) {
+	if (dump_len > hd_cfg.max_len) {
 		all_printk("Warning: length truncated to %u (max allowed)\r\n",
 			   (unsigned int)hd_cfg.max_len);
-		len = hd_cfg.max_len;
+		dump_len = hd_cfg.max_len;
 	}
 
 	/* 结束地址溢出检查 */
-	if (addr + len < addr) {
+	if (dump_addr + dump_len < dump_addr) {
 		all_printk("Error: address wrap-around\r\n");
 		return -1;
 	}
 
-	if (len > 0 && addr + len - 1 > hd_cfg.max_addr) {
+	if (dump_len > 0 && dump_addr + dump_len - 1 > hd_cfg.max_addr) {
 		all_printk("Warning: end address exceeds max_addr, "
 			   "truncating\r\n");
-		len = hd_cfg.max_addr - addr + 1;
+		dump_len = hd_cfg.max_addr - dump_addr + 1;
 	}
 
-	hexdump_print(addr, len, ascii);
+	hexdump_print(dump_addr, dump_len, args->ascii);
 	return 0;
 }
 
-static int hexdump_handler(char **argv, int argc)
-{
-	if (argc >= 2 && strcmp(argv[1], "config") == 0)
-		return hexdump_config_handler(argv, argc);
-
-	return hexdump_dump_handler(argv, argc);
-}
-
-CLI_RAW_COMMAND(hexdump_cmd, "hexdump",
-		"Memory dump for embedded debugging",
-		USAGE("hexdump [-C|--ascii] <addr> [len]",
-		      "hexdump config [-m <addr>] [-M <addr>] "
-		      "[-b <n>] [-s]"),
-		hexdump_handler,
-		"0x08000000", "0x20000000");
+CLI_COMMAND(hexdump, "hexdump", "Memory dump for embedded debugging",
+	    USAGE("hexdump -a <addr> [-l <len>] [-C]"),
+	    hexdump_handler, (struct hexdump_args *)0,
+	    OPTION('a', "addr", INT, "Start address (hex supported)",
+		   struct hexdump_args, addr, 0, NULL, NULL, false),
+	    OPTION('l', "len", INT, "Length to dump",
+		   struct hexdump_args, len, 0, NULL, NULL, false),
+	    OPTION('C', "ascii", BOOL, "Show ASCII column",
+		   struct hexdump_args, ascii, 0, NULL, NULL, false),
+	    OPTION('m', "min-addr", INT, "Set min valid address",
+		   struct hexdump_args, min_addr, 0, NULL, NULL, false),
+	    OPTION('M', "max-addr", INT, "Set max valid address",
+		   struct hexdump_args, max_addr, 0, NULL, NULL, false),
+	    OPTION('b', "bytes-per-line", INT,
+		   "Set bytes per line (1-64)",
+		   struct hexdump_args, bytes_per_line, 0, NULL, NULL, false),
+	    OPTION('s', "show", BOOL, "Show current config",
+		   struct hexdump_args, show, 0, NULL, NULL, false),
+	    END_OPTIONS);
 
 #endif /* HEXDUMP */
