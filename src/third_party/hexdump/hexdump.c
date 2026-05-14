@@ -283,8 +283,6 @@ static int hexdump_handler(void *_args)
 	if (args->config) {
 		hd_cfg.min_addr = (unsigned int)args->min_addr;
 		hd_cfg.max_addr = (unsigned int)args->max_addr;
-		if (args->bytes_per_line > 0)
-			hd_cfg.bytes_per_line = (size_t)args->bytes_per_line;
 		hd_print_config();
 		return 0;
 	}
@@ -293,6 +291,9 @@ static int hexdump_handler(void *_args)
 		hd_print_config();
 		return 0;
 	}
+
+	if (args->bytes_per_line > 0)
+		hd_cfg.bytes_per_line = (size_t)args->bytes_per_line;
 
 	dump_addr = (unsigned int)args->addr;
 
@@ -330,8 +331,9 @@ static int hexdump_handler(void *_args)
 }
 
 CLI_COMMAND(hexdump, "hexdump", "Memory dump for embedded debugging",
-	    USAGE("hexdump -a <addr> [-l <len>] [-C]"), hexdump_handler,
-	    (struct hexdump_args *)0,
+	    USAGE("hexdump -a <addr> [-l <len>] [-C] [-b <bytes>]",
+		  "hexdump --config -m <addr> -M <addr>"),
+	    hexdump_handler, (struct hexdump_args *)0,
 	    OPTION('a', "addr", INT, "Start address (hex supported)",
 		   struct hexdump_args, addr, 0, NULL, NULL, false),
 	    OPTION('l', "len", INT, "Length to dump", struct hexdump_args, len,
@@ -343,8 +345,7 @@ CLI_COMMAND(hexdump, "hexdump", "Memory dump for embedded debugging",
 	    OPTION('M', "max-addr", INT, "Set max valid address",
 		   struct hexdump_args, max_addr, 0, "config m", NULL, false),
 	    OPTION('b', "bytes-per-line", INT, "Set bytes per line (1-64)",
-		   struct hexdump_args, bytes_per_line, 0, "config", NULL,
-		   false),
+		   struct hexdump_args, bytes_per_line, 0, NULL, NULL, false),
 	    OPTION('s', "show", BOOL, "Show current config",
 		   struct hexdump_args, show, 0, NULL, NULL, false),
 	    OPTION(0, "config", BOOL, "enable option m, M, b",

@@ -624,6 +624,8 @@ lin@linCli> level
 
 - 🔌 **[第三方组件](docs/third_party.md)** — 内置的工作队列（workqueue）组件使用指南，支持异步任务投递与延迟调度。包含 `make menuconfig` 开启配置、`wqtest` 测试命令演示、四个核心 API（`INIT_WORK` / `INIT_DELAYED_WORK` / `schedule_work` / `schedule_delayed_work`）详解及完整源码示例。
 
+- 🖨️ **[内存转储工具 hexdump](docs/hexdump.md)** — 轻量级内存 dump 组件，支持十六进制 + ASCII 双列显示、🔵 蓝色地址列、🔷 青色 ASCII 列、自动表头与分隔线。支持 `--config` 模式配置地址范围保护，以及 `hexdump_default_read` 弱符号自定义读取。包含 Linux 虚拟地址禁区（0~4KB 军事禁区）与段错误原理详解。
+
 ---
 
 ## ⚖️ 选型对比 <a id="选型对比"></a>
