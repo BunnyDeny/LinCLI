@@ -7,10 +7,8 @@
  * 注册字符串类型命令选项候选（用于 Tab 补全）
  * ============================================================ */
 
-/* 在此处添加候选值定义，例如：
- * CLI_CANDIDATE(log_file, "log", "file",
- * 	      CANDIDATES("app.log", "app.cfg", "app.txt"));
- */
+CLI_CANDIDATE(log_file, "log", "file",
+	      CANDIDATES("zhaolin", "inline", "inlint"));
 
 /* ============================================================
  * 将 CLI_CANDIDATE 注册的候选数据填充到对应命令选项中

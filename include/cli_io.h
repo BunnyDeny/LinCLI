@@ -42,6 +42,7 @@
 #define COLOR_MAGENTA "\033[35m"
 #define COLOR_CYAN "\033[36m"
 #define COLOR_WHITE "\033[37m"
+#define COLOR_DIM "\033[2m"
 #define COLOR_BOLD "\033[1m"
 #define COLOR_RAINBOW_1 "\033[38;5;196m" /* 红 */
 #define COLOR_RAINBOW_2 "\033[38;5;208m" /* 橙红 */
@@ -61,6 +62,7 @@
 #define COLOR_MAGENTA
 #define COLOR_CYAN
 #define COLOR_WHITE
+#define COLOR_DIM
 #define COLOR_BOLD
 #define COLOR_RAINBOW_1
 #define COLOR_RAINBOW_2

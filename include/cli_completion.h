@@ -18,6 +18,12 @@ typedef enum {
 	CAND_CYCLING_OPT,
 } cand_cycling_t;
 
+typedef enum {
+	MATCH_TYPE_NONE = 0,
+	MATCH_TYPE_PREFIX,
+	MATCH_TYPE_SUBSTRING,
+} match_type_t;
+
 struct candidate_ctx {
 	cand_active_t active;
 	char prefix[CMD_LINE_BUF_SIZE];
@@ -29,6 +35,7 @@ struct candidate_ctx {
 	int rows;
 	int cols;
 	int repl_start;
+	int total_count;
 };
 
 extern struct candidate_ctx candidate_ctx;

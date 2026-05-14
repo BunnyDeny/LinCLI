@@ -229,26 +229,48 @@ static int do_delete(int is_backspace)
 {
 	int status;
 	int pos = is_backspace ? cmd_line.pos - 1 : cmd_line.pos;
+	if (pos < 0 || pos >= cmd_line.size)
+		return CLI_OK;
 	if (is_backspace) {
-		status = cli_out_push((_u8 *)"\b \b", 4);
-		if (status < 0)
-			return status;
-	}
-	for (int i = pos; i < cmd_line.size - 1; i++)
-		cmd_line.buf[i] = cmd_line.buf[i + 1];
-	cmd_line.buf[cmd_line.size - 1] = ' ';
-	int writeNums = cmd_line.size - pos;
-	status = cli_out_push((_u8 *)&cmd_line.buf[pos], writeNums);
-	if (status < 0)
-		return status;
-	if (cli_out_sync())
-		return CLI_ERR_IO_SYNC;
-	while (writeNums--) {
-		status = cli_out_push((_u8 *)"\033[D", 4);
+		if (pos == cmd_line.size - 1) {
+			status = cli_out_push((_u8 *)"\b\033[K", 5);
+			if (status < 0)
+				return status;
+			if (cli_out_sync())
+				return CLI_ERR_IO_SYNC;
+		} else {
+			status = cli_out_push((_u8 *)"\b \b", 4);
+			if (status < 0)
+				return status;
+		}
+	} else if (pos == cmd_line.size - 1) {
+		status = cli_out_push((_u8 *)"\033[K", 4);
 		if (status < 0)
 			return status;
 		if (cli_out_sync())
 			return CLI_ERR_IO_SYNC;
+	}
+	for (int i = pos; i < cmd_line.size - 1; i++)
+		cmd_line.buf[i] = cmd_line.buf[i + 1];
+	cmd_line.buf[cmd_line.size - 1] = ' ';
+	if (pos < cmd_line.size - 1) {
+		int writeNums = cmd_line.size - pos - 1;
+		status = cli_out_push((_u8 *)&cmd_line.buf[pos], writeNums);
+		if (status < 0)
+			return status;
+		status = cli_out_push((_u8 *)" ", 1);
+		if (status < 0)
+			return status;
+		if (cli_out_sync())
+			return CLI_ERR_IO_SYNC;
+		int move_back = writeNums + 1;
+		while (move_back--) {
+			status = cli_out_push((_u8 *)"\033[D", 4);
+			if (status < 0)
+				return status;
+			if (cli_out_sync())
+				return CLI_ERR_IO_SYNC;
+		}
 	}
 	cmd_line.size--;
 	if (is_backspace)
