@@ -163,9 +163,9 @@ static void hd_print_line(uintptr_t addr, size_t len, size_t offset, size_t bpl,
 		line_len = bpl;
 
 	/* 地址（蓝色） */
-	if (sizeof(uintptr_t) == 8 && (line_addr >> 32) != 0) {
+	if (sizeof(uintptr_t) == 8 && ((unsigned long long)line_addr >> 32) != 0) {
 		char addr_hi[9];
-		hd_utox((unsigned int)(line_addr >> 32), addr_hi, 8);
+		hd_utox((unsigned int)((unsigned long long)line_addr >> 32), addr_hi, 8);
 		hd_utox((unsigned int)line_addr, addr_buf, 8);
 		pos += cli_snprintf(buf + pos, sizeof(buf) - pos,
 				    COLOR_BLUE "0x%s%s: " COLOR_NONE, addr_hi,
