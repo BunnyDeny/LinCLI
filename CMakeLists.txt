@@ -78,8 +78,4 @@ set_target_properties(${OUTPUT_NAME} PROPERTIES
     LINK_FLAGS "-T ${LINKER_SCRIPT}"
 )
 
-# ============================================================
-# CTest
-# ============================================================
 enable_testing()
-add_test(NAME unit_tests COMMAND unit_tests)

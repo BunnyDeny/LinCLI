@@ -15,6 +15,4 @@ foreach(dir ${SUBDIRS})
     list(APPEND SOURCES ${TMP})
 endforeach()
 add_library(${PRO_NAME} OBJECT ${SOURCES})
-target_include_directories(${PRO_NAME} PUBLIC
-    ${INCLUDE_DIRS}
-)
+target_include_directories(${PRO_NAME} PUBLIC ${INCLUDE_DIRS})
