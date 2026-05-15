@@ -7,15 +7,7 @@ set(INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 set(SUBDIRS .)
-get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-
-project(${PRO_NAME})
-foreach(dir ${SUBDIRS})
-    file(GLOB_RECURSE TMP "${dir}/*.c")
-    list(APPEND SOURCES ${TMP})
-endforeach()
-file(GLOB_RECURSE UNITY_SOURCES "${CMAKE_SOURCE_DIR}/tests/unity/*.c")
-list(APPEND SOURCES ${UNITY_SOURCES})
-add_executable(${PRO_NAME} ${SOURCES})
+file(GLOB_RECURSE EXTRA_SOURCES "${CMAKE_SOURCE_DIR}/tests/unity/*.c")
+include(${CMAKE_SOURCE_DIR}/cmake/lincli_build.cmake)
+lincli_build_executable()
 target_link_libraries(${PRO_NAME} PRIVATE src commands)
-target_include_directories(${PRO_NAME} PUBLIC ${INCLUDE_DIRS})
