@@ -3,6 +3,7 @@ menu "Demo Commands"
 config CLI_ENABLE_DEMO_AUTO_CMD
     bool "Enable auto cmd demo"
     default n
+    select CLI_ENABLE_AUTO_RUN
     help
       Register the auto_cmd demo command.
 
