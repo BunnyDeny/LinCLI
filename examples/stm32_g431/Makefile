@@ -84,6 +84,8 @@ Core/Src/syscalls.c \
 ../../src/lib/cli_mpool.c \
 ../../src/lib/stateM.c \
 ../../src/lib/tVector.c \
+../../src/third_party/hexdump/hexdump.c \
+../../src/third_party/workqueue/workqueue.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -152,6 +154,8 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include	\
 -I../../include \
 -I../../include \
+-I../../src/third_party/workqueue \
+-I../../src/third_party/list \
 -IDrivers/CMSIS/Include
 
 
@@ -176,7 +180,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32G431XX_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -specs=nano.specs 
+LIBS = -lc -lm -lnosys
 LIBDIR = 
 LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
