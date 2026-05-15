@@ -2,3 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 add_subdirectory(commands)
 add_subdirectory(unit)
+
+enable_testing()
+add_test(NAME unit COMMAND unit)

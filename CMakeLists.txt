@@ -67,7 +67,6 @@ add_executable(${OUTPUT_NAME}
     examples/pc_linux/main.c
     $<TARGET_OBJECTS:src>
     $<TARGET_OBJECTS:commands>
-    $<TARGET_OBJECTS:workqueue>
 )
 target_include_directories(${OUTPUT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
@@ -79,8 +78,4 @@ set_target_properties(${OUTPUT_NAME} PROPERTIES
     LINK_FLAGS "-T ${LINKER_SCRIPT}"
 )
 
-# ============================================================
-# CTest
-# ============================================================
 enable_testing()
-add_test(NAME unit_tests COMMAND unit_tests)

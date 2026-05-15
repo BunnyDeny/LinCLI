@@ -48,3 +48,26 @@ void test_cli_atoi_mixed(void)
 	TEST_ASSERT_EQUAL(123, val);
 	TEST_ASSERT_EQUAL_PTR("123abc" + 3, end);
 }
+
+void test_cli_atoi_hex(void)
+{
+	int val;
+	char *end;
+
+	TEST_ASSERT_EQUAL(0, cli_atoi("0x100", &val, &end));
+	TEST_ASSERT_EQUAL(256, val);
+	TEST_ASSERT_EQUAL_PTR(&"0x100"[5], end);
+
+	TEST_ASSERT_EQUAL(0, cli_atoi("0X1aF", &val, NULL));
+	TEST_ASSERT_EQUAL(431, val);
+
+	TEST_ASSERT_EQUAL(0, cli_atoi("-0x10", &val, NULL));
+	TEST_ASSERT_EQUAL(-16, val);
+
+	TEST_ASSERT_EQUAL(-1, cli_atoi("0x", &val, &end));
+	TEST_ASSERT_EQUAL_PTR("0x", end);
+
+	TEST_ASSERT_EQUAL(0, cli_atoi("0x1G", &val, &end));
+	TEST_ASSERT_EQUAL(1, val);
+	TEST_ASSERT_EQUAL_PTR(&"0x1G"[3], end);
+}
