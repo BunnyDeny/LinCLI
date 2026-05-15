@@ -8,8 +8,7 @@ set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/third_party/workqueue
     ${CMAKE_SOURCE_DIR}/src/third_party/hexdump
 )
-set(SUBDIRS cli lib init)
-add_subdirectory(third_party)
+set(SUBDIRS cli lib init third_party/workqueue third_party/hexdump)
 get_filename_component(PRO_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${PRO_NAME})
