@@ -65,7 +65,7 @@ hexdump -a <addr> [-l <len>] [-C]
 > ⚠️ **改进点**：为了支持将 `min_addr` 配置为 `0x0` 等特殊值，配置选项已统一归入 `--config` 模式下使用。
 
 ```bash
-hexdump --config -m <min> -M <max> [-b <bytes>]
+hexdump --config -m <min> -M <max> [-b <bytes>] [-L <len>]
 ```
 
 | 选项 | 依赖 | 说明 | 示例 |
@@ -74,8 +74,10 @@ hexdump --config -m <min> -M <max> [-b <bytes>]
 | ✅ `-m` / `--min-addr` | `config` + `M` | 🚧 设置最小合法地址 | `-m 0x08000000` |
 | ✅ `-M` / `--max-addr` | `config` + `m` | 🏁 设置最大合法地址 | `-M 0x0800FFFF` |
 | ✅ `-b` / `--bytes-per-line` | — | 📐 设置每行显示字节数（1 ~ 64） | `-b 16` |
+| ✅ `-L` / `--max-len` | `config` | 📏 设置单次 dump 最大字节数（1 ~ 4096） | `-L 512` |
 
 > 💡 使用 `--config` 后，配置会立即生效并打印当前配置信息。
+> 💡 `-L` 和 `-m`、`-M` 一样，需要在 `--config` 模式下使用。
 
 ---
 
@@ -103,7 +105,18 @@ hexdump config:
   max_len        : 256
 ```
 
-### 🔹 示例 3：Dump 内存（含 ASCII）
+### 🔹 示例 3：修改单次 dump 最大长度
+
+```bash
+admin@linCli> hexdump --config -m 0x00400000 -M 0x00401000 -L 512
+hexdump config:
+  min_addr       : 0x00400000
+  max_addr       : 0x00401000
+  bytes_per_line : 16
+  max_len        : 512
+```
+
+### 🔹 示例 4：Dump 内存（含 ASCII）
 
 ```bash
 admin@linCli> hexdump -a 0x00400000 -l 64 -C
@@ -201,4 +214,5 @@ uint8_t hexdump_default_read(uintptr_t addr)
 - ⚠️ 在 PC Linux 上测试时，务必使用**已映射的合法虚拟地址**，否则触发段错误
 - 💡 使用 `-C` 选项可同时查看 ASCII 字符，方便识别字符串内容
 - 💡 使用 `--config` 模式时，`-m` 和 `-M` 必须成对出现，否则依赖检查会报错
+- 💡 `-L` 需要在 `--config` 模式下使用，且会强制要求 `-m` 和 `-M` 同时提供
 - 💡 `-b` 可在任意模式下独立使用，无需 `--config`
