@@ -30,7 +30,7 @@
  * 以下宏与 Kconfig 无关，始终保留。
  * ========================================================== */
 #define CLI_VERSION_MAJOR 1
-#define CLI_VERSION_MINOR 18
+#define CLI_VERSION_MINOR 19
 #define CLI_VERSION_PATCH 0
 
 #if CLI_MPOOL_COUNT > 32

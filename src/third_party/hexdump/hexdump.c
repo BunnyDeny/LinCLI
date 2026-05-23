@@ -163,9 +163,9 @@ static void hd_print_line(uintptr_t addr, size_t len, size_t offset, size_t bpl,
 		line_len = bpl;
 
 	/* 地址（蓝色） */
-	if (sizeof(uintptr_t) == 8 && (line_addr >> 32) != 0) {
+	if (sizeof(uintptr_t) == 8 && ((unsigned long long)line_addr >> 32) != 0) {
 		char addr_hi[9];
-		hd_utox((unsigned int)(line_addr >> 32), addr_hi, 8);
+		hd_utox((unsigned int)((unsigned long long)line_addr >> 32), addr_hi, 8);
 		hd_utox((unsigned int)line_addr, addr_buf, 8);
 		pos += cli_snprintf(buf + pos, sizeof(buf) - pos,
 				    COLOR_BLUE "0x%s%s: " COLOR_NONE, addr_hi,
@@ -268,6 +268,7 @@ struct hexdump_args {
 	int min_addr;
 	int max_addr;
 	int bytes_per_line;
+	int max_len;
 	bool show;
 	bool config;
 };
@@ -281,6 +282,8 @@ static int hexdump_handler(void *_args)
 	if (args->config) {
 		hd_cfg.min_addr = (unsigned int)args->min_addr;
 		hd_cfg.max_addr = (unsigned int)args->max_addr;
+		if (args->max_len > 0)
+			hd_cfg.max_len = (size_t)args->max_len;
 		hd_print_config();
 		return 0;
 	}
@@ -330,7 +333,7 @@ static int hexdump_handler(void *_args)
 
 CLI_COMMAND(hexdump, "hexdump", "Memory dump for embedded debugging",
 	    USAGE("hexdump -a <addr> [-l <len>] [-C] [-b <bytes>]",
-		  "hexdump --config -m <addr> -M <addr>"),
+		  "hexdump --config -m <addr> -M <addr> [-L <len>]"),
 	    hexdump_handler, (struct hexdump_args *)0,
 	    OPTION('a', "addr", INT, "Start address (hex supported)",
 		   struct hexdump_args, addr, 0, NULL, NULL, false),
@@ -344,9 +347,11 @@ CLI_COMMAND(hexdump, "hexdump", "Memory dump for embedded debugging",
 		   struct hexdump_args, max_addr, 0, "config m", NULL, false),
 	    OPTION('b', "bytes-per-line", INT, "Set bytes per line (1-64)",
 		   struct hexdump_args, bytes_per_line, 0, NULL, NULL, false),
+	    OPTION('L', "max-len", INT, "Set max bytes per dump (1-4096)",
+		   struct hexdump_args, max_len, 0, "config", NULL, false),
 	    OPTION('s', "show", BOOL, "Show current config",
 		   struct hexdump_args, show, 0, NULL, NULL, false),
-	    OPTION(0, "config", BOOL, "enable option m, M, b",
+	    OPTION(0, "config", BOOL, "enable option m, M, L, b",
 		   struct hexdump_args, config, 0, NULL, NULL, false),
 	    END_OPTIONS);
 

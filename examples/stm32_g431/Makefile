@@ -84,6 +84,30 @@ Core/Src/syscalls.c \
 ../../src/lib/cli_mpool.c \
 ../../src/lib/stateM.c \
 ../../src/lib/tVector.c \
+../../src/third_party/hexdump/hexdump.c \
+../../src/third_party/workqueue/workqueue.c \
+../../tests/commands/test_auto_cmd.c \
+../../tests/commands/test_bool.c \
+../../tests/commands/test_buf_insufficient.c \
+../../tests/commands/test_callback.c \
+../../tests/commands/test_cli_var.c \
+../../tests/commands/test_conflicts.c \
+../../tests/commands/test_double.c \
+../../tests/commands/test_env.c \
+../../tests/commands/test_init_d.c \
+../../tests/commands/test_int_array.c \
+../../tests/commands/test_int.c \
+../../tests/commands/test_key_interaction.c \
+../../tests/commands/test_led.c \
+../../tests/commands/test_log.c \
+../../tests/commands/test_motor.c \
+../../tests/commands/test_raw_cmd_async.c \
+../../tests/commands/test_raw_cmd.c \
+../../tests/commands/test_required.c \
+../../tests/commands/test_scope.c \
+../../tests/commands/test_string.c \
+../../tests/commands/test_with_buf.c \
+../../tests/commands/test_workqueue.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -152,6 +176,8 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include	\
 -I../../include \
 -I../../include \
+-I../../src/third_party/workqueue \
+-I../../src/third_party/list \
 -IDrivers/CMSIS/Include
 
 
@@ -176,7 +202,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32G431XX_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -specs=nano.specs 
+LIBS = -lc -lm -lnosys
 LIBDIR = 
 LDFLAGS = $(MCU) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 

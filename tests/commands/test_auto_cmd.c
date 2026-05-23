@@ -15,10 +15,6 @@
 #if CLI_ENABLE_DEMO_AUTO_CMD
 #include "cli_auto_cmd.h"
 
-#define CLI_AUTO_CMDS_TEST_EN 0
-
-#if CLI_AUTO_CMDS_TEST_EN
-
 const char *const cli_auto_cmds[] = {
 	"tb -v",
 	"ti -n 100",
@@ -30,5 +26,3 @@ const int cli_auto_cmds_count =
 	sizeof(cli_auto_cmds) / sizeof(cli_auto_cmds[0]);
 
 #endif
-
-#endif /* CLI_ENABLE_DEMO_AUTO_CMD */
