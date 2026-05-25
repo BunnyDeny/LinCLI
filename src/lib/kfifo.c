@@ -21,68 +21,50 @@
  * SOFTWARE.
  */
 
-#include "tVector.h"
+#include "kfifo.h"
 
-void vectorInit(struct vector *v, _u8 *buf, int buf_size)
+void kfifo_init(kfifo_t *fifo, uint8_t *buffer, uint32_t size)
 {
-	v->buf_size = buf_size;
-	v->_buf = buf;
-	v->head = 0;
-	v->tail = -1;
-	v->size = 0;
+	fifo->buffer = buffer;
+	fifo->size = size;
+	fifo->mask = size - 1;
+	fifo->in = 0;
+	fifo->out = 0;
 }
 
-bool at(struct vector *v, int pos, _u8 *data)
+uint32_t kfifo_put(kfifo_t *fifo, const uint8_t *data, uint32_t len)
 {
-	if (pos >= v->size || pos < 0) {
-		return false;
-	}
-	*data = v->_buf[(v->head + pos) % v->buf_size];
-	return true;
+	uint32_t l;
+
+	len = len < (fifo->size - (fifo->in - fifo->out)) ?
+	      len : (fifo->size - (fifo->in - fifo->out));
+
+	l = len < (fifo->size - (fifo->in & fifo->mask)) ?
+	    len : (fifo->size - (fifo->in & fifo->mask));
+
+	memcpy(fifo->buffer + (fifo->in & fifo->mask), data, l);
+	memcpy(fifo->buffer, data + l, len - l);
+
+	smp_wmb();
+	fifo->in += len;
+
+	return len;
 }
 
-bool pop_front(struct vector *v, int n)
+uint32_t kfifo_get(kfifo_t *fifo, uint8_t *data, uint32_t len)
 {
-	if (v->size < n || n <= 0) {
-		return false;
-	}
-	v->head = (v->head + n) % v->buf_size;
-	v->size -= n;
-	return true;
-}
+	uint32_t l;
 
-bool pop_back(struct vector *v, int n)
-{
-	if (v->size < n || n <= 0) {
-		return false;
-	}
-	v->tail = (v->tail - n + v->buf_size) % v->buf_size;
-	v->size -= n;
-	return true;
-}
+	len = len < (fifo->in - fifo->out) ? len : (fifo->in - fifo->out);
 
-bool push_front(struct vector *v, _u8 *date, int n)
-{
-	if (v->size + n > v->buf_size || n <= 0) {
-		return false;
-	}
-	for (int i = n - 1; i >= 0; --i) {
-		v->head = (v->head - 1 + v->buf_size) % v->buf_size;
-		v->_buf[v->head] = date[i];
-	}
-	v->size += n;
-	return true;
-}
+	l = len < (fifo->size - (fifo->out & fifo->mask)) ?
+	    len : (fifo->size - (fifo->out & fifo->mask));
 
-bool push_back(struct vector *v, _u8 *date, int n)
-{
-	if (v->size + n > v->buf_size || n <= 0) {
-		return false;
-	}
-	for (int i = 0; i < n; ++i) {
-		v->tail = (v->tail + 1) % v->buf_size;
-		v->_buf[v->tail] = date[i];
-	}
-	v->size += n;
-	return true;
+	memcpy(data, fifo->buffer + (fifo->out & fifo->mask), l);
+	memcpy(data + l, fifo->buffer, len - l);
+
+	smp_rmb();
+	fifo->out += len;
+
+	return len;
 }

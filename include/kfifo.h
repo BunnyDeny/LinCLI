@@ -21,39 +21,52 @@
  * SOFTWARE.
  */
 
-#ifndef TVECTOR_H
-#define TVECTOR_H
+#ifndef KFIFO_H
+#define KFIFO_H
 
-#include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
-#if defined(_u8)
-#undef _u8
-typedef volatile uint8_t _u8;
+/* 内存屏障定义：根据平台修改 */
+#if defined(__ARM_ARCH)
+/* ARM Cortex-M系列使用__DMB()数据内存屏障 */
+#define smp_wmb() __DMB()
+#define smp_rmb() __DMB()
+#elif defined(__GNUC__)
+/* GCC编译器使用内置函数 */
+#define smp_wmb() __sync_synchronize()
+#define smp_rmb() __sync_synchronize()
 #else
-typedef volatile uint8_t _u8;
+/* 其他平台：至少需要一个编译器屏障 */
+#define smp_wmb() asm volatile("" ::: "memory")
+#define smp_rmb() asm volatile("" ::: "memory")
 #endif
 
-#if defined(_int)
-#undef _int
-typedef volatile int _int;
-#else
-typedef volatile int _int;
-#endif
+typedef struct {
+	uint8_t *buffer;
+	uint32_t size;
+	uint32_t mask;
+	uint32_t in;
+	uint32_t out;
+} kfifo_t;
 
-struct vector {
-	_int buf_size;
-	_int head;
-	_int tail;
-	_int size;
-	_u8 *_buf;
-};
+void kfifo_init(kfifo_t *fifo, uint8_t *buffer, uint32_t size);
+uint32_t kfifo_put(kfifo_t *fifo, const uint8_t *data, uint32_t len);
+uint32_t kfifo_get(kfifo_t *fifo, uint8_t *data, uint32_t len);
 
-void vectorInit(struct vector *v, _u8 *buf, int buf_size);
-bool at(struct vector *v, int pos, _u8 *data);
-bool pop_front(struct vector *v, int n);
-bool pop_back(struct vector *v, int n);
-bool push_front(struct vector *v, _u8 *date, int n);
-bool push_back(struct vector *v, _u8 *date, int n);
+static inline uint32_t kfifo_len(kfifo_t *fifo)
+{
+	return fifo->in - fifo->out;
+}
+
+static inline void kfifo_reset(kfifo_t *fifo)
+{
+	fifo->in = fifo->out;
+}
+
+static inline uint32_t kfifo_avail(kfifo_t *fifo)
+{
+	return fifo->size - (fifo->in - fifo->out);
+}
 
 #endif

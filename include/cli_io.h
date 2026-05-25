@@ -25,8 +25,22 @@
 #define _CLI_IO_H
 
 #include "cli_errno.h"
-#include "tVector.h"
+#include "kfifo.h"
 #include <stdio.h>
+
+#if defined(_u8)
+#undef _u8
+typedef volatile uint8_t _u8;
+#else
+typedef volatile uint8_t _u8;
+#endif
+
+#if defined(_int)
+#undef _int
+typedef volatile int _int;
+#else
+typedef volatile int _int;
+#endif
 
 #define CLI_IO_SIZE 128
 #define CLI_PRINTK_BUF_SIZE 128
@@ -105,11 +119,11 @@ int all_printk(const char *fmt, ...);
 #endif
 
 struct cli_io {
-	struct vector in;
+	kfifo_t in;
 	_u8 in_ref;
 	char in_buf[CLI_IO_SIZE];
 
-	struct vector out;
+	kfifo_t out;
 	_u8 out_ref;
 	char out_buf[CLI_IO_SIZE];
 };

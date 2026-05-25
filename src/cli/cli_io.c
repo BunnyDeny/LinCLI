@@ -43,8 +43,8 @@ struct cli_io _cli_io = {
 
 void cli_io_init(void)
 {
-	vectorInit(&_cli_io.in, (_u8 *)_cli_io.in_buf, CLI_IO_SIZE);
-	vectorInit(&_cli_io.out, (_u8 *)_cli_io.out_buf, CLI_IO_SIZE);
+	kfifo_init(&_cli_io.in, (uint8_t *)_cli_io.in_buf, CLI_IO_SIZE);
+	kfifo_init(&_cli_io.out, (uint8_t *)_cli_io.out_buf, CLI_IO_SIZE);
 	_cli_io.in_ref = 1;
 	_cli_io.out_ref = 1;
 }
@@ -54,43 +54,36 @@ __attribute__((weak)) void cli_putc(char ch)
 {
 }
 
-static int _cli_io_push(struct vector *v, _u8 *data, int size, _u8 *ref)
+static int _cli_io_push(kfifo_t *f, _u8 *data, int size, _u8 *ref)
 {
-	bool status;
+	uint32_t ret;
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
 	}
 	cli_enter_critical();
 	(*ref)++;
-	status = push_back(v, data, size);
+	ret = kfifo_put(f, (const uint8_t *)data, (uint32_t)size);
 	(*ref)--;
 	cli_exit_critical();
-	if (status == false) {
+	if (ret < (uint32_t)size) {
 		return CLI_ERR_FIFO_FULL;
 	} else {
 		return CLI_OK;
 	}
 }
 
-static int _cli_io_pop(struct vector *v, _u8 *data, int size, _u8 *ref)
+static int _cli_io_pop(kfifo_t *f, _u8 *data, int size, _u8 *ref)
 {
+	uint32_t ret;
 	if (*ref == 0) {
 		return CLI_ERR_INVAL; /*uninited*/
 	}
 	cli_enter_critical();
 	(*ref)++;
-	int popped = 0;
-	while (popped < size) {
-		_u8 front;
-		if (at(v, 0, &front) == false) {
-			break;
-		}
-		data[popped++] = front;
-		pop_front(v, 1);
-	}
+	ret = kfifo_get(f, (uint8_t *)data, (uint32_t)size);
 	(*ref)--;
 	cli_exit_critical();
-	return popped;
+	return (int)ret;
 }
 
 int cli_in_push(_u8 *data, int size)
@@ -121,7 +114,7 @@ int cli_get_in_size(void)
 {
 	int size;
 	cli_enter_critical();
-	size = _cli_io.in.size;
+	size = (int)kfifo_len(&_cli_io.in);
 	cli_exit_critical();
 	return size;
 }
@@ -130,7 +123,7 @@ int cli_get_out_size(void)
 {
 	int size;
 	cli_enter_critical();
-	size = _cli_io.out.size;
+	size = (int)kfifo_len(&_cli_io.out);
 	cli_exit_critical();
 	return size;
 }
@@ -181,17 +174,9 @@ int all_printk(const char *fmt, ...)
 
 int cli_in_clear(void)
 {
-	_u8 tmp;
-	int status;
-	while (_cli_io.in.size > 0) {
-		status = cli_in_pop(&tmp, 1);
-		if (status < 0) {
-			return status;
-		}
-		if (status == 0) {
-			return CLI_ERR_FIFO_EMPTY;
-		}
-	}
+	cli_enter_critical();
+	kfifo_reset(&_cli_io.in);
+	cli_exit_critical();
 	return 0;
 }
 
