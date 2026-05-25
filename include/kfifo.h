@@ -27,19 +27,23 @@
 #include <stdint.h>
 #include <string.h>
 
-/* 内存屏障定义：根据平台修改 */
-#if defined(__ARM_ARCH)
-/* ARM Cortex-M系列使用__DMB()数据内存屏障 */
+/* 内存屏障定义：仅支持 GCC / Keil MDK / IAR */
+#if defined(__CC_ARM) || defined(__ARMCC_VERSION)
+/* Keil MDK (ARMCC 5 / ARMCLANG 6) */
+#include <intrinsics.h>
 #define smp_wmb() __DMB()
 #define smp_rmb() __DMB()
 #elif defined(__GNUC__)
-/* GCC编译器使用内置函数 */
+/* GCC */
 #define smp_wmb() __sync_synchronize()
 #define smp_rmb() __sync_synchronize()
+#elif defined(__ICCARM__)
+/* IAR Embedded Workbench for ARM */
+#include <intrinsics.h>
+#define smp_wmb() __DMB()
+#define smp_rmb() __DMB()
 #else
-/* 其他平台：至少需要一个编译器屏障 */
-#define smp_wmb() asm volatile("" ::: "memory")
-#define smp_rmb() asm volatile("" ::: "memory")
+#error "Unsupported compiler. Please use GCC, Keil MDK, or IAR."
 #endif
 
 typedef struct {
