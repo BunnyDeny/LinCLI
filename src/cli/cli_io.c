@@ -54,69 +54,59 @@ __attribute__((weak)) void cli_putc(char ch)
 {
 }
 
-static int _cli_io_push(kfifo_t *f, _u8 *data, int size, _u8 *ref)
-{
-	uint32_t ret;
-	if (*ref == 0) {
-		return CLI_ERR_INVAL; /*uninited*/
-	}
-	cli_enter_critical();
-	(*ref)++;
-	ret = kfifo_put(f, (const uint8_t *)data, (uint32_t)size);
-	(*ref)--;
-	cli_exit_critical();
-	if (ret < (uint32_t)size) {
-		return CLI_ERR_FIFO_FULL;
-	} else {
-		return CLI_OK;
-	}
-}
-
-static int _cli_io_pop(kfifo_t *f, _u8 *data, int size, _u8 *ref)
-{
-	uint32_t ret;
-	if (*ref == 0) {
-		return CLI_ERR_INVAL; /*uninited*/
-	}
-	cli_enter_critical();
-	(*ref)++;
-	ret = kfifo_get(f, (uint8_t *)data, (uint32_t)size);
-	(*ref)--;
-	cli_exit_critical();
-	return (int)ret;
-}
-
 int cli_in_push(_u8 *data, int size)
 {
-	if (cli_in_push_lock) {
+	uint32_t ret;
+	if (cli_in_push_lock || _cli_io.in_ref == 0) {
 		return CLI_ERR_FIFO_FULL;
-	} else {
-		return _cli_io_push(&_cli_io.in, data, size, &_cli_io.in_ref);
 	}
+	ret = kfifo_put(&_cli_io.in, (const uint8_t *)data, (uint32_t)size);
+	if (ret < (uint32_t)size) {
+		return CLI_ERR_FIFO_FULL;
+	}
+	return CLI_OK;
 }
 
 int cli_out_push(_u8 *data, int size)
 {
-	return _cli_io_push(&_cli_io.out, data, size, &_cli_io.out_ref);
+	uint32_t ret;
+	if (_cli_io.out_ref == 0) {
+		return CLI_ERR_INVAL;
+	}
+	cli_enter_critical();
+	ret = kfifo_put(&_cli_io.out, (const uint8_t *)data, (uint32_t)size);
+	cli_exit_critical();
+	if (ret < (uint32_t)size) {
+		return CLI_ERR_FIFO_FULL;
+	}
+	return CLI_OK;
 }
 
 int cli_in_pop(_u8 *data, int size)
 {
-	return _cli_io_pop(&_cli_io.in, data, size, &_cli_io.in_ref);
+	uint32_t ret;
+	if (_cli_io.in_ref == 0) {
+		return CLI_ERR_INVAL;
+	}
+	ret = kfifo_get(&_cli_io.in, (uint8_t *)data, (uint32_t)size);
+	return (int)ret;
 }
 
 int cli_out_pop(_u8 *data, int size)
 {
-	return _cli_io_pop(&_cli_io.out, data, size, &_cli_io.out_ref);
+	uint32_t ret;
+	if (_cli_io.out_ref == 0) {
+		return CLI_ERR_INVAL;
+	}
+	cli_enter_critical();
+	ret = kfifo_get(&_cli_io.out, (uint8_t *)data, (uint32_t)size);
+	cli_exit_critical();
+	return (int)ret;
 }
 
 int cli_get_in_size(void)
 {
-	int size;
-	cli_enter_critical();
-	size = (int)kfifo_len(&_cli_io.in);
-	cli_exit_critical();
-	return size;
+	return (int)kfifo_len(&_cli_io.in);
 }
 
 int cli_get_out_size(void)
@@ -174,9 +164,10 @@ int all_printk(const char *fmt, ...)
 
 int cli_in_clear(void)
 {
-	cli_enter_critical();
+	if (_cli_io.in_ref == 0) {
+		return CLI_ERR_INVAL;
+	}
 	kfifo_reset(&_cli_io.in);
-	cli_exit_critical();
 	return 0;
 }
 
