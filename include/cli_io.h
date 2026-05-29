@@ -104,6 +104,7 @@ extern _u8 cli_in_push_lock;
 
 int cli_printk(const char *fmt, ...);
 int all_printk(const char *fmt, ...);
+int cli_in_exception(void);
 
 /*
  * Log macros: each call produces exactly ONE cli_printk call.
