@@ -344,6 +344,11 @@ int cli_printk(const char *fmt, ...)
 		return status;
 
 	if (in_interactive && !_in_exc) {
+		/* ensure prompt is always on its own line */
+		if (len > 0 && buffer[len - 1] != '\n') {
+			cli_out_push((_u8 *)"\r\n", 2);
+			cli_out_sync();
+		}
 		if (candidate_ctx.active)
 			candidate_redraw();
 		else
