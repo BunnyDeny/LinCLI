@@ -340,8 +340,7 @@ int cli_printk(const char *fmt, ...)
 		if (!_in_exc) {
 			cli_out_push((_u8 *)"\r\033[K", 4);
 		} else if (_isr_newline_pending) {
-			cli_out_push((_u8 *)"\r\n", 2);
-			cli_out_sync();
+			cli_out_push((_u8 *)"\r", 1);
 		}
 		_isr_newline_pending = 0;
 	}
