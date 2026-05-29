@@ -331,11 +331,19 @@ int cli_printk(const char *fmt, ...)
 
 	int in_interactive = scheduler_is_in_get_char();
 	int _in_exc = cli_in_exception();
+
+	/* ISR: first call after a task redraw pushes \r\n to leave
+	 * the prompt behind; subsequent ISR calls push nothing
+	 * so partial lines can continue naturally. */
+	static int _isr_newline_pending;
 	if (in_interactive) {
-		/* In exception context skip \033[K but keep \r:
-		 * without \r the output would append after the CLI prompt. */
-		cli_out_push((_u8 *)(_in_exc ? "\r" : "\r\033[K"),
-			     _in_exc ? 1 : 4);
+		if (!_in_exc) {
+			cli_out_push((_u8 *)"\r\033[K", 4);
+		} else if (_isr_newline_pending) {
+			cli_out_push((_u8 *)"\r\n", 2);
+			cli_out_sync();
+		}
+		_isr_newline_pending = 0;
 	}
 
 	const char *_pre = prefix_gen(pre);
@@ -344,7 +352,6 @@ int cli_printk(const char *fmt, ...)
 		return status;
 
 	if (in_interactive && !_in_exc) {
-		/* ensure prompt is always on its own line */
 		if (len > 0 && buffer[len - 1] != '\n') {
 			cli_out_push((_u8 *)"\r\n", 2);
 			cli_out_sync();
@@ -353,6 +360,7 @@ int cli_printk(const char *fmt, ...)
 			candidate_redraw();
 		else
 			cmd_line_redraw();
+		_isr_newline_pending = 1;
 	}
 	return len;
 }
