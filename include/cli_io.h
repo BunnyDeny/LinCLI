@@ -104,27 +104,21 @@ extern _u8 cli_in_push_lock;
 
 int cli_printk(const char *fmt, ...);
 int all_printk(const char *fmt, ...);
-int cli_in_exception(void);
+int sys_printk(const char *fmt, ...);
+void cli_printk_batch_begin(void);
+void cli_printk_batch_end(void);
 
-/*
- * Log macros: each call produces exactly ONE cli_printk call.
- *
- * DO NOT split a logical line across multiple log calls.
- * In interactive mode the CLI prompt redraw interleaves between calls,
- * and the next call's \r\033[K clears the previous output before it's
- * visible.  One logical line = one atomic log call, always.
- */
-#define pr_emerg(fmt, ...) cli_printk(KERN_EMERG fmt, ##__VA_ARGS__)
-#define pr_alert(fmt, ...) cli_printk(KERN_ALERT fmt, ##__VA_ARGS__)
-#define pr_crit(fmt, ...) cli_printk(KERN_CRIT fmt, ##__VA_ARGS__)
-#define pr_err(fmt, ...) cli_printk(KERN_ERR fmt, ##__VA_ARGS__)
-#define pr_warn(fmt, ...) cli_printk(KERN_WARNING fmt, ##__VA_ARGS__)
-#define pr_notice(fmt, ...) cli_printk(KERN_NOTICE fmt, ##__VA_ARGS__)
-#define pr_info(fmt, ...) cli_printk(KERN_INFO fmt, ##__VA_ARGS__)
-#define pr_debug(fmt, ...) cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#define pr_emerg(fmt, ...) sys_printk(KERN_EMERG fmt, ##__VA_ARGS__)
+#define pr_alert(fmt, ...) sys_printk(KERN_ALERT fmt, ##__VA_ARGS__)
+#define pr_crit(fmt, ...) sys_printk(KERN_CRIT fmt, ##__VA_ARGS__)
+#define pr_err(fmt, ...) sys_printk(KERN_ERR fmt, ##__VA_ARGS__)
+#define pr_warn(fmt, ...) sys_printk(KERN_WARNING fmt, ##__VA_ARGS__)
+#define pr_notice(fmt, ...) sys_printk(KERN_NOTICE fmt, ##__VA_ARGS__)
+#define pr_info(fmt, ...) sys_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#define pr_debug(fmt, ...) sys_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
 
 #ifdef DEBUG
-#define pr_devel(fmt, ...) cli_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#define pr_devel(fmt, ...) sys_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
 #endif
 
 struct cli_io {

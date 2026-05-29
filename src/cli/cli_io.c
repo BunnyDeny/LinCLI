@@ -146,20 +146,52 @@ static const char *prefix_table[] = {
 	"",
 };
 
+static char s_printk_buf[CLI_PRINTK_BUF_SIZE];
+
 int all_printk(const char *fmt, ...)
 {
 	int status;
-	char buf[CLI_PRINTK_BUF_SIZE];
 	va_list args;
 	va_start(args, fmt);
-	int len = cli_vsnprintf(buf, sizeof(buf), fmt, args);
+	int len = cli_vsnprintf(s_printk_buf, sizeof(s_printk_buf), fmt, args);
 	va_end(args);
-	status = cli_out_push((_u8 *)buf, len);
+	status = cli_out_push((_u8 *)s_printk_buf, len);
 	if (status < 0)
 		return status;
 	if (cli_out_sync())
 		return CLI_ERR_IO_SYNC;
 	return 0;
+}
+
+/* ============================================================
+ *  sys_printk —— 使用标准库 vsnprintf 的通用日志打印
+ *  （与 all_printk 共用全局缓冲区，供测试用例 / CmBacktrace 使用）
+ * ============================================================ */
+
+int sys_printk(const char *fmt, ...)
+{
+	int len;
+
+	cli_enter_critical();
+
+	va_list args;
+	va_start(args, fmt);
+	len = vsnprintf(s_printk_buf, sizeof(s_printk_buf), fmt, args);
+	va_end(args);
+
+	if (len > 0) {
+		if ((size_t)len >= sizeof(s_printk_buf)) {
+			const char *trunc = "...[trunc]\n";
+			size_t tlen = strlen(trunc);
+			size_t pos = sizeof(s_printk_buf) > tlen ? sizeof(s_printk_buf) - tlen - 1 : 0;
+			memcpy(&s_printk_buf[pos], trunc, tlen + 1);
+			len = sizeof(s_printk_buf) - 1;
+		}
+		cli_printk("%s", s_printk_buf);
+	}
+
+	cli_exit_critical();
+	return len;
 }
 
 int cli_in_clear(void)
@@ -248,6 +280,7 @@ CLI_COMMAND(level, "level", "Log level",
  * ============================================================ */
 
 static char buffer[CLI_PRINTK_BUF_SIZE];
+int _cli_batch;
 
 static const char *prefix_gen(const char *level)
 {
@@ -321,24 +354,29 @@ static int printk_format_and_send(const char *pre_str, int raw_len)
 
 int cli_printk(const char *fmt, ...)
 {
+	int ret = 0;
 	va_list args;
+
+	cli_enter_critical();
+
 	va_start(args, fmt);
 	int len = cli_vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 	char pre[2] = { buffer[0], '\0' };
 	if (printk_should_drop(pre))
-		return 0;
+		goto out;
 
 	int in_interactive = scheduler_is_in_get_char();
+	extern int cli_in_exception(void);
 	int _in_exc = cli_in_exception();
 
-	/* ISR: first call after a task redraw pushes \r\n to leave
-	 * the prompt behind; subsequent ISR calls push nothing
-	 * so partial lines can continue naturally. */
+	/* ISR first call after task redraw: \r to overwrite old prompt.
+	 * Task context: \r\033[K unless in batch mode. */
 	static int _isr_newline_pending;
 	if (in_interactive) {
 		if (!_in_exc) {
-			cli_out_push((_u8 *)"\r\033[K", 4);
+			if (!_cli_batch)
+				cli_out_push((_u8 *)"\r\033[K", 4);
 		} else if (_isr_newline_pending) {
 			cli_out_push((_u8 *)"\r", 1);
 		}
@@ -347,10 +385,12 @@ int cli_printk(const char *fmt, ...)
 
 	const char *_pre = prefix_gen(pre);
 	int status = printk_format_and_send(_pre, len);
-	if (status < 0)
-		return status;
+	if (status < 0) {
+		ret = status;
+		goto out;
+	}
 
-	if (in_interactive && !_in_exc) {
+	if (in_interactive && !_in_exc && !_cli_batch) {
 		if (len > 0 && buffer[len - 1] != '\n') {
 			cli_out_push((_u8 *)"\r\n", 2);
 			cli_out_sync();
@@ -361,7 +401,27 @@ int cli_printk(const char *fmt, ...)
 			cmd_line_redraw();
 		_isr_newline_pending = 1;
 	}
-	return len;
+	ret = len;
+
+out:
+	cli_exit_critical();
+	return ret;
+}
+
+void cli_printk_batch_begin(void)
+{
+	if (!_cli_batch) {
+		cli_out_push((_u8 *)"\r\033[K", 4);
+		cli_out_sync();
+	}
+	++_cli_batch;
+}
+
+void cli_printk_batch_end(void)
+{
+	if (_cli_batch > 0) --_cli_batch;
+	if (!_cli_batch)
+		cmd_line_redraw();
 }
 
 /* ============================================================
