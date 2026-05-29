@@ -331,10 +331,7 @@ int cli_printk(const char *fmt, ...)
 
 	int in_interactive = scheduler_is_in_get_char();
 	/* skip interactive line-editing in exception context (HardFault, ISR, etc.) */
-	int _in_exc = 0;
-#if defined(__ARMCC_VERSION) || defined(__GNUC__)
-	{ register uint32_t _ipsr; __asm volatile ("MRS %0, IPSR\n" : "=r" (_ipsr)); _in_exc = (_ipsr != 0); }
-#endif
+	int _in_exc = cli_in_exception();
 	if (in_interactive && !_in_exc)
 		cli_out_push((_u8 *)"\r\033[K", 4);
 

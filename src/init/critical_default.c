@@ -30,3 +30,11 @@ __attribute__((weak)) void cli_enter_critical(void)
 __attribute__((weak)) void cli_exit_critical(void)
 {
 }
+
+/* Default: never in exception context.
+ * Platforms with interrupt/exception detection (e.g. Cortex-M via IPSR)
+ * should override this to return 1 when running in handler mode. */
+__attribute__((weak)) int cli_in_exception(void)
+{
+    return 0;
+}
