@@ -330,10 +330,13 @@ int cli_printk(const char *fmt, ...)
 		return 0;
 
 	int in_interactive = scheduler_is_in_get_char();
-	/* skip interactive line-editing in exception context (HardFault, ISR, etc.) */
 	int _in_exc = cli_in_exception();
-	if (in_interactive && !_in_exc)
-		cli_out_push((_u8 *)"\r\033[K", 4);
+	if (in_interactive) {
+		/* In exception context skip \033[K but keep \r:
+		 * without \r the output would append after the CLI prompt. */
+		cli_out_push((_u8 *)(_in_exc ? "\r" : "\r\033[K"),
+			     _in_exc ? 1 : 4);
+	}
 
 	const char *_pre = prefix_gen(pre);
 	int status = printk_format_and_send(_pre, len);
