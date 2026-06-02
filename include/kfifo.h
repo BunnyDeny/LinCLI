@@ -21,68 +21,56 @@
  * SOFTWARE.
  */
 
-#include "tVector.h"
+#ifndef KFIFO_H
+#define KFIFO_H
 
-void vectorInit(struct vector *v, _u8 *buf, int buf_size)
+#include <stdint.h>
+#include <string.h>
+
+/* 内存屏障定义：仅支持 GCC / Keil MDK / IAR */
+#if defined(__CC_ARM) || defined(__ARMCC_VERSION)
+/* Keil MDK (ARMCC 5 / ARMCLANG 6) */
+#include <intrinsics.h>
+#define smp_wmb() __DMB()
+#define smp_rmb() __DMB()
+#elif defined(__GNUC__)
+/* GCC */
+#define smp_wmb() __sync_synchronize()
+#define smp_rmb() __sync_synchronize()
+#elif defined(__ICCARM__)
+/* IAR Embedded Workbench for ARM */
+#include <intrinsics.h>
+#define smp_wmb() __DMB()
+#define smp_rmb() __DMB()
+#else
+#error "Unsupported compiler. Please use GCC, Keil MDK, or IAR."
+#endif
+
+typedef struct {
+	uint8_t *buffer;
+	uint32_t size;
+	uint32_t mask;
+	uint32_t in;
+	uint32_t out;
+} kfifo_t;
+
+void kfifo_init(kfifo_t *fifo, uint8_t *buffer, uint32_t size);
+uint32_t kfifo_put(kfifo_t *fifo, const uint8_t *data, uint32_t len);
+uint32_t kfifo_get(kfifo_t *fifo, uint8_t *data, uint32_t len);
+
+static inline uint32_t kfifo_len(kfifo_t *fifo)
 {
-	v->buf_size = buf_size;
-	v->_buf = buf;
-	v->head = 0;
-	v->tail = -1;
-	v->size = 0;
+	return fifo->in - fifo->out;
 }
 
-bool at(struct vector *v, int pos, _u8 *data)
+static inline void kfifo_reset(kfifo_t *fifo)
 {
-	if (pos >= v->size || pos < 0) {
-		return false;
-	}
-	*data = v->_buf[(v->head + pos) % v->buf_size];
-	return true;
+	fifo->in = fifo->out;
 }
 
-bool pop_front(struct vector *v, int n)
+static inline uint32_t kfifo_avail(kfifo_t *fifo)
 {
-	if (v->size < n || n <= 0) {
-		return false;
-	}
-	v->head = (v->head + n) % v->buf_size;
-	v->size -= n;
-	return true;
+	return fifo->size - (fifo->in - fifo->out);
 }
 
-bool pop_back(struct vector *v, int n)
-{
-	if (v->size < n || n <= 0) {
-		return false;
-	}
-	v->tail = (v->tail - n + v->buf_size) % v->buf_size;
-	v->size -= n;
-	return true;
-}
-
-bool push_front(struct vector *v, _u8 *date, int n)
-{
-	if (v->size + n > v->buf_size || n <= 0) {
-		return false;
-	}
-	for (int i = n - 1; i >= 0; --i) {
-		v->head = (v->head - 1 + v->buf_size) % v->buf_size;
-		v->_buf[v->head] = date[i];
-	}
-	v->size += n;
-	return true;
-}
-
-bool push_back(struct vector *v, _u8 *date, int n)
-{
-	if (v->size + n > v->buf_size || n <= 0) {
-		return false;
-	}
-	for (int i = 0; i < n; ++i) {
-		v->tail = (v->tail + 1) % v->buf_size;
-		v->_buf[v->tail] = date[i];
-	}
-	v->size += n;
-	return true;
-}
+#endif

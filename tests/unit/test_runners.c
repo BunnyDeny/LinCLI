@@ -47,12 +47,6 @@ extern void test_cli_mpool_alloc_exhaust(void);
 extern void test_cli_mpool_free_invalid_ptr(void);
 extern void test_cli_mpool_get_usage(void);
 
-/* ==== test_unit_vector.c ==== */
-extern void test_vector_init_and_push_pop(void);
-extern void test_vector_full(void);
-extern void test_vector_empty_pop(void);
-extern void test_vector_at_out_of_range(void);
-
 /* ==== test_unit_vsnprintf.c ==== */
 extern void test_cli_snprintf_basic(void);
 extern void test_cli_snprintf_unsigned(void);
@@ -119,14 +113,6 @@ static void run_mpool_tests(void)
 	RUN_TEST(test_cli_mpool_get_usage);
 }
 
-static void run_vector_tests(void)
-{
-	RUN_TEST(test_vector_init_and_push_pop);
-	RUN_TEST(test_vector_full);
-	RUN_TEST(test_vector_empty_pop);
-	RUN_TEST(test_vector_at_out_of_range);
-}
-
 static void run_vsnprintf_tests(void)
 {
 	RUN_TEST(test_cli_snprintf_basic);
@@ -159,7 +145,6 @@ int main(void)
 	run_atoi_tests();
 	run_float_tests();
 	run_mpool_tests();
-	run_vector_tests();
 	run_vsnprintf_tests();
 	run_statem_tests();
 	run_errno_tests();

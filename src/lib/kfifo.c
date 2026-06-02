@@ -21,39 +21,50 @@
  * SOFTWARE.
  */
 
-#ifndef TVECTOR_H
-#define TVECTOR_H
+#include "kfifo.h"
 
-#include <stdbool.h>
-#include <stdint.h>
+void kfifo_init(kfifo_t *fifo, uint8_t *buffer, uint32_t size)
+{
+	fifo->buffer = buffer;
+	fifo->size = size;
+	fifo->mask = size - 1;
+	fifo->in = 0;
+	fifo->out = 0;
+}
 
-#if defined(_u8)
-#undef _u8
-typedef volatile uint8_t _u8;
-#else
-typedef volatile uint8_t _u8;
-#endif
+uint32_t kfifo_put(kfifo_t *fifo, const uint8_t *data, uint32_t len)
+{
+	uint32_t l;
 
-#if defined(_int)
-#undef _int
-typedef volatile int _int;
-#else
-typedef volatile int _int;
-#endif
+	len = len < (fifo->size - (fifo->in - fifo->out)) ?
+	      len : (fifo->size - (fifo->in - fifo->out));
 
-struct vector {
-	_int buf_size;
-	_int head;
-	_int tail;
-	_int size;
-	_u8 *_buf;
-};
+	l = len < (fifo->size - (fifo->in & fifo->mask)) ?
+	    len : (fifo->size - (fifo->in & fifo->mask));
 
-void vectorInit(struct vector *v, _u8 *buf, int buf_size);
-bool at(struct vector *v, int pos, _u8 *data);
-bool pop_front(struct vector *v, int n);
-bool pop_back(struct vector *v, int n);
-bool push_front(struct vector *v, _u8 *date, int n);
-bool push_back(struct vector *v, _u8 *date, int n);
+	memcpy(fifo->buffer + (fifo->in & fifo->mask), data, l);
+	memcpy(fifo->buffer, data + l, len - l);
 
-#endif
+	smp_wmb();
+	fifo->in += len;
+
+	return len;
+}
+
+uint32_t kfifo_get(kfifo_t *fifo, uint8_t *data, uint32_t len)
+{
+	uint32_t l;
+
+	len = len < (fifo->in - fifo->out) ? len : (fifo->in - fifo->out);
+
+	l = len < (fifo->size - (fifo->out & fifo->mask)) ?
+	    len : (fifo->size - (fifo->out & fifo->mask));
+
+	memcpy(data, fifo->buffer + (fifo->out & fifo->mask), l);
+	memcpy(data + l, fifo->buffer, len - l);
+
+	smp_rmb();
+	fifo->out += len;
+
+	return len;
+}

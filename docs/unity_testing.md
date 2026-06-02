@@ -281,7 +281,6 @@ Unity 提供了丰富的断言宏，覆盖整数、浮点、字符串、指针�
 | `lib/cli_atoi.c` | 正数、负数、零、无前导数字、空格前缀 | `test_unit_atoi.c` |
 | `lib/cli_float.c` | 浮点解析与格式化：正负值、小数、精度截断 | `test_unit_float.c` |
 | `lib/cli_mpool.c` | 分配/释放配对、池耗尽、非法指针释放安全 | `test_unit_mpool.c` |
-| `lib/tVector.c` | FIFO 的 push/pop、空/满边界、越界访问 | `test_unit_vector.c` |
 
 ### ✅ 已补充测试
 
