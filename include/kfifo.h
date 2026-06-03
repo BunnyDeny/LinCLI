@@ -31,15 +31,18 @@
 #if defined(__CC_ARM) || defined(__ARMCC_VERSION)
 /* Keil MDK (ARMCC 5 / ARMCLANG 6) */
 #include <intrinsics.h>
+#define smp_mb()  __DMB()
 #define smp_wmb() __DMB()
 #define smp_rmb() __DMB()
 #elif defined(__GNUC__)
 /* GCC */
+#define smp_mb()  __sync_synchronize()
 #define smp_wmb() __sync_synchronize()
 #define smp_rmb() __sync_synchronize()
 #elif defined(__ICCARM__)
 /* IAR Embedded Workbench for ARM */
 #include <intrinsics.h>
+#define smp_mb()  __DMB()
 #define smp_wmb() __DMB()
 #define smp_rmb() __DMB()
 #else

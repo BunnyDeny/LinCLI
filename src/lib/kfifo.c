@@ -39,6 +39,8 @@ uint32_t kfifo_put(kfifo_t *fifo, const uint8_t *data, uint32_t len)
 	len = len < (fifo->size - (fifo->in - fifo->out)) ?
 	      len : (fifo->size - (fifo->in - fifo->out));
 
+	smp_mb();
+
 	l = len < (fifo->size - (fifo->in & fifo->mask)) ?
 	    len : (fifo->size - (fifo->in & fifo->mask));
 
@@ -57,13 +59,15 @@ uint32_t kfifo_get(kfifo_t *fifo, uint8_t *data, uint32_t len)
 
 	len = len < (fifo->in - fifo->out) ? len : (fifo->in - fifo->out);
 
+	smp_rmb();
+
 	l = len < (fifo->size - (fifo->out & fifo->mask)) ?
 	    len : (fifo->size - (fifo->out & fifo->mask));
 
 	memcpy(data, fifo->buffer + (fifo->out & fifo->mask), l);
 	memcpy(data + l, fifo->buffer, len - l);
 
-	smp_rmb();
+	smp_mb();
 	fifo->out += len;
 
 	return len;
