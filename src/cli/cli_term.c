@@ -74,7 +74,6 @@ static void cli_hook_begin(void)
         for (int i = 0; i < candidate_ctx.rows; i++) {
             cli_out_push_nolock((const uint8_t *)"\033[1A", 4);
         }
-        candidate_ctx_clear();
     }
 
     /* Lockless: reset color + clear current prompt line before output.
