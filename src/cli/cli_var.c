@@ -383,8 +383,7 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 		return -1;
 	size_t len = strlen(str);
 	if (len >= size) {
-		pr_warn("str trunc %u>%u\r\n", (unsigned int)len,
-			size - 1);
+		pr_warn("str trunc %zu>%zu\r\n", len, size - 1);
 		len = size - 1;
 	}
 	memcpy(addr, str, len);
