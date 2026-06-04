@@ -1,16 +1,22 @@
 /* USER CODE BEGIN Header */
 /**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body (baseline — no LinCLI)
- ******************************************************************************
- */
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body (baseline — no LinCLI)
+  *
+  * NOTE: includes a dummy snprintf() call to force libc stdio formatting
+  * into the baseline ELF.  Without this the delta includes the libc
+  * vsnprintf machinery that LinCLI pulls in via log_output, giving an
+  * inflated and misleading picture of LinCLI's own flash footprint.
+  ******************************************************************************
+  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
 #include "usart.h"
 #include "gpio.h"
+#include <stdio.h>
 
 uint8_t rx_buffer3[BUF_SIZE];
 
@@ -24,6 +30,12 @@ void SystemClock_Config(void);
 int main(void)
 {
   static uint32_t led_tick = 0;
+  char _dummy[16];
+
+  /* Dummy call — forces libc *printf family into the binary so that
+   * the LinCLI Flash delta reflects only LinCLI code, not the
+   * standard library's formatting layer. */
+  snprintf(_dummy, sizeof(_dummy), "%d", 42);
 
   HAL_Init();
   SystemClock_Config();

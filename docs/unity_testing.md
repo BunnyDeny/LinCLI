@@ -286,7 +286,6 @@ Unity 提供了丰富的断言宏，覆盖整数、浮点、字符串、指针�
 
 | 模块 | 测试重点 | 测试文件 |
 |------|----------|----------|
-| `lib/cli_vsnprintf.c` | `%d`/`%s`/`%c`/`%u`/`%%` 格式化、宽度对齐、缓冲区截断、NULL 字符串 | `test_unit_vsnprintf.c` |
 | `lib/stateM.c` | 状态机初始化、状态切换、同状态切换、非法状态 ID | `test_unit_statem.c` |
 | `lib/cli_errno.c` | 错误码映射非空、返回值一致性 | `test_unit_errno.c` |
 
@@ -384,33 +383,32 @@ Test project /path/to/LinCLI/build
 
 ## 🆕 为项目新增测试模块
 
-假设你为 `lib/cli_vsnprintf.c` 新增了一组函数，想补充对应的 Unity 测试，步骤如下：
+假设你为 `lib/cli_string.c` 新增了一组字符串操作函数，想补充对应的 Unity 测试，步骤如下：
 
 ### 第 1 步：创建测试文件
 
 ```bash
-touch tests/unit/test_unit_vsnprintf.c
+touch tests/unit/test_unit_string.c
 ```
 
 内容模板：
 
 ```c
 #include "unity.h"
-#include "cli_vsnprintf.h"
+#include "cli_string.h"
 
-void test_cli_snprintf_basic(void)
+void test_cli_strcpy_normal(void)
 {
     char buf[32];
-    int len = cli_snprintf(buf, sizeof(buf), "val=%d", 42);
-    TEST_ASSERT_EQUAL_STRING("val=42", buf);
-    TEST_ASSERT_EQUAL(6, len);
+    TEST_ASSERT_EQUAL_STRING("hello", cli_strcpy(buf, "hello"));
 }
 
-void test_cli_snprintf_truncate(void)
+void test_cli_strcpy_null_src(void)
 {
-    char buf[4];
-    int len = cli_snprintf(buf, sizeof(buf), "hello");
-    TEST_ASSERT_EQUAL_STRING("hel", buf);  /* 被截断，末尾留 \0 */
+    char buf[32];
+    buf[0] = 'X';
+    TEST_ASSERT_NULL(cli_strcpy(buf, NULL));
+    TEST_ASSERT_EQUAL_CHAR('X', buf[0]);  /* 传入 NULL，缓冲区不变 */
 }
 ```
 
@@ -420,14 +418,14 @@ void test_cli_snprintf_truncate(void)
 
 ```c
 /* 1. 在顶部声明外部测试函数 */
-extern void test_cli_snprintf_basic(void);
-extern void test_cli_snprintf_truncate(void);
+extern void test_cli_strcpy_normal(void);
+extern void test_cli_strcpy_null_src(void);
 
 /* 2. 新增一个分组函数（或加入已有分组） */
-static void run_vsnprintf_tests(void)
+static void run_string_tests(void)
 {
-    RUN_TEST(test_cli_snprintf_basic);
-    RUN_TEST(test_cli_snprintf_truncate);
+    RUN_TEST(test_cli_strcpy_normal);
+    RUN_TEST(test_cli_strcpy_null_src);
 }
 
 /* 3. 在 main() 中调用 */
@@ -435,7 +433,7 @@ int main(void)
 {
     UNITY_BEGIN();
     /* ... 其他分组 ... */
-    run_vsnprintf_tests();
+    run_string_tests();
     return UNITY_END();
 }
 ```

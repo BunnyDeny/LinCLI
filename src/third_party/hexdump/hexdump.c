@@ -26,7 +26,6 @@
 
 #include "cmd_dispose.h"
 #include "cli_io.h"
-#include "cli_vsnprintf.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -167,12 +166,12 @@ static void hd_print_line(uintptr_t addr, size_t len, size_t offset, size_t bpl,
 		char addr_hi[9];
 		hd_utox((unsigned int)((unsigned long long)line_addr >> 32), addr_hi, 8);
 		hd_utox((unsigned int)line_addr, addr_buf, 8);
-		pos += cli_snprintf(buf + pos, sizeof(buf) - pos,
+		pos += snprintf(buf + pos, sizeof(buf) - pos,
 				    COLOR_BLUE "0x%s%s: " COLOR_NONE, addr_hi,
 				    addr_buf);
 	} else {
 		hd_utox((unsigned int)line_addr, addr_buf, 8);
-		pos += cli_snprintf(buf + pos, sizeof(buf) - pos,
+		pos += snprintf(buf + pos, sizeof(buf) - pos,
 				    COLOR_BLUE "0x%s: " COLOR_NONE, addr_buf);
 	}
 
@@ -250,12 +249,12 @@ static void hd_print_addr_err(uintptr_t addr)
 	int pos = 0;
 
 	hd_utox((unsigned int)addr, buf, 8);
-	pos += cli_snprintf(msg + pos, sizeof(msg) - pos,
+	pos += snprintf(msg + pos, sizeof(msg) - pos,
 			    "address 0x%s out of range [", buf);
 	hd_utox((unsigned int)hd_cfg.min_addr, buf, 8);
-	pos += cli_snprintf(msg + pos, sizeof(msg) - pos, "0x%s, ", buf);
+	pos += snprintf(msg + pos, sizeof(msg) - pos, "0x%s, ", buf);
 	hd_utox((unsigned int)hd_cfg.max_addr, buf, 8);
-	pos += cli_snprintf(msg + pos, sizeof(msg) - pos, "0x%s]", buf);
+	pos += snprintf(msg + pos, sizeof(msg) - pos, "0x%s]", buf);
 
 	pr_err("%s\r\n", msg);
 }

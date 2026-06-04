@@ -609,11 +609,6 @@
               <FilePath>..\..\..\src\lib\cli_string.c</FilePath>
             </File>
             <File>
-              <FileName>cli_vsnprintf.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\src\lib\cli_vsnprintf.c</FilePath>
-            </File>
-            <File>
               <FileName>stateM.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\src\lib\stateM.c</FilePath>

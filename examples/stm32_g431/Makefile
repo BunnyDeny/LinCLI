@@ -61,7 +61,6 @@ Core/Src/system_stm32g4xx.c \
 Core/Src/sysmem.c \
 Core/Src/syscalls.c \
 ../../src/lib/cli_float.c \
-../../src/lib/cli_vsnprintf.c \
 ../../src/lib/cli_string.c \
 ../../src/lib/cli_atoi.c \
 ../../src/cli/cli_candidate.c \
@@ -82,8 +81,10 @@ Core/Src/syscalls.c \
 ../../src/init/section_markers.c \
 ../../src/lib/cli_errno.c \
 ../../src/lib/cli_mpool.c \
+../../src/lib/kfifo.c \
+../../src/lib/log_output.c \
 ../../src/lib/stateM.c \
-../../src/lib/tVector.c \
+../../src/cli/cli_term.c \
 ../../src/third_party/hexdump/hexdump.c \
 ../../src/third_party/workqueue/workqueue.c \
 ../../tests/commands/test_auto_cmd.c \

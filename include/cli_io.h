@@ -1,24 +1,13 @@
 /*
- * LinCLI - A lightweight C command-line interaction framework for embedded/MCU.
- * Copyright (C) 2026  bunnydeny <guoy55448@gmail.com>
+ * LinCLI - IO definitions (includes log_output for terminal logging).
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * This header provides backward-compatible aliases for the original
+ * cli_io.h COLOR_*, KERN_*, pr_* macros, pointing them to the
+ * standalone log_output library.
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * New code should include log_output.h directly when the log API is
+ * sufficient.  Include cli_io.h only when you need the FIFO IO layer
+ * (cli_in_push, cli_out_push, etc.).
  */
 
 #ifndef _CLI_IO_H
@@ -26,6 +15,7 @@
 
 #include "cli_errno.h"
 #include "kfifo.h"
+#include "log_output.h"
 #include <stdio.h>
 
 #if defined(_u8)
@@ -42,93 +32,113 @@ typedef volatile int _int;
 typedef volatile int _int;
 #endif
 
-#define CLI_IO_SIZE 128
-#define CLI_PRINTK_BUF_SIZE CLI_IO_SIZE
-#define COLOR_TERMINAL_EN 1
-#define DEBUG
+/* ============================================================
+ * Configuration (project-local override)
+ * ============================================================ */
 
-#if COLOR_TERMINAL_EN
-#define COLOR_NONE "\033[0m"
-#define COLOR_RED "\033[31m"
-#define COLOR_GREEN "\033[32m"
-#define COLOR_YELLOW "\033[33m"
-#define COLOR_BLUE "\033[34m"
-#define COLOR_MAGENTA "\033[35m"
-#define COLOR_CYAN "\033[36m"
-#define COLOR_WHITE "\033[37m"
-#define COLOR_DIM "\033[2m"
-#define COLOR_BOLD "\033[1m"
-#define COLOR_RAINBOW_1 "\033[38;5;196m" /* 红 */
-#define COLOR_RAINBOW_2 "\033[38;5;208m" /* 橙红 */
-#define COLOR_RAINBOW_3 "\033[38;5;214m" /* 橙 */
-#define COLOR_RAINBOW_4 "\033[38;5;226m" /* 黄 */
-#define COLOR_RAINBOW_5 "\033[38;5;046m" /* 绿 */
-#define COLOR_RAINBOW_6 "\033[38;5;051m" /* 青 */
-#define COLOR_RAINBOW_7 "\033[38;5;033m" /* 蓝 */
-#define COLOR_RAINBOW_8 "\033[38;5;129m" /* 紫 */
-#define COLOR_RAINBOW_9 "\033[38;5;201m" /* 洋红 */
-#else
-#define COLOR_NONE
-#define COLOR_RED
-#define COLOR_GREEN
-#define COLOR_YELLOW
-#define COLOR_BLUE
-#define COLOR_MAGENTA
-#define COLOR_CYAN
-#define COLOR_WHITE
-#define COLOR_DIM
-#define COLOR_BOLD
-#define COLOR_RAINBOW_1
-#define COLOR_RAINBOW_2
-#define COLOR_RAINBOW_3
-#define COLOR_RAINBOW_4
-#define COLOR_RAINBOW_5
-#define COLOR_RAINBOW_6
-#define COLOR_RAINBOW_7
-#define COLOR_RAINBOW_8
-#define COLOR_RAINBOW_9
+#ifndef CLI_IO_SIZE
+#define CLI_IO_SIZE 128
 #endif
 
-#define KERN_EMERG "0"
-#define KERN_ALERT "1"
-#define KERN_CRIT "2"
-#define KERN_ERR "3"
-#define KERN_WARNING "4"
-#define KERN_NOTICE "5"
-#define KERN_INFO "6"
-#define KERN_DEBUG "7"
-#define KERN_DEFAULT ""
+/* ============================================================
+ * Backward-compatible colour aliases → log_output.h
+ * ============================================================ */
 
-extern char log_level[3];
-extern _u8 cli_in_push_lock;
+#define COLOR_NONE       LOG_COLOR_NONE
+#define COLOR_RED        LOG_COLOR_RED
+#define COLOR_GREEN      LOG_COLOR_GREEN
+#define COLOR_YELLOW     LOG_COLOR_YELLOW
+#define COLOR_BLUE       LOG_COLOR_BLUE
+#define COLOR_MAGENTA    LOG_COLOR_MAGENTA
+#define COLOR_CYAN       LOG_COLOR_CYAN
+#define COLOR_WHITE      LOG_COLOR_WHITE
+#define COLOR_DIM        LOG_COLOR_DIM
+#define COLOR_BOLD       LOG_COLOR_BOLD
+#define COLOR_RAINBOW_1  LOG_COLOR_RAINBOW_1
+#define COLOR_RAINBOW_2  LOG_COLOR_RAINBOW_2
+#define COLOR_RAINBOW_3  LOG_COLOR_RAINBOW_3
+#define COLOR_RAINBOW_4  LOG_COLOR_RAINBOW_4
+#define COLOR_RAINBOW_5  LOG_COLOR_RAINBOW_5
+#define COLOR_RAINBOW_6  LOG_COLOR_RAINBOW_6
+#define COLOR_RAINBOW_7  LOG_COLOR_RAINBOW_7
+#define COLOR_RAINBOW_8  LOG_COLOR_RAINBOW_8
+#define COLOR_RAINBOW_9  LOG_COLOR_RAINBOW_9
 
-int cli_printk(const char *fmt, ...);
-int all_printk(const char *fmt, ...);
-int sys_printk(const char *fmt, ...);
-void cli_printk_batch_begin(void);
-void cli_printk_batch_end(void);
+/* ============================================================
+ * Backward-compatible KERN level aliases → log_output.h
+ * ============================================================ */
 
-#define pr_emerg(fmt, ...) sys_printk(KERN_EMERG fmt, ##__VA_ARGS__)
-#define pr_alert(fmt, ...) sys_printk(KERN_ALERT fmt, ##__VA_ARGS__)
-#define pr_crit(fmt, ...) sys_printk(KERN_CRIT fmt, ##__VA_ARGS__)
-#define pr_err(fmt, ...) sys_printk(KERN_ERR fmt, ##__VA_ARGS__)
-#define pr_warn(fmt, ...) sys_printk(KERN_WARNING fmt, ##__VA_ARGS__)
-#define pr_notice(fmt, ...) sys_printk(KERN_NOTICE fmt, ##__VA_ARGS__)
-#define pr_info(fmt, ...) sys_printk(KERN_INFO fmt, ##__VA_ARGS__)
-#define pr_debug(fmt, ...) sys_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#define KERN_EMERG       LOG_KERN_EMERG
+#define KERN_ALERT       LOG_KERN_ALERT
+#define KERN_CRIT        LOG_KERN_CRIT
+#define KERN_ERR         LOG_KERN_ERR
+#define KERN_WARNING     LOG_KERN_WARNING
+#define KERN_NOTICE      LOG_KERN_NOTICE
+#define KERN_INFO        LOG_KERN_INFO
+#define KERN_DEBUG       LOG_KERN_DEBUG
+#define KERN_DEFAULT     LOG_KERN_DEFAULT
+
+/* ============================================================
+ * Backward-compatible log level variable
+ * ============================================================ */
+
+#define log_level        g_log_level
+
+/*
+ * Backward-compatible pr_* macros → cli_printk wrapper
+ *
+ * cli_printk handles the critical-section + terminal save/restore
+ * sequencing.
+ */
+#define pr_emerg(fmt, ...)     cli_printk(KERN_EMERG   fmt, ##__VA_ARGS__)
+#define pr_alert(fmt, ...)     cli_printk(KERN_ALERT   fmt, ##__VA_ARGS__)
+#define pr_crit(fmt, ...)      cli_printk(KERN_CRIT    fmt, ##__VA_ARGS__)
+#define pr_err(fmt, ...)       cli_printk(KERN_ERR     fmt, ##__VA_ARGS__)
+#define pr_warn(fmt, ...)      cli_printk(KERN_WARNING fmt, ##__VA_ARGS__)
+#define pr_notice(fmt, ...)    cli_printk(KERN_NOTICE  fmt, ##__VA_ARGS__)
+#define pr_info(fmt, ...)      cli_printk(KERN_INFO    fmt, ##__VA_ARGS__)
+#define pr_debug(fmt, ...)     cli_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
 
 #ifdef DEBUG
-#define pr_devel(fmt, ...) sys_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#define pr_devel(fmt, ...)     cli_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
 #endif
 
-struct cli_io {
-	kfifo_t in;
-	_u8 in_ref;
-	char in_buf[CLI_IO_SIZE];
+/*
+ * pr_cont — 续行打印（类似 Linux KERN_CONT）。
+ * 仅在 log_batch_begin_cont() 批量内有效。
+ * 抑制级别前缀重复，用于构建多段日志行：
+ *   cli_printk_batch_begin_cont(KERN_INFO);
+ *   pr_info("hello ");
+ *   pr_cont("world\n");
+ *   cli_printk_batch_end();
+ *   // → [I] hello world\n
+ */
+#define pr_cont(fmt, ...)      cli_printk(fmt, ##__VA_ARGS__)
 
-	kfifo_t out;
-	_u8 out_ref;
-	char out_buf[CLI_IO_SIZE];
+/* ============================================================
+ * Original API — still provided by cli_io.c wrappers
+ * ============================================================ */
+
+int cli_printk(const char *fmt, ...)
+    __attribute__((__format__(__printf__, 1, 2)));
+int all_printk(const char *fmt, ...)
+    __attribute__((__format__(__printf__, 1, 2)));
+void cli_printk_batch_begin(void);
+void cli_printk_batch_begin_cont(const char *level);
+void cli_printk_batch_end(void);
+
+/* ============================================================
+ * Original IO FIFO struct & functions (unchanged)
+ * ============================================================ */
+
+struct cli_io {
+    kfifo_t in;
+    _u8 in_ref;
+    char in_buf[CLI_IO_SIZE];
+
+    kfifo_t out;
+    _u8 out_ref;
+    char out_buf[CLI_IO_SIZE];
 };
 
 extern struct cli_io _cli_io;
@@ -145,5 +155,38 @@ int cli_out_sync(void);
 int cli_in_clear(void);
 void set_cli_in_push_lock(void);
 void reset_cli_in_push_lock(void);
+
+/*
+ * Lockless variants — skip cli_enter_critical/cli_exit_critical.
+ * Use ONLY when the critical section is already held by the caller
+ * (e.g. inside the log output path).
+ */
+int cli_out_push_nolock(const uint8_t *data, int size);
+int cli_out_pop_nolock(uint8_t *data, int size);
+int cli_get_out_size_nolock(void);
+int cli_out_sync_nolock(void);
+
+/* ============================================================
+ * Terminal adapter initialisation (from cli_term.c)
+ * ============================================================ */
+
+void cli_term_init(void);
+
+/*
+ * Terminal restore for external callers.
+ *
+ * cli_term_restore — calls candidate_redraw() / cmd_line_redraw()
+ *                  through cli_out_push (acquires spinlock). Must be
+ *                  called OUTSIDE the critical section.
+ *
+ * cli_term_save   — historical alias.  The library now handles
+ *                  output_begin automatically via log_output hooks.
+ *
+ * cli_term_is_interactive — 1 if scheduler is in get-char mode
+ *                  and NOT in exception context.
+ */
+void cli_term_save(void);
+void cli_term_restore(void);
+int  cli_term_is_interactive(void);
 
 #endif

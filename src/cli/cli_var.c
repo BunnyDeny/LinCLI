@@ -11,7 +11,6 @@
 #include "cmd_dispose.h"
 #include "init_d.h"
 #include "cli_float.h"
-#include "cli_vsnprintf.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,14 +213,14 @@ CLI_COMMAND(var_cmd, "var", "Variables",
 static void cli_var_format_value(const cli_var_t *var, char *buf, size_t size)
 {
 	if (!var->type_name) {
-		cli_snprintf(buf, (int)size, "?");
+		snprintf(buf, (int)size, "?");
 		return;
 	}
 	const cli_var_type_t *type = cli_var_type_find(var->type_name);
 	if (type && type->ops.to_string) {
 		type->ops.to_string(var->addr, var->size, buf, size);
 	} else {
-		cli_snprintf(buf, (int)size, "?");
+		snprintf(buf, (int)size, "?");
 	}
 }
 
@@ -335,7 +334,7 @@ static int builtin_int_from_str(void *addr, size_t size, const char *str)
 static int builtin_int_to_str(const void *addr, size_t size, char *buf,
 			      size_t buf_size)
 {
-	cli_snprintf(buf, (int)buf_size, "%d", *(const int *)addr);
+	snprintf(buf, (int)buf_size, "%d", *(const int *)addr);
 	return 0;
 }
 
@@ -372,7 +371,7 @@ static int builtin_bool_from_str(void *addr, size_t size, const char *str)
 static int builtin_bool_to_str(const void *addr, size_t size, char *buf,
 			       size_t buf_size)
 {
-	cli_snprintf(buf, (int)buf_size, "%s",
+	snprintf(buf, (int)buf_size, "%s",
 		 *(const bool *)addr ? "true" : "false");
 	return 0;
 }
@@ -383,8 +382,7 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 		return -1;
 	size_t len = strlen(str);
 	if (len >= size) {
-		pr_warn("str trunc %u>%u\r\n", (unsigned int)len,
-			size - 1);
+		pr_warn("str trunc %zu>%zu\r\n", len, size - 1);
 		len = size - 1;
 	}
 	memcpy(addr, str, len);
@@ -395,7 +393,7 @@ static int builtin_string_from_str(void *addr, size_t size, const char *str)
 static int builtin_string_to_str(const void *addr, size_t size, char *buf,
 				 size_t buf_size)
 {
-	cli_snprintf(buf, (int)buf_size, "\"%s\"", (const char *)addr);
+	snprintf(buf, (int)buf_size, "\"%s\"", (const char *)addr);
 	return 0;
 }
 

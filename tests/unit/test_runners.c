@@ -47,15 +47,6 @@ extern void test_cli_mpool_alloc_exhaust(void);
 extern void test_cli_mpool_free_invalid_ptr(void);
 extern void test_cli_mpool_get_usage(void);
 
-/* ==== test_unit_vsnprintf.c ==== */
-extern void test_cli_snprintf_basic(void);
-extern void test_cli_snprintf_unsigned(void);
-extern void test_cli_snprintf_percent(void);
-extern void test_cli_snprintf_width(void);
-extern void test_cli_snprintf_truncate(void);
-extern void test_cli_snprintf_null_string(void);
-extern void test_cli_snprintf_negative(void);
-
 /* ==== test_unit_statem.c ==== */
 extern void test_statem_init_and_run(void);
 extern void test_statem_switch(void);
@@ -113,17 +104,6 @@ static void run_mpool_tests(void)
 	RUN_TEST(test_cli_mpool_get_usage);
 }
 
-static void run_vsnprintf_tests(void)
-{
-	RUN_TEST(test_cli_snprintf_basic);
-	RUN_TEST(test_cli_snprintf_unsigned);
-	RUN_TEST(test_cli_snprintf_percent);
-	RUN_TEST(test_cli_snprintf_width);
-	RUN_TEST(test_cli_snprintf_truncate);
-	RUN_TEST(test_cli_snprintf_null_string);
-	RUN_TEST(test_cli_snprintf_negative);
-}
-
 static void run_statem_tests(void)
 {
 	RUN_TEST(test_statem_init_and_run);
@@ -145,7 +125,6 @@ int main(void)
 	run_atoi_tests();
 	run_float_tests();
 	run_mpool_tests();
-	run_vsnprintf_tests();
 	run_statem_tests();
 	run_errno_tests();
 	return UNITY_END();

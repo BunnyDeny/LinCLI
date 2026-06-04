@@ -24,15 +24,10 @@
 #include "cli_io.h"
 #include "cli_critical.h"
 #include "cmd_dispose.h"
-#include "cli_cmd_line.h"
-#include "cli_completion.h"
 #include "cli_mpool.h"
-#include "cli_vsnprintf.h"
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
-//#include <unistd.h>
-
-char log_level[3] = "8";
 
 _u8 cli_in_push_lock = 1;
 
@@ -47,6 +42,7 @@ void cli_io_init(void)
 	kfifo_init(&_cli_io.out, (uint8_t *)_cli_io.out_buf, CLI_IO_SIZE);
 	_cli_io.in_ref = 1;
 	_cli_io.out_ref = 1;
+	cli_term_init();
 }
 
 //移植的时候实现
@@ -118,80 +114,158 @@ int cli_get_out_size(void)
 	return size;
 }
 
-int cli_out_sync(void)
+/* ============================================================
+ * Lockless variants — skip cli_enter_critical/cli_exit_critical
+ * ============================================================ */
+
+int cli_out_push_nolock(const uint8_t *data, int size)
 {
-	while (cli_get_out_size() > 0) {
-		char ch;
-		int status = cli_out_pop((_u8 *)&ch, 1);
-		if (status < 0) {
-			return status;
-		}
-		if (status == 0) {
-			return CLI_ERR_FIFO_EMPTY;
-		}
-		cli_putc(ch);
-	}
-	return 0;
+    uint32_t ret;
+    if (_cli_io.out_ref == 0) {
+        return CLI_ERR_INVAL;
+    }
+    ret = kfifo_put(&_cli_io.out, (const uint8_t *)data, (uint32_t)size);
+    if (ret < (uint32_t)size) {
+        return CLI_ERR_FIFO_FULL;
+    }
+    return CLI_OK;
 }
 
-static const char *prefix_table[] = {
-	COLOR_BOLD COLOR_RED "[E] ",
-	COLOR_MAGENTA "[A] ",
-	COLOR_RAINBOW_2 "[C] ",
-	COLOR_RED "[E] ",
-	COLOR_YELLOW "[W] ",
-	COLOR_BOLD COLOR_GREEN " ",
-	COLOR_BLUE "[I] " COLOR_NONE,
-	COLOR_RAINBOW_4 "[D] ",
-	"",
-};
-
-static char s_printk_buf[CLI_PRINTK_BUF_SIZE];
-
-int all_printk(const char *fmt, ...)
+int cli_out_pop_nolock(uint8_t *data, int size)
 {
-	int status;
-	va_list args;
-	va_start(args, fmt);
-	int len = cli_vsnprintf(s_printk_buf, sizeof(s_printk_buf), fmt, args);
-	va_end(args);
-	status = cli_out_push((_u8 *)s_printk_buf, len);
-	if (status < 0)
-		return status;
-	if (cli_out_sync())
-		return CLI_ERR_IO_SYNC;
-	return 0;
+    uint32_t ret;
+    if (_cli_io.out_ref == 0) {
+        return CLI_ERR_INVAL;
+    }
+    ret = kfifo_get(&_cli_io.out, data, (uint32_t)size);
+    return (int)ret;
+}
+
+int cli_get_out_size_nolock(void)
+{
+    if (_cli_io.out_ref == 0) return 0;
+    return (int)kfifo_len(&_cli_io.out);
+}
+
+int cli_out_sync_nolock(void)
+{
+    while (cli_get_out_size_nolock() > 0) {
+        char ch;
+        int status = cli_out_pop_nolock((uint8_t *)&ch, 1);
+        if (status < 0) {
+            return status;
+        }
+        if (status == 0) {
+            return CLI_ERR_FIFO_EMPTY;
+        }
+        cli_putc(ch);
+    }
+    return 0;
+}
+
+int cli_out_sync(void)
+{
+    while (cli_get_out_size() > 0) {
+        char ch;
+        int status = cli_out_pop((_u8 *)&ch, 1);
+        if (status < 0) {
+            return status;
+        }
+        if (status == 0) {
+            return CLI_ERR_FIFO_EMPTY;
+        }
+        cli_putc(ch);
+    }
+    return 0;
 }
 
 /* ============================================================
- *  sys_printk —— 使用标准库 vsnprintf 的通用日志打印
- *  （与 all_printk 共用全局缓冲区，供测试用例 / CmBacktrace 使用）
+ *  all_printk — 直接向输出 FIFO 写入（无日志过滤/终端协调）
+ *  （使用标准 vsnprintf，供提示符和内部输出使用）
  * ============================================================ */
 
-int sys_printk(const char *fmt, ...)
+int all_printk(const char *fmt, ...)
 {
-	int len;
+    int status;
+    char buf[CLI_IO_SIZE];
+    va_list args;
+    va_start(args, fmt);
+    int len = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    status = cli_out_push((_u8 *)buf, len);
+    if (status < 0)
+        return status;
+    if (cli_out_sync())
+        return CLI_ERR_IO_SYNC;
+    return 0;
+}
 
-	cli_enter_critical();
+/* ============================================================
+ *  cli_printk — 通用日志打印
+ *
+ *  利用 tinypr 的输出生命周期钩子：
+ *    - log_output_v() 内部自动调 output_begin → 写 \r\033[K
+ *    - 外层负责 cli_term_restore（需要在 CS 外运行，因为 restore
+ *      用 cli_out_push 拿自旋锁，CS 内调会死锁）
+ *
+ *  时序：ENTER_CS → log_output_v(→hook_begin) → EXIT_CS → restore
+ * ============================================================ */
 
-	va_list args;
-	va_start(args, fmt);
-	len = vsnprintf(s_printk_buf, sizeof(s_printk_buf), fmt, args);
-	va_end(args);
+static int _cli_batch;
 
-	if (len > 0) {
-		if ((size_t)len >= sizeof(s_printk_buf)) {
-			const char *trunc = "...[trunc]\n";
-			size_t tlen = strlen(trunc);
-			size_t pos = sizeof(s_printk_buf) > tlen ? sizeof(s_printk_buf) - tlen - 1 : 0;
-			memcpy(&s_printk_buf[pos], trunc, tlen + 1);
-			len = sizeof(s_printk_buf) - 1;
-		}
-		cli_printk("%s", s_printk_buf);
-	}
+int cli_printk(const char *fmt, ...)
+{
+    cli_enter_critical();
 
-	cli_exit_critical();
-	return len;
+    va_list args;
+    va_start(args, fmt);
+    int ret = log_output_v(fmt, args);
+    va_end(args);
+
+    /* Flush ring → transport (inside CS, _nolock is safe) */
+    log_output_flush();
+
+    cli_exit_critical();
+
+    /* Restore prompt outside CS (restore needs spinlock) */
+    /* 不在交互期或批量中不 restore */
+    if (cli_term_is_interactive() && !_cli_batch)
+        cli_term_restore();
+
+    return ret;
+}
+
+/* ============================================================
+ *  Batch 模式 — 代理到 log_output 的批量计数器。
+ *
+ *  _cli_batch 用于抑制批量中每条日志后的 restore。
+ *  log_batch_begin/end 控制 output_begin/output_end 的触发时机。
+ * ============================================================ */
+
+void cli_printk_batch_begin(void)
+{
+    if (_cli_batch == 0) {
+        /* hook_begin 在第一条 log 时自动触发 */
+    }
+    ++_cli_batch;
+    log_batch_begin();
+}
+
+void cli_printk_batch_begin_cont(const char *level)
+{
+    ++_cli_batch;
+    log_batch_begin_cont(level);
+}
+
+void cli_printk_batch_end(void)
+{
+    if (_cli_batch > 0) --_cli_batch;
+    log_batch_end();
+    if (!_cli_batch) {
+        log_output_flush();
+        if (cli_term_is_interactive())
+            cli_term_restore();
+    }
 }
 
 int cli_in_clear(void)
@@ -274,155 +348,6 @@ CLI_COMMAND(level, "level", "Log level",
 	    OPTION(0, "debug", BOOL, "",
 		   struct level_args, debug, 0, NULL, NULL, false),
 	    END_OPTIONS);
-
-/* ============================================================
- *  cli_printk 辅助函数（从 cli_io.c 迁移而来）
- * ============================================================ */
-
-static char buffer[CLI_PRINTK_BUF_SIZE];
-int _cli_batch;
-
-static const char *prefix_gen(const char *level)
-{
-	char lv = level[0];
-	if (lv >= '0' && lv <= '7')
-		return prefix_table[lv - '0'];
-	return prefix_table[8];
-}
-
-static inline int is_kern_level(char c)
-{
-	return (c >= '0' && c <= '7');
-}
-
-/* ============================================================
- *  cli_printk（从 cli_io.c 迁移至此，直接访问 cmd_line 状态）
- * ============================================================ */
-
-extern int scheduler_is_in_get_char(void);
-
-static bool printk_should_drop(const char *pre)
-{
-	if (pre[0] != '8' && pre[0] >= '0' && pre[0] <= '7') {
-		if (pre[0] > log_level[0])
-			return true;
-	}
-	if (!is_kern_level(pre[0]) && strcmp("8", log_level))
-		return true;
-	return false;
-}
-
-static int printk_format_and_send(const char *pre_str, int raw_len)
-{
-	if (raw_len <= 0)
-		return 0;
-
-	int pre_len = strlen(pre_str);
-	int suffix_len = strlen(COLOR_NONE);
-
-	/* 如果 buffer[0] 是内核级别字符，跳过它 */
-	const char *content = buffer;
-	int content_len = raw_len;
-	if (is_kern_level(buffer[0])) {
-		content++;
-		content_len--;
-	}
-
-	if (content_len <= 0)
-		return 0;
-
-	int status;
-
-	if (pre_len > 0) {
-		status = cli_out_push((_u8 *)pre_str, pre_len);
-		if (status < 0) return status;
-		if (cli_out_sync()) return CLI_ERR_IO_SYNC;
-	}
-
-	status = cli_out_push((_u8 *)content, content_len);
-	if (status < 0) return status;
-	if (cli_out_sync()) return CLI_ERR_IO_SYNC;
-
-	if (suffix_len > 0) {
-		status = cli_out_push((_u8 *)COLOR_NONE, suffix_len);
-		if (status < 0) return status;
-		if (cli_out_sync()) return CLI_ERR_IO_SYNC;
-	}
-
-	return 0;
-}
-
-int cli_printk(const char *fmt, ...)
-{
-	int ret = 0;
-	va_list args;
-
-	cli_enter_critical();
-
-	va_start(args, fmt);
-	int len = cli_vsnprintf(buffer, sizeof(buffer), fmt, args);
-	va_end(args);
-	char pre[2] = { buffer[0], '\0' };
-	if (printk_should_drop(pre))
-		goto out;
-
-	int in_interactive = scheduler_is_in_get_char();
-	extern int cli_in_exception(void);
-	int _in_exc = cli_in_exception();
-
-	/* ISR first call after task redraw: \r to overwrite old prompt.
-	 * Task context: \r\033[K unless in batch mode. */
-	static int _isr_newline_pending;
-	if (in_interactive) {
-		if (!_in_exc) {
-			if (!_cli_batch)
-				cli_out_push((_u8 *)"\r\033[K", 4);
-		} else if (_isr_newline_pending) {
-			cli_out_push((_u8 *)"\r", 1);
-		}
-		_isr_newline_pending = 0;
-	}
-
-	const char *_pre = prefix_gen(pre);
-	int status = printk_format_and_send(_pre, len);
-	if (status < 0) {
-		ret = status;
-		goto out;
-	}
-
-	if (in_interactive && !_in_exc && !_cli_batch) {
-		if (len > 0 && buffer[len - 1] != '\n') {
-			cli_out_push((_u8 *)"\r\n", 2);
-			cli_out_sync();
-		}
-		if (candidate_ctx.active)
-			candidate_redraw();
-		else
-			cmd_line_redraw();
-		_isr_newline_pending = 1;
-	}
-	ret = len;
-
-out:
-	cli_exit_critical();
-	return ret;
-}
-
-void cli_printk_batch_begin(void)
-{
-	if (!_cli_batch) {
-		cli_out_push((_u8 *)"\r\033[K", 4);
-		cli_out_sync();
-	}
-	++_cli_batch;
-}
-
-void cli_printk_batch_end(void)
-{
-	if (_cli_batch > 0) --_cli_batch;
-	if (!_cli_batch)
-		cmd_line_redraw();
-}
 
 /* ============================================================
  *  内存池占用情况打印（分配失败时自动调用，不申请内存）
