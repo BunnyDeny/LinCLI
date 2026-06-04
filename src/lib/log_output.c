@@ -13,10 +13,25 @@
  *
  * Ring mode is built-in (kfifo is a hard dependency of this library).
  *
- * INTEGRATION
- * -----------
+ * LIFECYCLE HOOKS
+ * ---------------
+ * Register hooks via log_output_set_hooks().  When coord=1 (default),
+ * the library wraps every "output transaction" with:
+ *
+ *   output_begin()  — called before output (if !in_atomic)
+ *   output_end()    — called after  output (if !in_atomic, !batch)
+ *
+ * An "output transaction" is:
+ *   - a single log_output() call  (non-batch mode)
+ *   - a batch region              (begin on first log, end at batch_end)
+ *   - a ring buffer flush         (begin before drain, end after)
+ *
+ * coord=0 disables automatic hooks (user manages them externally).
+ * in_atomic() lets hooks be skipped in ISR / spinlock context.
+ *
+ * Integration:
  *   1. log_output_set_write_fn(fn)  — mandatory (the transport)
- *   2. log_output_set_term_ops()    — optional (interactive terminal)
+ *   2. log_output_set_hooks()       — optional (lifecycle hooks)
  *   3. log_output_init()             — optional (reset state)
  *   4. log_output() / log_*() macros — emit messages
  */
@@ -42,16 +57,11 @@
 
 char g_log_level[3] = "8";
 
-static log_write_fn       s_write_fn = NULL;
-static struct log_term_ops s_ops;
-static int                s_batch;
-static int                s_term_coord = 1;  /* default: internal save/restore enabled */
-
-/* ISR first-print coordination (direct mode only):
- * after a task-context print restores the prompt, this flag is set.
- * The next ISR-context print uses "\r" to overwrite the prompt line
- * before emitting its content. */
-static int s_isr_newline_pending;
+static log_write_fn          s_write_fn = NULL;
+static struct log_output_hooks s_hooks;
+static int                   s_batch;
+static int                   s_term_coord = 1;  /* default: hooks auto-fire */
+static bool                  s_hook_begin_called;  /* track begin for batch */
 
 /* Shared format buffer — safe because log_output holds a critical section
  * externally on the LinCLI side, or callers serialise access. */
@@ -131,11 +141,49 @@ static void truncate_if_needed(int *len, size_t buf_size)
 }
 
 /* ============================================================
- * Format + filter + emit (direct path)
+ * Lifecycle: output_begin
  *
- * All terminal coordination (save/restore, ISR first-print
- * handling) lives here.  Called from log_output_v when ring
- * mode is NOT active.
+ * Called once per output transaction (one log call, or one batch,
+ * or one flush).  Skipped if atomic context or coord=0.
+ * ============================================================ */
+
+static inline void lifecycle_begin(void)
+{
+    if (!s_term_coord) return;
+    int atomic = s_hooks.in_atomic ? s_hooks.in_atomic() : 0;
+    if (atomic) return;
+
+    if (s_hook_begin_called)
+        return;  /* already begun (batch: same transaction) */
+
+    if (s_hooks.output_begin)
+        s_hooks.output_begin();
+    s_hook_begin_called = true;
+}
+
+/* ============================================================
+ * Lifecycle: output_end
+ *
+ * Called once per output transaction (if begin was called).
+ * In batch mode, deferred until batch_end.
+ * ============================================================ */
+
+static inline void lifecycle_end(void)
+{
+    if (!s_term_coord) return;
+    if (!s_hook_begin_called)
+        return;
+
+    if (s_batch)
+        return;  /* batch in progress — end at batch_end */
+
+    if (s_hooks.output_end)
+        s_hooks.output_end();
+    s_hook_begin_called = false;
+}
+
+/* ============================================================
+ * Format + filter + emit (direct path)
  * ============================================================ */
 
 static int log_direct_internal(const char *fmt, va_list args,
@@ -152,24 +200,8 @@ static int log_direct_internal(const char *fmt, va_list args,
     if (!skip_filter && pre[0] && log_should_drop(pre))
         return 0;
 
-    int in_irq   = (s_ops.in_irq) ? s_ops.in_irq() : 0;
-    int interact = (s_ops.is_interactive) ? s_ops.is_interactive() : 0;
-
-    /* ---- Terminal save ---- */
-    if (s_term_coord && interact) {
-        if (!in_irq) {
-            /* Task context: clear prompt line before printing */
-            if (!s_batch) {
-                do_write_str("\r\033[K");
-            }
-            s_isr_newline_pending = 0;
-        } else if (s_isr_newline_pending) {
-            /* ISR context, and prompt was last restored by task:
-             * need "\r" to overwrite the stale prompt line. */
-            do_write_str("\r");
-            s_isr_newline_pending = 0;
-        }
-    }
+    /* ---- Lifecycle: begin ---- */
+    lifecycle_begin();
 
     /* ---- Emit prefix + content + reset ---- */
     const char *content = s_buf;
@@ -185,15 +217,8 @@ static int log_direct_internal(const char *fmt, va_list args,
         do_write_str(LOG_COLOR_NONE);
     }
 
-    /* ---- Terminal restore ---- */
-    if (s_term_coord && interact && !in_irq && !s_batch) {
-        if (len > 0 && s_buf[len - 1] != '\n') {
-            do_write_str("\r\n");
-        }
-        if (s_ops.restore)
-            s_ops.restore();
-        s_isr_newline_pending = 1;
-    }
+    /* ---- Lifecycle: end ---- */
+    lifecycle_end();
 
     return len;
 }
@@ -223,7 +248,7 @@ static int log_ring_internal(const char *fmt, va_list args, bool raw)
 void log_output_init(void)
 {
     s_batch = 0;
-    s_isr_newline_pending = 0;
+    s_hook_begin_called = false;
 }
 
 void log_output_set_write_fn(log_write_fn fn)
@@ -231,12 +256,13 @@ void log_output_set_write_fn(log_write_fn fn)
     s_write_fn = fn;
 }
 
-void log_output_set_term_ops(const struct log_term_ops *ops)
+void log_output_set_hooks(const struct log_output_hooks *hooks)
 {
-    if (ops)
-        s_ops = *ops;
+    if (hooks)
+        s_hooks = *hooks;
     else
-        memset(&s_ops, 0, sizeof(s_ops));
+        memset(&s_hooks, 0, sizeof(s_hooks));
+    s_hook_begin_called = false;
 }
 
 void log_output_set_term_coord(int enable)
@@ -265,7 +291,7 @@ int log_output_v(const char *fmt, va_list args)
     return log_direct_internal(fmt, args, false);
 }
 
-/* ---- Raw log (bypass level filter, still do terminal co-ord) ---- */
+/* ---- Raw log (bypass level filter, still do hooks) ---- */
 
 int log_output_raw(const char *fmt, ...)
 {
@@ -286,7 +312,7 @@ int log_output_raw_v(const char *fmt, va_list args)
     return log_direct_internal(fmt, args, true);
 }
 
-/* ---- Direct log (no filter, no save/restore, just format+write) ---- */
+/* ---- Direct log (no filter, no hooks) ---- */
 
 int log_output_direct(const char *fmt, ...)
 {
@@ -312,17 +338,19 @@ int log_output_direct_v(const char *fmt, va_list args)
 
 void log_batch_begin(void)
 {
-    if (!s_batch) {
-        do_write_str("\r\033[K");
-    }
+    /* No inline terminal escapes here — that's the hook's job.
+     * output_begin fires on the first log_output() in the batch. */
     ++s_batch;
 }
 
 void log_batch_end(void)
 {
     if (s_batch > 0) --s_batch;
-    if (!s_batch && s_ops.restore)
-        s_ops.restore();
+    if (!s_batch && s_term_coord && s_hook_begin_called) {
+        if (s_hooks.output_end)
+            s_hooks.output_end();
+        s_hook_begin_called = false;
+    }
 }
 
 /* ---- Ring buffer lifecycle ---- */
@@ -344,11 +372,9 @@ int log_output_flush(void)
     char buf[LOG_BUF_SIZE];
     int  total = 0;
 
-    int interact = (s_ops.is_interactive) ? s_ops.is_interactive() : 0;
-
-    /* Save terminal once for the entire batch */
-    if (interact && !s_batch && s_ops.save)
-        s_ops.save();
+    /* Lifecycle: begin */
+    if (s_term_coord && !s_batch && s_hooks.output_begin)
+        s_hooks.output_begin();
 
     while (kfifo_len(&s_ring) > 0) {
         uint32_t avail = kfifo_len(&s_ring);
@@ -359,9 +385,9 @@ int log_output_flush(void)
         total += (int)rlen;
     }
 
-    /* Restore terminal once */
-    if (interact && !s_batch && s_ops.restore)
-        s_ops.restore();
+    /* Lifecycle: end */
+    if (s_term_coord && !s_batch && s_hooks.output_end)
+        s_hooks.output_end();
 
     return total;
 }

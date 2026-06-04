@@ -73,25 +73,27 @@ extern "C" {
 #define LOG_KERN_DEFAULT          ""
 
 /* ============================================================
- * Terminal lifecycle hooks
+ * 输出生命周期钩子
  *
- * When terminal ops are registered, log_output calls:
- *   save()              – clear current interactive line
- *   write_fn(prefix..)  – emit the log
- *   write_fn(content..)
- *   write_fn(reset..)
- *   restore()           – redraw prompt / candidate list
+ * 注册钩子后，log_output 在每个"输出事务"前后自动调用：
  *
- * save/restore are ONLY called when is_interactive() returns true.
- * in_irq() lets the adapter track first-ISR-print-before-task-print.
- * All callbacks are optional (set to NULL to skip that step).
+ *   output_begin()  — 输出开始前调用（清行、解锁 Flash、加锁互斥）
+ *   output_end()    — 输出结束后调用（恢复提示符、锁定 Flash、释放互斥）
+ *   in_atomic()     — 查询是否在原子上下文中（ISR/自旋锁），返回 1 则跳过钩子
+ *
+ * 你完全控制钩子函数的内容——它可以是终端 save/restore，
+ * 可以是 Flash 写保护开关，可以是 GPIO 脉冲，什么都行。
+ *
+ * coord=1（默认）: 钩子自动触发
+ * coord=0:         钩子由你手动管理（配合外部临界区）
+ *
+ * 所有回调都是可选的（设为 NULL 跳过）。
  * ============================================================ */
 
-struct log_term_ops {
-    void (*save)(void);
-    void (*restore)(void);
-    int  (*in_irq)(void);           /* 1 if currently in interrupt */
-    int  (*is_interactive)(void);   /* 1 if terminal is interactive */
+struct log_output_hooks {
+    void (*output_begin)(void);
+    void (*output_end)(void);
+    int  (*in_atomic)(void);
 };
 
 /* ============================================================
@@ -112,8 +114,15 @@ void log_output_init(void);
 /** Register the output transport (mandatory before first log). */
 void log_output_set_write_fn(log_write_fn fn);
 
-/** Register terminal lifecycle hooks (optional). */
-void log_output_set_term_ops(const struct log_term_ops *ops);
+/** Register output lifecycle hooks (optional).
+ *
+ *  When hooks are set and coord=1, the library calls:
+ *    output_begin() before each output transaction
+ *    output_end()   after each output transaction
+ *
+ *  in_atomic() lets the library skip hooks in atomic context.
+ *  Pass NULL to unregister. */
+void log_output_set_hooks(const struct log_output_hooks *hooks);
 
 /**
  * Global log-level filter: messages with level > g_log_level are dropped.
@@ -122,17 +131,14 @@ void log_output_set_term_ops(const struct log_term_ops *ops);
 extern char g_log_level[3];
 
 /**
- * Terminal coordination mode.
+ * 输出协调模式。
  *
- * When ENABLED (default): log_output_v() internally calls term_ops->save()
- * before writing and term_ops->restore() after writing.  This is the
- * standalone / Cortex-M mode (where cli_enter_critical maps to interrupt
- * masking, which is properly nested).
+ * coord=1（默认）: 登记的自定义钩子（hooks）自动触发。
+ *   每个日志输出前调用 output_begin()，输出后调用 output_end()。
+ *   批量/环形缓冲模式下，begin/end 自动合并为一次。
  *
- * When DISABLED: log_output_v() ONLY formats and writes.  The wrapper
- * (e.g. cli_printk) is responsible for calling save/restore around the
- * critical section.  This is the PC mode (where cli_enter_critical maps to
- * a non-reentrant spinlock, and redrawing inside the CS would deadlock).
+ * coord=0: 自定义钩子不会自动触发。
+ *   你手动管理 begin/end 调用（常见于外部临界区保护）。
  */
 void log_output_set_term_coord(int enable);
 
