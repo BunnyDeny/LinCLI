@@ -176,11 +176,11 @@ void log_batch_end(void);
 
 #include "kfifo.h"
 
-/** Enable ring buffer mode: log_output pushes to this kfifo
- *  instead of calling the write_fn directly.  Caller must
- *  periodically drain with log_output_flush().  Pass NULL/NULL/0
- *  to disable ring mode and revert to direct mode. */
-void log_output_set_ring(kfifo_t *ring, uint8_t *buf, uint32_t size);
+/** Enable ring buffer mode: log_output pushes formatted messages to
+ *  the kfifo ring instead of calling the write_fn directly.
+ *  Caller must periodically drain with log_output_flush().
+ *  Pass NULL/0 to disable ring mode and revert to direct mode. */
+void log_output_set_ring(uint8_t *buf, uint32_t size);
 
 /** Drain the ring buffer: pull all buffered messages and push them
  *  through the registered write_fn.  Returns total bytes flushed. */
