@@ -592,8 +592,13 @@ int scheduler_task(void)
 	}
 #if CLI_ENABLE_SCHEDULER_TICK_PRINT
 	cnt++;
-	if ((cnt % 50) == 0)
-		pr_info("test : %7d\r\n", cnt);
+	if ((cnt % 50) == 0) {
+		/* Use continuation batch to build a multi-part log line */
+		cli_printk_batch_begin_cont(KERN_INFO);
+		pr_info("test : ");
+		pr_cont("%7d\r\n", cnt);
+		cli_printk_batch_end();
+	}
 #endif
 	return 0;
 }

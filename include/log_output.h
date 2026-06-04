@@ -170,10 +170,23 @@ int log_output_direct(const char *fmt, ...)
 int log_output_direct_v(const char *fmt, va_list args);
 
 /*
- * Batch mode — suppress terminal save/restore across a group of logs.
- * Useful for commands that emit many log lines (save once, restore once).
+ * Batch mode — suppress output_begin/end across a group of log calls.
+ *
+ *   log_batch_begin/end()       — suppress hooks only
+ *   log_batch_begin_cont(lvl)   — suppress hooks + continuation mode
+ *
+ * Continuation mode is analogous to Linux KERN_CONT: the level prefix
+ * is emitted only on the first message inside the batch; subsequent
+ * messages inherit the same level for filtering but omit the prefix.
+ *
+ * Use for building multi-part log lines:
+ *   log_batch_begin_cont(KERN_INFO);
+ *   log_output("hello ");          // → [I] hello
+ *   log_output("world\n");         // → world\n
+ *   log_batch_end();               // → [I] hello world\n
  */
 void log_batch_begin(void);
+void log_batch_begin_cont(const char *level);
 void log_batch_end(void);
 
 /* ============================================================

@@ -60,6 +60,8 @@ char g_log_level[3] = "8";
 static log_write_fn          s_write_fn = NULL;
 static struct log_output_hooks s_hooks;
 static int                   s_batch;
+static const char            *s_batch_level;      /* non-NULL = cont mode */
+static bool                  s_batch_first;       /* first msg in cont batch */
 static int                   s_term_coord = 1;  /* default: hooks auto-fire */
 static bool                  s_hook_begin_called;  /* track begin for batch */
 
@@ -194,7 +196,15 @@ static int log_direct_internal(const char *fmt, va_list args,
 
     truncate_if_needed(&len, sizeof(s_buf));
 
-    char pre[2] = { s_buf[0], '\0' };
+    /* ---- Determine effective level ---- */
+    char pre[2];
+    if (s_batch_level) {
+        /* Continuation batch: use the batch's level for filtering */
+        pre[0] = s_batch_level[0];
+    } else {
+        pre[0] = s_buf[0];
+    }
+    pre[1] = '\0';
 
     /* ---- Level filter ---- */
     if (!skip_filter && pre[0] && log_should_drop(pre))
@@ -212,10 +222,17 @@ static int log_direct_internal(const char *fmt, va_list args,
     }
 
     if (content_len > 0) {
-        do_write_str(prefix_gen(pre[0]));
+        /* In continuation batch: suppress prefix on 2nd+ messages */
+        bool show_prefix = !(s_batch_level && !s_batch_first);
+        if (show_prefix) {
+            do_write_str(prefix_gen(pre[0]));
+        }
         do_write(content, content_len);
-        do_write_str(LOG_COLOR_NONE);
+        if (show_prefix) {
+            do_write_str(LOG_COLOR_NONE);
+        }
     }
+    s_batch_first = false;
 
     /* ---- Lifecycle: end ---- */
     lifecycle_end();
@@ -248,6 +265,8 @@ static int log_ring_internal(const char *fmt, va_list args, bool raw)
 void log_output_init(void)
 {
     s_batch = 0;
+    s_batch_level = NULL;
+    s_batch_first = false;
     s_hook_begin_called = false;
 }
 
@@ -338,18 +357,26 @@ int log_output_direct_v(const char *fmt, va_list args)
 
 void log_batch_begin(void)
 {
-    /* No inline terminal escapes here — that's the hook's job.
-     * output_begin fires on the first log_output() in the batch. */
     ++s_batch;
+}
+
+void log_batch_begin_cont(const char *level)
+{
+    ++s_batch;
+    s_batch_level = level;
+    s_batch_first = true;
 }
 
 void log_batch_end(void)
 {
     if (s_batch > 0) --s_batch;
-    if (!s_batch && s_term_coord && s_hook_begin_called) {
-        if (s_hooks.output_end)
-            s_hooks.output_end();
-        s_hook_begin_called = false;
+    if (!s_batch) {
+        if (s_term_coord && s_hook_begin_called) {
+            if (s_hooks.output_end)
+                s_hooks.output_end();
+            s_hook_begin_called = false;
+        }
+        s_batch_level = NULL;
     }
 }
 

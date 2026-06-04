@@ -248,6 +248,12 @@ void cli_printk_batch_begin(void)
     log_batch_begin();
 }
 
+void cli_printk_batch_begin_cont(const char *level)
+{
+    ++_cli_batch;
+    log_batch_begin_cont(level);
+}
+
 void cli_printk_batch_end(void)
 {
     if (_cli_batch > 0) --_cli_batch;

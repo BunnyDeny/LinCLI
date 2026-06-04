@@ -103,6 +103,18 @@ typedef volatile int _int;
 #define pr_devel(fmt, ...)     cli_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
 #endif
 
+/*
+ * pr_cont — 续行打印（类似 Linux KERN_CONT）。
+ * 仅在 log_batch_begin_cont() 批量内有效。
+ * 抑制级别前缀重复，用于构建多段日志行：
+ *   cli_printk_batch_begin_cont(KERN_INFO);
+ *   pr_info("hello ");
+ *   pr_cont("world\n");
+ *   cli_printk_batch_end();
+ *   // → [I] hello world\n
+ */
+#define pr_cont(fmt, ...)      cli_printk(fmt, ##__VA_ARGS__)
+
 /* ============================================================
  * Original API — still provided by cli_io.c wrappers
  * ============================================================ */
@@ -112,6 +124,7 @@ int cli_printk(const char *fmt, ...)
 int all_printk(const char *fmt, ...)
     __attribute__((__format__(__printf__, 1, 2)));
 void cli_printk_batch_begin(void);
+void cli_printk_batch_begin_cont(const char *level);
 void cli_printk_batch_end(void);
 
 /* ============================================================
