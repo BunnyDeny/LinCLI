@@ -63,9 +63,12 @@ static void cli_hook_begin(void)
     if (!scheduler_is_in_get_char())
         return;
 
-    /* Lockless: clear current prompt line before output.
+    /* Lockless: reset color + clear current prompt line before output.
+     * \033[0m 复位颜色状态（防止 ISR 在提示符绘制中途打断，
+     *            \033[K 只清内容不清颜色状态）
+     * \r\033[K 回到行首并清行
      * Safe inside CS because it uses _nolock variants. */
-    cli_out_push_nolock((const uint8_t *)"\r\033[K", 4);
+    cli_out_push_nolock((const uint8_t *)"\033[0m\r\033[K", 7);
     cli_out_sync_nolock();
 }
 
