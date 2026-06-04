@@ -160,14 +160,14 @@ int cli_out_sync_nolock(void);
 void cli_term_init(void);
 
 /*
- * Terminal save/restore for external callers.
- *
- * cli_term_save  — lockless; clears the current prompt line via _nolock.
- *                  Safe to call from inside cli_enter_critical().
+ * Terminal restore for external callers.
  *
  * cli_term_restore — calls candidate_redraw() / cmd_line_redraw()
  *                  through cli_out_push (acquires spinlock). Must be
  *                  called OUTSIDE the critical section.
+ *
+ * cli_term_save   — historical alias.  The library now handles
+ *                  output_begin automatically via log_output hooks.
  *
  * cli_term_is_interactive — 1 if scheduler is in get-char mode
  *                  and NOT in exception context.

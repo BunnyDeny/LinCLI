@@ -201,16 +201,20 @@ int all_printk(const char *fmt, ...)
 }
 
 /* ============================================================
- *  cli_printk — 通用日志打印（CS 仅在格式化+写入期间持有，
- *               终端 save/restore 在 CS 外围进行）
+ *  cli_printk — 通用日志打印
+ *
+ *  利用 tinypr 的输出生命周期钩子：
+ *    - log_output_v() 内部自动调 output_begin → 写 \r\033[K
+ *    - 外层负责 cli_term_restore（需要在 CS 外运行，因为 restore
+ *      用 cli_out_push 拿自旋锁，CS 内调会死锁）
+ *
+ *  时序：ENTER_CS → log_output_v(→hook_begin) → EXIT_CS → restore
  * ============================================================ */
+
+static int _cli_batch;
 
 int cli_printk(const char *fmt, ...)
 {
-    int interact = cli_term_is_interactive();
-    if (interact)
-        cli_term_save();
-
     cli_enter_critical();
 
     va_list args;
@@ -220,31 +224,34 @@ int cli_printk(const char *fmt, ...)
 
     cli_exit_critical();
 
-    if (interact)
+    /* Restore prompt outside CS (restore needs spinlock) */
+    /* 不在交互期或批量中不 restore */
+    if (cli_term_is_interactive() && !_cli_batch)
         cli_term_restore();
 
     return ret;
 }
 
 /* ============================================================
- *  Batch 模式 — terminal coordination done externally,
- *  no need to touch log_output's internal batch counter
- *  (which only matters when term_coord=1).
+ *  Batch 模式 — 代理到 log_output 的批量计数器。
+ *
+ *  _cli_batch 用于抑制批量中每条日志后的 restore。
+ *  log_batch_begin/end 控制 output_begin/output_end 的触发时机。
  * ============================================================ */
-
-static int _cli_batch;
 
 void cli_printk_batch_begin(void)
 {
-    if (!_cli_batch) {
-        cli_term_save();
+    if (_cli_batch == 0) {
+        /* hook_begin 在第一条 log 时自动触发 */
     }
     ++_cli_batch;
+    log_batch_begin();
 }
 
 void cli_printk_batch_end(void)
 {
     if (_cli_batch > 0) --_cli_batch;
+    log_batch_end();
     if (!_cli_batch)
         cli_term_restore();
 }
