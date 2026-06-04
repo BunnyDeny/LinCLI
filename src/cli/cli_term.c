@@ -55,8 +55,13 @@ static int cli_log_write(const char *buf, int len)
 
 static void cli_hook_begin(void)
 {
-    /* 不在交互期不做事（启动阶段/批量命令执行） */
-    if (!cli_term_is_interactive()) return;
+    /* 检查提示符是否在屏幕上：调度器在 get_char 状态
+     *
+     * 不检查 cli_in_exception()——ISR 中打印同样需要清行。
+     * 但 ISR 中不需要 restore（restore 用自旋锁，ISR 中不能拿），
+     * 这个保护由 cli_printk / cli_printk_batch_end 负责。 */
+    if (!scheduler_is_in_get_char())
+        return;
 
     /* Lockless: clear current prompt line before output.
      * Safe inside CS because it uses _nolock variants. */
