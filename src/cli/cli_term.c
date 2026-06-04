@@ -63,6 +63,20 @@ static void cli_hook_begin(void)
     if (!scheduler_is_in_get_char())
         return;
 
+    /* Lockless: 如果候选列表显示中，先清掉所有候选行。
+     * \r\033[K 只清当前行，候选列表可能占多行。
+     * 每行：\033[1B 下移一行 → \r 回车 → \033[K 清行
+     * 之后 \033[1A*rows 回到提示符行。 */
+    if (candidate_ctx.rows > 0) {
+        for (int i = 0; i < candidate_ctx.rows; i++) {
+            cli_out_push_nolock((const uint8_t *)"\033[1B\r\033[K", 9);
+        }
+        for (int i = 0; i < candidate_ctx.rows; i++) {
+            cli_out_push_nolock((const uint8_t *)"\033[1A", 4);
+        }
+        candidate_ctx_clear();
+    }
+
     /* Lockless: reset color + clear current prompt line before output.
      * \033[0m 复位颜色状态（防止 ISR 在提示符绘制中途打断，
      *            \033[K 只清内容不清颜色状态）
