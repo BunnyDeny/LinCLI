@@ -348,9 +348,9 @@ void log_batch_end(void)
 
 void log_output_set_ring(kfifo_t *ring, uint8_t *buf, uint32_t size)
 {
-    if (ring && buf && size) {
-        /* Use the caller-provided fifo structure */
-        s_ring     = *ring;  /* shallow-copy the descriptor */
+    (void)ring;  /* ignored — we use buf+size to initialise our own fifo */
+    if (buf && size) {
+        kfifo_init(&s_ring, buf, size);
         s_ring_enabled = true;
     } else {
         s_ring_enabled = false;
