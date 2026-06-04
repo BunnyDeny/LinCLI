@@ -64,11 +64,6 @@ static void cli_hook_begin(void)
     cli_out_sync_nolock();
 }
 
-static int cli_hook_atomic(void)
-{
-    return cli_in_exception();
-}
-
 /* ============================================================
  * Public restore — called from cli_printk OUTSIDE critical section.
  *
@@ -110,11 +105,12 @@ void cli_term_init(void)
      * calls output_begin automatically before each output.
      * output_end is NULL because restore needs the spinlock
      * and must run outside the critical section (handled by
-     * cli_printk's wrapper). */
+     * cli_printk's wrapper).
+     * cli_hook_begin itself guards with cli_term_is_interactive(),
+     * so no separate in_atomic mechanism is needed. */
     static const struct log_output_hooks hooks = {
         .output_begin = cli_hook_begin,
         .output_end   = NULL,          /* restore done by cli_printk wrapper */
-        .in_atomic    = cli_hook_atomic,
     };
     log_output_set_hooks(&hooks);
     log_output_set_term_coord(1);

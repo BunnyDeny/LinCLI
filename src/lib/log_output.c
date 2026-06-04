@@ -18,8 +18,8 @@
  * Register hooks via log_output_set_hooks().  When coord=1 (default),
  * the library wraps every "output transaction" with:
  *
- *   output_begin()  — called before output (if !in_atomic)
- *   output_end()    — called after  output (if !in_atomic, !batch)
+ *   output_begin()  — called before output
+ *   output_end()    — called after  output (!batch)
  *
  * An "output transaction" is:
  *   - a single log_output() call  (non-batch mode)
@@ -27,7 +27,8 @@
  *   - a ring buffer flush         (begin before drain, end after)
  *
  * coord=0 disables automatic hooks (user manages them externally).
- * in_atomic() lets hooks be skipped in ISR / spinlock context.
+ * Hook functions are called unconditionally — guard yourself
+ * if you need to skip them (e.g. ISR context).
  *
  * Integration:
  *   1. log_output_set_write_fn(fn)  — mandatory (the transport)
@@ -146,14 +147,12 @@ static void truncate_if_needed(int *len, size_t buf_size)
  * Lifecycle: output_begin
  *
  * Called once per output transaction (one log call, or one batch,
- * or one flush).  Skipped if atomic context or coord=0.
+ * or one flush).  Skipped if coord=0.
  * ============================================================ */
 
 static inline void lifecycle_begin(void)
 {
     if (!s_term_coord) return;
-    int atomic = s_hooks.in_atomic ? s_hooks.in_atomic() : 0;
-    if (atomic) return;
 
     if (s_hook_begin_called)
         return;  /* already begun (batch: same transaction) */

@@ -79,10 +79,11 @@ extern "C" {
  *
  *   output_begin()  — 输出开始前调用（清行、解锁 Flash、加锁互斥）
  *   output_end()    — 输出结束后调用（恢复提示符、锁定 Flash、释放互斥）
- *   in_atomic()     — 查询是否在原子上下文中（ISR/自旋锁），返回 1 则跳过钩子
  *
  * 你完全控制钩子函数的内容——它可以是终端 save/restore，
  * 可以是 Flash 写保护开关，可以是 GPIO 脉冲，什么都行。
+ * 如果某个场景下你不希望钩子执行（如 ISR 上下文），
+ * 直接在钩子函数内判断即可——库不越俎代庖。
  *
  * coord=1（默认）: 钩子自动触发
  * coord=0:         钩子由你手动管理（配合外部临界区）
@@ -93,7 +94,6 @@ extern "C" {
 struct log_output_hooks {
     void (*output_begin)(void);
     void (*output_end)(void);
-    int  (*in_atomic)(void);
 };
 
 /* ============================================================
@@ -120,7 +120,9 @@ void log_output_set_write_fn(log_write_fn fn);
  *    output_begin() before each output transaction
  *    output_end()   after each output transaction
  *
- *  in_atomic() lets the library skip hooks in atomic context.
+ *  Hook functions are called unconditionally — if you need
+ *  to skip them (e.g. in ISR context), guard them yourself
+ *  inside the hook.
  *  Pass NULL to unregister. */
 void log_output_set_hooks(const struct log_output_hooks *hooks);
 
