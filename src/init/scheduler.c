@@ -599,6 +599,12 @@ int scheduler_task(void)
 		pr_cont("%7d\r\n", cnt);
 		cli_printk_batch_end();
 	}
+	if ((cnt % 100) == 0) {
+		/* Single-segment complete message inside cont batch */
+		cli_printk_batch_begin_cont(KERN_NOTICE);
+		pr_info("complete msg inside cont, cnt=%d\r\n", cnt);
+		cli_printk_batch_end();
+	}
 #endif
 	return 0;
 }
