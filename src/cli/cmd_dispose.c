@@ -29,7 +29,6 @@
 #include "cli_cmd_line.h"
 #include "cli_mpool.h"
 #include "cli_parse.h"
-#include "cli_vsnprintf.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
@@ -630,15 +629,15 @@ static void build_opt_marks(cli_option_t *opt, char *req_mark,
 	req_mark[0] = '\0';
 	dep_mark[0] = '\0';
 	if (opt->required)
-		cli_snprintf(req_mark, CLI_HELP_REQ_MARK_SIZE, " [R]");
+		snprintf(req_mark, CLI_HELP_REQ_MARK_SIZE, " [R]");
 	if (opt->depends && opt->depends[0]) {
-		cli_snprintf(dep_mark, dep_mark_size, " [D:%s]",
+		snprintf(dep_mark, dep_mark_size, " [D:%s]",
 			 opt->depends);
 	}
 	if (opt->conflicts && opt->conflicts[0]) {
 		size_t len = strlen(dep_mark);
 		if (len < dep_mark_size - 1) {
-			cli_snprintf(dep_mark + len, dep_mark_size - len,
+			snprintf(dep_mark + len, dep_mark_size - len,
 				 " [conf:%s]", opt->conflicts);
 		}
 	}

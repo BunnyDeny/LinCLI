@@ -32,7 +32,8 @@
 
 /*
  * Overridable vsnprintf — default to standard library.
- * LinCLI sets LOG_VSNPRINTF to cli_vsnprintf for its embedded build.
+ * #define LOG_VSNPRINTF my_vsnprintf before including log_output.h
+ * to use a custom implementation.
  */
 #ifndef LOG_VSNPRINTF
 #define LOG_VSNPRINTF   vsnprintf

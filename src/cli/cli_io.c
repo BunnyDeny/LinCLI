@@ -25,8 +25,8 @@
 #include "cli_critical.h"
 #include "cmd_dispose.h"
 #include "cli_mpool.h"
-#include "cli_vsnprintf.h"
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 _u8 cli_in_push_lock = 1;
@@ -181,7 +181,7 @@ int cli_out_sync(void)
 
 /* ============================================================
  *  all_printk — 直接向输出 FIFO 写入（无日志过滤/终端协调）
- *  （保留 cli_vsnprintf 轻量格式化，供提示符和内部输出使用）
+ *  （使用标准 vsnprintf，供提示符和内部输出使用）
  * ============================================================ */
 
 int all_printk(const char *fmt, ...)
@@ -190,7 +190,7 @@ int all_printk(const char *fmt, ...)
     char buf[CLI_IO_SIZE];
     va_list args;
     va_start(args, fmt);
-    int len = cli_vsnprintf(buf, sizeof(buf), fmt, args);
+    int len = vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     status = cli_out_push((_u8 *)buf, len);
     if (status < 0)
@@ -201,35 +201,8 @@ int all_printk(const char *fmt, ...)
 }
 
 /* ============================================================
- *  sys_printk — 通用日志打印（CS 仅在格式化+写入期间持有，
+ *  cli_printk — 通用日志打印（CS 仅在格式化+写入期间持有，
  *               终端 save/restore 在 CS 外围进行）
- * ============================================================ */
-
-int sys_printk(const char *fmt, ...)
-{
-    /* Save terminal state (lockless — inside CS or not, both safe) */
-    int interact = cli_term_is_interactive();
-    if (interact)
-        cli_term_save();
-
-    cli_enter_critical();
-
-    va_list args;
-    va_start(args, fmt);
-    int ret = log_output_v(fmt, args);
-    va_end(args);
-
-    cli_exit_critical();
-
-    /* Restore terminal state (outside CS — uses cli_out_push normally) */
-    if (interact)
-        cli_term_restore();
-
-    return ret;
-}
-
-/* ============================================================
- *  cli_printk — 等同 sys_printk（历史兼容别名）
  * ============================================================ */
 
 int cli_printk(const char *fmt, ...)

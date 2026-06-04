@@ -130,7 +130,7 @@ extern char g_log_level[3];
  * masking, which is properly nested).
  *
  * When DISABLED: log_output_v() ONLY formats and writes.  The wrapper
- * (e.g. sys_printk) is responsible for calling save/restore around the
+ * (e.g. cli_printk) is responsible for calling save/restore around the
  * critical section.  This is the PC mode (where cli_enter_critical maps to
  * a non-reentrant spinlock, and redrawing inside the CS would deadlock).
  */

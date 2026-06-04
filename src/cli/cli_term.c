@@ -16,7 +16,7 @@
  *                          real redraw through cli_out_push (which
  *                          acquires/releases the spinlock normally)
  *
- * sys_printk / cli_printk in cli_io.c handle the sequencing:
+ * cli_printk in cli_io.c handle the sequencing:
  *   save → ENTER_CS → log_output_v → EXIT_CS → restore
  *
  * On Cortex-M the critical section is interrupt masking (re-entrant
@@ -92,7 +92,7 @@ void cli_term_init(void)
 
     /*
      * Disable log_output's internal terminal coordination.
-     * sys_printk/cli_printk in cli_io.c handle save/restore
+     * cli_printk in cli_io.c handle save/restore
      * externally, around the critical section.
      */
     log_output_set_term_coord(0);

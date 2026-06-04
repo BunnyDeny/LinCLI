@@ -61,7 +61,6 @@ Core/Src/system_stm32g4xx.c \
 Core/Src/sysmem.c \
 Core/Src/syscalls.c \
 ../../src/lib/cli_float.c \
-../../src/lib/cli_vsnprintf.c \
 ../../src/lib/cli_string.c \
 ../../src/lib/cli_atoi.c \
 ../../src/cli/cli_candidate.c \

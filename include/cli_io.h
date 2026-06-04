@@ -84,24 +84,23 @@ typedef volatile int _int;
 
 #define log_level        g_log_level
 
-/* ============================================================
- * Backward-compatible pr_* macros → sys_printk wrapper
+/*
+ * Backward-compatible pr_* macros → cli_printk wrapper
  *
- * sys_printk handles the critical-section + terminal save/restore
- * sequencing.  Going directly to log_output would bypass that.
- * ============================================================ */
-
-#define pr_emerg(fmt, ...)     sys_printk(KERN_EMERG   fmt, ##__VA_ARGS__)
-#define pr_alert(fmt, ...)     sys_printk(KERN_ALERT   fmt, ##__VA_ARGS__)
-#define pr_crit(fmt, ...)      sys_printk(KERN_CRIT    fmt, ##__VA_ARGS__)
-#define pr_err(fmt, ...)       sys_printk(KERN_ERR     fmt, ##__VA_ARGS__)
-#define pr_warn(fmt, ...)      sys_printk(KERN_WARNING fmt, ##__VA_ARGS__)
-#define pr_notice(fmt, ...)    sys_printk(KERN_NOTICE  fmt, ##__VA_ARGS__)
-#define pr_info(fmt, ...)      sys_printk(KERN_INFO    fmt, ##__VA_ARGS__)
-#define pr_debug(fmt, ...)     sys_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
+ * cli_printk handles the critical-section + terminal save/restore
+ * sequencing.
+ */
+#define pr_emerg(fmt, ...)     cli_printk(KERN_EMERG   fmt, ##__VA_ARGS__)
+#define pr_alert(fmt, ...)     cli_printk(KERN_ALERT   fmt, ##__VA_ARGS__)
+#define pr_crit(fmt, ...)      cli_printk(KERN_CRIT    fmt, ##__VA_ARGS__)
+#define pr_err(fmt, ...)       cli_printk(KERN_ERR     fmt, ##__VA_ARGS__)
+#define pr_warn(fmt, ...)      cli_printk(KERN_WARNING fmt, ##__VA_ARGS__)
+#define pr_notice(fmt, ...)    cli_printk(KERN_NOTICE  fmt, ##__VA_ARGS__)
+#define pr_info(fmt, ...)      cli_printk(KERN_INFO    fmt, ##__VA_ARGS__)
+#define pr_debug(fmt, ...)     cli_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
 
 #ifdef DEBUG
-#define pr_devel(fmt, ...)     sys_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
+#define pr_devel(fmt, ...)     cli_printk(KERN_DEBUG   fmt, ##__VA_ARGS__)
 #endif
 
 /* ============================================================
@@ -111,8 +110,6 @@ typedef volatile int _int;
 int cli_printk(const char *fmt, ...)
     __attribute__((__format__(__printf__, 1, 2)));
 int all_printk(const char *fmt, ...)
-    __attribute__((__format__(__printf__, 1, 2)));
-int sys_printk(const char *fmt, ...)
     __attribute__((__format__(__printf__, 1, 2)));
 void cli_printk_batch_begin(void);
 void cli_printk_batch_end(void);
@@ -149,7 +146,7 @@ void reset_cli_in_push_lock(void);
 /*
  * Lockless variants — skip cli_enter_critical/cli_exit_critical.
  * Use ONLY when the critical section is already held by the caller
- * (e.g. inside sys_printk's log path).
+ * (e.g. inside the log output path).
  */
 int cli_out_push_nolock(const uint8_t *data, int size);
 int cli_out_pop_nolock(uint8_t *data, int size);
