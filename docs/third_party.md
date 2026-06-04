@@ -257,15 +257,7 @@ void good_example(void)
 
 ### 🖨️ 打印格式限制
 
-LinCLI 的 `cli_vsnprintf` 仅支持 `%d %u %s %c %%`，**不支持 `%lu`**。打印 tick 值时请使用 `%u`：
-
-```c
-/* ❌ 不支持 %lu，输出可能异常 */
-cli_printk("tick = %lu\r\n", jiffies);
-
-/* ✅ 使用 %u 打印 */
-cli_printk("tick = %u\r\n", jiffies);
-```
+LinCLI 使用标准 libc `vsnprintf`，支持所有标准 printf 格式说明符（`%d %u %s %c %x %lu` 等）。
 
 ### ⏱️ 避免耗时操作
 

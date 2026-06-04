@@ -1,51 +1,38 @@
 /*
  * log_output — standalone embedded-friendly logging library.
  *
- * DESIGN
- * ------
- * log_output is decoupled from any specific transport, terminal UI, or
- * RTOS.  It provides two output modes:
- *
- *   DIRECT  (default) — each log() call formats, filters, and writes
- *   RING    (native)  — each log() formats and pushes to a kfifo ring
- *                        buffer; a background task calls flush() to drain
- *                        the ring and write to the transport.
- *
- * Ring mode is built-in (kfifo is a hard dependency of this library).
+ * All output goes through an internal kfifo ring buffer.
+ * No "direct mode" exists — every message is pushed to the ring.
+ * The ONLY output path to the transport is log_output_flush().
  *
  * LIFECYCLE HOOKS
  * ---------------
  * Register hooks via log_output_set_hooks().  When coord=1 (default),
- * the library wraps every "output transaction" with:
+ * hooks fire on the PRODUCER side (inside log_output/log_output_raw):
  *
- *   output_begin()  — called before output
- *   output_end()    — called after  output (!batch)
+ *   output_begin()  — called before push (clear line, unlock flash)
+ *   output_end()    — called after  push (restore prompt, relock flash)
  *
- * An "output transaction" is:
- *   - a single log_output() call  (non-batch mode)
- *   - a batch region              (begin on first log, end at batch_end)
- *   - a ring buffer flush         (begin before drain, end after)
+ * The CONSUMER side (log_output_flush()) never fires hooks — it just
+ * drains the ring and calls write_fn.  This separation ensures that:
+ *   - ISR:  producer pushes to ring (fast, no I/O)
+ *   - Task: flush writes to transport (actual I/O, with hooks already
+ *           fired on the producer side)
  *
  * coord=0 disables automatic hooks (user manages them externally).
- * Hook functions are called unconditionally — guard yourself
- * if you need to skip them (e.g. ISR context).
  *
  * Integration:
  *   1. log_output_set_write_fn(fn)  — mandatory (the transport)
  *   2. log_output_set_hooks()       — optional (lifecycle hooks)
- *   3. log_output_init()             — optional (reset state)
- *   4. log_output() / log_*() macros — emit messages
+ *   3. log_output_init()             — optional (reset state, inits ring)
+ *   4. log_output() / log_*()        — emit messages (push to ring)
+ *   5. log_output_flush()            — drain ring → write_fn (call periodically)
  */
 
 #include "log_output.h"
 #include <stdio.h>
 #include <string.h>
 
-/*
- * Overridable vsnprintf — default to standard library.
- * #define LOG_VSNPRINTF my_vsnprintf before including log_output.h
- * to use a custom implementation.
- */
 #ifndef LOG_VSNPRINTF
 #define LOG_VSNPRINTF   vsnprintf
 #endif
@@ -61,32 +48,32 @@ char g_log_level[3] = "8";
 static log_write_fn          s_write_fn = NULL;
 static struct log_output_hooks s_hooks;
 static int                   s_batch;
-static const char            *s_batch_level;      /* non-NULL = cont mode */
-static bool                  s_batch_first;       /* first msg in cont batch */
-static int                   s_term_coord = 1;  /* default: hooks auto-fire */
-static bool                  s_hook_begin_called;  /* track begin for batch */
+static const char            *s_batch_level;
+static bool                  s_batch_first;
+static int                   s_term_coord = 1;
+static bool                  s_hook_begin_called;
 
-/* Shared format buffer — safe because log_output holds a critical section
- * externally on the LinCLI side, or callers serialise access. */
 static char s_buf[LOG_BUF_SIZE];
 
-static kfifo_t s_ring;
-static bool    s_ring_enabled;
+/* Internal ring buffer — all output goes through here */
+static kfifo_t      s_ring;
+static uint8_t      s_ring_buf[128];
+static int          s_ring_inited;
 
 /* ============================================================
  * Level / prefix helpers
  * ============================================================ */
 
 static const char *s_prefix_table[] = {
-    LOG_COLOR_BOLD LOG_COLOR_RED " [E] ",      /* 0  EMERG   */
-    LOG_COLOR_MAGENTA          " [A] ",         /* 1  ALERT   */
-    LOG_COLOR_RAINBOW_2       " [C] ",         /* 2  CRIT    */
-    LOG_COLOR_RED             " [E] ",         /* 3  ERR     */
-    LOG_COLOR_YELLOW          " [W] ",         /* 4  WARNING */
-    LOG_COLOR_BOLD LOG_COLOR_GREEN " ",        /* 5  NOTICE  */
-    LOG_COLOR_BLUE            " [I] " LOG_COLOR_NONE,  /* 6  INFO */
-    LOG_COLOR_RAINBOW_4       " [D] ",         /* 7  DEBUG   */
-    "",                                        /* 8  default */
+    LOG_COLOR_BOLD LOG_COLOR_RED " [E] ",
+    LOG_COLOR_MAGENTA          " [A] ",
+    LOG_COLOR_RAINBOW_2       " [C] ",
+    LOG_COLOR_RED             " [E] ",
+    LOG_COLOR_YELLOW          " [W] ",
+    LOG_COLOR_BOLD LOG_COLOR_GREEN " ",
+    LOG_COLOR_BLUE            " [I] " LOG_COLOR_NONE,
+    LOG_COLOR_RAINBOW_4       " [D] ",
+    "",
 };
 
 static inline int is_kern_level(char c)
@@ -113,23 +100,7 @@ static bool log_should_drop(const char *pre)
 }
 
 /* ============================================================
- * Low-level transport calls
- * ============================================================ */
-
-static inline int do_write(const char *s, int len)
-{
-    if (!s_write_fn || !s || len <= 0) return 0;
-    return s_write_fn(s, len);
-}
-
-static inline int do_write_str(const char *s)
-{
-    if (!s) return 0;
-    return do_write(s, (int)strlen(s));
-}
-
-/* ============================================================
- * Truncate oversized buffer (s_buf, called after vsnprintf)
+ * Truncate oversized buffer
  * ============================================================ */
 
 static void truncate_if_needed(int *len, size_t buf_size)
@@ -144,75 +115,63 @@ static void truncate_if_needed(int *len, size_t buf_size)
 }
 
 /* ============================================================
- * Lifecycle: output_begin
- *
- * Called once per output transaction (one log call, or one batch,
- * or one flush).  Skipped if coord=0.
+ * Lifecycle helpers
  * ============================================================ */
 
 static inline void lifecycle_begin(void)
 {
     if (!s_term_coord) return;
-
     if (s_hook_begin_called)
-        return;  /* already begun (batch: same transaction) */
-
+        return;
     if (s_hooks.output_begin)
         s_hooks.output_begin();
     s_hook_begin_called = true;
 }
-
-/* ============================================================
- * Lifecycle: output_end
- *
- * Called once per output transaction (if begin was called).
- * In batch mode, deferred until batch_end.
- * ============================================================ */
 
 static inline void lifecycle_end(void)
 {
     if (!s_term_coord) return;
     if (!s_hook_begin_called)
         return;
-
     if (s_batch)
-        return;  /* batch in progress — end at batch_end */
-
+        return;
     if (s_hooks.output_end)
         s_hooks.output_end();
     s_hook_begin_called = false;
 }
 
 /* ============================================================
- * Format + filter + emit (direct path)
+ * Single producer path — always pushes to kfifo ring
  * ============================================================ */
 
-static int log_direct_internal(const char *fmt, va_list args,
-                               bool skip_filter)
+static int log_output_internal(const char *fmt, va_list args,
+                               bool skip_filter, bool skip_hooks)
 {
+    if (!s_ring_inited) return -1;
+
     int len = LOG_VSNPRINTF(s_buf, sizeof(s_buf), fmt, args);
     if (len <= 0) return 0;
 
     truncate_if_needed(&len, sizeof(s_buf));
 
-    /* ---- Determine effective level ---- */
+    /* Determine effective level */
     char pre[2];
     if (s_batch_level) {
-        /* Continuation batch: use the batch's level for filtering */
         pre[0] = s_batch_level[0];
     } else {
         pre[0] = s_buf[0];
     }
     pre[1] = '\0';
 
-    /* ---- Level filter ---- */
+    /* Level filter */
     if (!skip_filter && pre[0] && log_should_drop(pre))
         return 0;
 
-    /* ---- Lifecycle: begin ---- */
-    lifecycle_begin();
+    /* Lifecycle */
+    if (!skip_hooks)
+        lifecycle_begin();
 
-    /* ---- Emit prefix + content + reset ---- */
+    /* Emit prefix + content + color reset → ring */
     const char *content = s_buf;
     int content_len = len;
     if (is_kern_level(s_buf[0])) {
@@ -221,40 +180,24 @@ static int log_direct_internal(const char *fmt, va_list args,
     }
 
     if (content_len > 0) {
-        /* In continuation batch: suppress prefix on 2nd+ messages */
         bool show_prefix = !(s_batch_level && !s_batch_first);
         if (show_prefix) {
-            do_write_str(prefix_gen(pre[0]));
+            const char *pref = prefix_gen(pre[0]);
+            kfifo_put(&s_ring, (const uint8_t *)pref, (uint32_t)strlen(pref));
         }
-        do_write(content, content_len);
+        kfifo_put(&s_ring, (const uint8_t *)content, (uint32_t)content_len);
         if (show_prefix) {
-            do_write_str(LOG_COLOR_NONE);
+            kfifo_put(&s_ring, (const uint8_t *)LOG_COLOR_NONE,
+                      (uint32_t)strlen(LOG_COLOR_NONE));
         }
     }
     s_batch_first = false;
 
-    /* ---- Lifecycle: end ---- */
-    lifecycle_end();
+    /* Lifecycle */
+    if (!skip_hooks)
+        lifecycle_end();
 
     return len;
-}
-
-/* ============================================================
- * Ring buffer producer path
- * ============================================================ */
-
-static int log_ring_internal(const char *fmt, va_list args, bool raw)
-{
-    (void)raw; /* ring mode never drops — raw is a no-op here */
-
-    int len = LOG_VSNPRINTF(s_buf, sizeof(s_buf), fmt, args);
-    if (len <= 0) return 0;
-
-    truncate_if_needed(&len, sizeof(s_buf));
-
-    /* Push raw bytes to ring — no terminal interaction at producer side */
-    uint32_t written = kfifo_put(&s_ring, (const uint8_t *)s_buf, (uint32_t)len);
-    return (int)written;
 }
 
 /* ============================================================
@@ -267,6 +210,8 @@ void log_output_init(void)
     s_batch_level = NULL;
     s_batch_first = false;
     s_hook_begin_called = false;
+    kfifo_init(&s_ring, s_ring_buf, sizeof(s_ring_buf));
+    s_ring_inited = 1;
 }
 
 void log_output_set_write_fn(log_write_fn fn)
@@ -288,7 +233,7 @@ void log_output_set_term_coord(int enable)
     s_term_coord = enable ? 1 : 0;
 }
 
-/* ---- Standard log (with level filtering) ---- */
+/* ---- Standard log (with level filtering + hooks) ---- */
 
 int log_output(const char *fmt, ...)
 {
@@ -301,15 +246,11 @@ int log_output(const char *fmt, ...)
 
 int log_output_v(const char *fmt, va_list args)
 {
-    if (!fmt || !s_write_fn) return -1;
-
-    if (s_ring_enabled)
-        return log_ring_internal(fmt, args, false);
-
-    return log_direct_internal(fmt, args, false);
+    if (!fmt || !s_write_fn || !s_ring_inited) return -1;
+    return log_output_internal(fmt, args, false, false);
 }
 
-/* ---- Raw log (bypass level filter, still do hooks) ---- */
+/* ---- Raw log (bypass filter, keep hooks) ---- */
 
 int log_output_raw(const char *fmt, ...)
 {
@@ -322,12 +263,8 @@ int log_output_raw(const char *fmt, ...)
 
 int log_output_raw_v(const char *fmt, va_list args)
 {
-    if (!fmt || !s_write_fn) return -1;
-
-    if (s_ring_enabled)
-        return log_ring_internal(fmt, args, true);
-
-    return log_direct_internal(fmt, args, true);
+    if (!fmt || !s_write_fn || !s_ring_inited) return -1;
+    return log_output_internal(fmt, args, true, false);
 }
 
 /* ---- Direct log (no filter, no hooks) ---- */
@@ -343,13 +280,14 @@ int log_output_direct(const char *fmt, ...)
 
 int log_output_direct_v(const char *fmt, va_list args)
 {
-    if (!fmt || !s_write_fn) return -1;
+    if (!fmt || !s_write_fn || !s_ring_inited) return -1;
 
     int len = LOG_VSNPRINTF(s_buf, sizeof(s_buf), fmt, args);
     if (len <= 0) return 0;
     truncate_if_needed(&len, sizeof(s_buf));
 
-    return do_write(s_buf, len);
+    kfifo_put(&s_ring, (const uint8_t *)s_buf, (uint32_t)len);
+    return len;
 }
 
 /* ---- Batch mode ---- */
@@ -379,28 +317,22 @@ void log_batch_end(void)
     }
 }
 
-/* ---- Ring buffer lifecycle ---- */
+/* ---- Ring buffer lifecycle / flush ---- */
 
 void log_output_set_ring(uint8_t *buf, uint32_t size)
 {
     if (buf && size) {
         kfifo_init(&s_ring, buf, size);
-        s_ring_enabled = true;
-    } else {
-        s_ring_enabled = false;
+        s_ring_inited = 1;
     }
 }
 
 int log_output_flush(void)
 {
-    if (!s_ring_enabled || !s_write_fn) return 0;
+    if (!s_ring_inited || !s_write_fn) return 0;
 
     char buf[LOG_BUF_SIZE];
     int  total = 0;
-
-    /* Lifecycle: begin */
-    if (s_term_coord && !s_batch && s_hooks.output_begin)
-        s_hooks.output_begin();
 
     while (kfifo_len(&s_ring) > 0) {
         uint32_t avail = kfifo_len(&s_ring);
@@ -410,10 +342,6 @@ int log_output_flush(void)
         s_write_fn(buf, (int)rlen);
         total += (int)rlen;
     }
-
-    /* Lifecycle: end */
-    if (s_term_coord && !s_batch && s_hooks.output_end)
-        s_hooks.output_end();
 
     return total;
 }

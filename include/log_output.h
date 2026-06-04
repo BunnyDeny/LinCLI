@@ -77,16 +77,17 @@ extern "C" {
  *
  * 注册钩子后，log_output 在每个"输出事务"前后自动调用：
  *
- *   output_begin()  — 输出开始前调用（清行、解锁 Flash、加锁互斥）
- *   output_end()    — 输出结束后调用（恢复提示符、锁定 Flash、释放互斥）
+ *   output_begin()  — 输出开始前调用（清行、解锁Flash、加锁互斥）
+ *   output_end()    — 输出结束后调用（恢复提示符、锁定Flash、释放互斥）
  *
- * 你完全控制钩子函数的内容——它可以是终端 save/restore，
- * 可以是 Flash 写保护开关，可以是 GPIO 脉冲，什么都行。
- * 如果某个场景下你不希望钩子执行（如 ISR 上下文），
- * 直接在钩子函数内判断即可——库不越俎代庖。
+ * 钩子只会在数据推入 kfifo 环形缓冲时触发（log_output / log_output_raw），
+ * 不会在 log_output_flush 刷出时再次触发。flush 只管转移数据到传输层。
+ *
+ * 你完全控制钩子函数的内容。如果某场景下不希望执行（如 ISR），
+ * 直接在钩子函数内部判断返回即可。
  *
  * coord=1（默认）: 钩子自动触发
- * coord=0:         钩子由你手动管理（配合外部临界区）
+ * coord=0:         钩子由你手动管理
  *
  * 所有回调都是可选的（设为 NULL 跳过）。
  * ============================================================ */
@@ -135,12 +136,12 @@ extern char g_log_level[3];
 /**
  * 输出协调模式。
  *
- * coord=1（默认）: 登记的自定义钩子（hooks）自动触发。
- *   每个日志输出前调用 output_begin()，输出后调用 output_end()。
- *   批量/环形缓冲模式下，begin/end 自动合并为一次。
+ * coord=1（默认）: 自定义钩子（hooks）在推入环形缓冲时自动触发。
+ *   每个输出事务前调用 output_begin()，后调用 output_end()。
+ *   批量模式下，begin/end 自动合并为一次。
  *
  * coord=0: 自定义钩子不会自动触发。
- *   你手动管理 begin/end 调用（常见于外部临界区保护）。
+ *   你手动管理 begin/end 调用（常见于外部临界区）。
  */
 void log_output_set_term_coord(int enable);
 
@@ -192,15 +193,21 @@ void log_batch_begin_cont(const char *level);
 void log_batch_end(void);
 
 /* ============================================================
- * Ring buffer mode (built-in — kfifo is a hard dependency)
+ * Ring buffer — all output goes through kfifo (hard dependency)
  * ============================================================ */
 
 #include "kfifo.h"
 
-/** Enable ring buffer mode: log_output pushes formatted messages to
- *  the kfifo ring instead of calling the write_fn directly.
- *  Caller must periodically drain with log_output_flush().
- *  Pass NULL/0 to disable ring mode and revert to direct mode. */
+/** Configure the ring buffer size.  All log_output/raw/direct calls
+ *  push formatted messages to this ring.  The ONLY function that
+ *  drains the ring and calls write_fn is log_output_flush().
+ *
+ *  Unless you call this function, a default 2048-byte internal buffer
+ *  is used (initialised by log_output_init()).  Call this to override
+ *  with your own buffer (e.g. 1024 bytes for a busy RTOS system).
+ *
+ *  Re-initialising the ring discards any unflushed data.
+ *  Pass NULL/0 to keep the existing ring unchanged. */
 void log_output_set_ring(uint8_t *buf, uint32_t size);
 
 /** Drain the ring buffer: pull all buffered messages and push them

@@ -222,6 +222,9 @@ int cli_printk(const char *fmt, ...)
     int ret = log_output_v(fmt, args);
     va_end(args);
 
+    /* Flush ring → transport (inside CS, _nolock is safe) */
+    log_output_flush();
+
     cli_exit_critical();
 
     /* Restore prompt outside CS (restore needs spinlock) */
@@ -258,8 +261,11 @@ void cli_printk_batch_end(void)
 {
     if (_cli_batch > 0) --_cli_batch;
     log_batch_end();
-    if (!_cli_batch)
-        cli_term_restore();
+    if (!_cli_batch) {
+        log_output_flush();
+        if (cli_term_is_interactive())
+            cli_term_restore();
+    }
 }
 
 int cli_in_clear(void)

@@ -4,8 +4,8 @@
  * Outputs \r-prefixed data lines that can be captured by
  * tools/lincli_csv_bridge.py for live plotting.
  *
- * Note: cli_vsnprintf only supports %% %d %u %s %c,
- * so floating-point values are scaled to integers (x1000).
+ * Note: floating-point values are scaled to integers (x1000)
+ * for simpler CSV parsing on the Python bridge side.
  */
 
 #include "cli_config.h"
