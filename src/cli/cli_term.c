@@ -68,7 +68,7 @@ static void cli_hook_begin(void)
      *            \033[K 只清内容不清颜色状态）
      * \r\033[K 回到行首并清行
      * Safe inside CS because it uses _nolock variants. */
-    cli_out_push_nolock((const uint8_t *)"\033[0m\r\033[K", 7);
+    cli_out_push_nolock((const uint8_t *)"\033[0m\r\033[K", 8);
     cli_out_sync_nolock();
 }
 
