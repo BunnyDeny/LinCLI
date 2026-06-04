@@ -65,14 +65,14 @@ static int          s_ring_inited;
  * ============================================================ */
 
 static const char *s_prefix_table[] = {
-    LOG_COLOR_BOLD LOG_COLOR_RED " [E] ",
-    LOG_COLOR_MAGENTA          " [A] ",
-    LOG_COLOR_RAINBOW_2       " [C] ",
-    LOG_COLOR_RED             " [E] ",
-    LOG_COLOR_YELLOW          " [W] ",
-    LOG_COLOR_BOLD LOG_COLOR_GREEN " ",
+    LOG_COLOR_BOLD LOG_COLOR_RED " [E] " LOG_COLOR_NONE,
+    LOG_COLOR_MAGENTA          " [A] " LOG_COLOR_NONE,
+    LOG_COLOR_RAINBOW_2       " [C] " LOG_COLOR_NONE,
+    LOG_COLOR_RED             " [E] " LOG_COLOR_NONE,
+    LOG_COLOR_YELLOW          " [W] " LOG_COLOR_NONE,
+    LOG_COLOR_BOLD LOG_COLOR_GREEN " " LOG_COLOR_NONE,
     LOG_COLOR_BLUE            " [I] " LOG_COLOR_NONE,
-    LOG_COLOR_RAINBOW_4       " [D] ",
+    LOG_COLOR_RAINBOW_4       " [D] " LOG_COLOR_NONE,
     "",
 };
 
