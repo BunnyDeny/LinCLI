@@ -7,12 +7,11 @@
  * RTOS.  It provides two output modes:
  *
  *   DIRECT  (default) — each log() call formats, filters, and writes
- *   RING    (optional) — each log() formats and pushes to a kfifo ring
+ *   RING    (native)  — each log() formats and pushes to a kfifo ring
  *                        buffer; a background task calls flush() to drain
  *                        the ring and write to the transport.
  *
- * Ring mode requires LOG_OUTPUT_HAVE_KFIFO and a kfifo_t from kfifo.h.
- * Without it, the library falls back to direct mode with no ring overhead.
+ * Ring mode is built-in (kfifo is a hard dependency of this library).
  *
  * INTEGRATION
  * -----------
@@ -20,10 +19,6 @@
  *   2. log_output_set_term_ops()    — optional (interactive terminal)
  *   3. log_output_init()             — optional (reset state)
  *   4. log_output() / log_*() macros — emit messages
- *
- * For standalone extraction (e.g. a separate GitHub repo), copy only
- * log_output.h + log_output.c.  kfifo is pulled in only when the
- * consuming project already provides it.
  */
 
 #include "log_output.h"
@@ -39,9 +34,7 @@
 #define LOG_VSNPRINTF   vsnprintf
 #endif
 
-#ifdef LOG_OUTPUT_HAVE_KFIFO
 #include "kfifo.h"
-#endif
 
 /* ============================================================
  * Static state
@@ -64,10 +57,8 @@ static int s_isr_newline_pending;
  * externally on the LinCLI side, or callers serialise access. */
 static char s_buf[LOG_BUF_SIZE];
 
-#ifdef LOG_OUTPUT_HAVE_KFIFO
 static kfifo_t s_ring;
 static bool    s_ring_enabled;
-#endif
 
 /* ============================================================
  * Level / prefix helpers
@@ -211,8 +202,6 @@ static int log_direct_internal(const char *fmt, va_list args,
  * Ring buffer producer path
  * ============================================================ */
 
-#ifdef LOG_OUTPUT_HAVE_KFIFO
-
 static int log_ring_internal(const char *fmt, va_list args, bool raw)
 {
     (void)raw; /* ring mode never drops — raw is a no-op here */
@@ -226,8 +215,6 @@ static int log_ring_internal(const char *fmt, va_list args, bool raw)
     uint32_t written = kfifo_put(&s_ring, (const uint8_t *)s_buf, (uint32_t)len);
     return (int)written;
 }
-
-#endif /* LOG_OUTPUT_HAVE_KFIFO */
 
 /* ============================================================
  * Public API
@@ -272,10 +259,8 @@ int log_output_v(const char *fmt, va_list args)
 {
     if (!fmt || !s_write_fn) return -1;
 
-#ifdef LOG_OUTPUT_HAVE_KFIFO
     if (s_ring_enabled)
         return log_ring_internal(fmt, args, false);
-#endif
 
     return log_direct_internal(fmt, args, false);
 }
@@ -295,10 +280,8 @@ int log_output_raw_v(const char *fmt, va_list args)
 {
     if (!fmt || !s_write_fn) return -1;
 
-#ifdef LOG_OUTPUT_HAVE_KFIFO
     if (s_ring_enabled)
         return log_ring_internal(fmt, args, true);
-#endif
 
     return log_direct_internal(fmt, args, true);
 }
@@ -342,9 +325,7 @@ void log_batch_end(void)
         s_ops.restore();
 }
 
-/* ---- Ring buffer lifecycle (only available with kfifo) ---- */
-
-#ifdef LOG_OUTPUT_HAVE_KFIFO
+/* ---- Ring buffer lifecycle ---- */
 
 void log_output_set_ring(kfifo_t *ring, uint8_t *buf, uint32_t size)
 {
@@ -386,4 +367,4 @@ int log_output_flush(void)
     return total;
 }
 
-#endif /* LOG_OUTPUT_HAVE_KFIFO */
+/* ---- Convenience macros (defined in header) ---- */

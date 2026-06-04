@@ -171,10 +171,9 @@ void log_batch_begin(void);
 void log_batch_end(void);
 
 /* ============================================================
- * Ring buffer mode (requires kfifo.h / LOG_OUTPUT_HAVE_KFIFO)
+ * Ring buffer mode (built-in — kfifo is a hard dependency)
  * ============================================================ */
 
-#ifdef LOG_OUTPUT_HAVE_KFIFO
 #include "kfifo.h"
 
 /** Enable ring buffer mode: log_output pushes to this kfifo
@@ -186,7 +185,6 @@ void log_output_set_ring(kfifo_t *ring, uint8_t *buf, uint32_t size);
 /** Drain the ring buffer: pull all buffered messages and push them
  *  through the registered write_fn.  Returns total bytes flushed. */
 int log_output_flush(void);
-#endif
 
 /* ============================================================
  * Convenience macros (log_* namespace)
